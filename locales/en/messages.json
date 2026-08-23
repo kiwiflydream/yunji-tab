@@ -1,0 +1,18 @@
+{
+  "extensionName": {
+    "message": "Yunji Tab",
+    "description": "Extension name."
+  },
+  "extensionDescription": {
+    "message": "Free and open-source new-tab bookmark workspace with native sync, fast search, tags, pinning, bulk management, and link checks.",
+    "description": "Shown in extension listings and browser settings; summarizes Yunji Tab's new-tab bookmark workspace and management features."
+  },
+  "openGlobalCommandPaletteDescription": {
+    "message": "Open the Yunji Tab global command palette on the current page",
+    "description": "Description of the global command palette keyboard command."
+  },
+  "quickSaveCommandDescription": {
+    "message": "Save the current page to Yunji Tab",
+    "description": "Description of the quick-save keyboard command."
+  }
+}

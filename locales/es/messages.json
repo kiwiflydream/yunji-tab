@@ -1,0 +1,18 @@
+{
+  "extensionName": {
+    "message": "Yunji Tab",
+    "description": "Extension name."
+  },
+  "extensionDescription": {
+    "message": "Gestor gratuito y de código abierto para la nueva pestaña: sincroniza marcadores, busca, organiza y revisa enlaces.",
+    "description": "Se muestra en la ficha de la extensión y en los ajustes del navegador; resume las funciones de espacio de trabajo y gestión de marcadores."
+  },
+  "openGlobalCommandPaletteDescription": {
+    "message": "Abrir la paleta global de Yunji Tab en la página actual",
+    "description": "Description of the global command palette keyboard command."
+  },
+  "quickSaveCommandDescription": {
+    "message": "Guardar la página actual en Yunji Tab",
+    "description": "Description of the quick-save keyboard command."
+  }
+}

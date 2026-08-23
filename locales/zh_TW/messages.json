@@ -1,0 +1,18 @@
+{
+  "extensionName": {
+    "message": "雲吉 Tab",
+    "description": "Extension name."
+  },
+  "extensionDescription": {
+    "message": "免費開放原始碼的新分頁書籤工作台：原生雙向同步、分類看板、快速搜尋、標籤置頂、批次管理與健康檢查。",
+    "description": "顯示於擴充功能商店與瀏覽器擴充功能管理頁，用於說明雲吉 Tab 的新分頁書籤工作台與深度管理功能。"
+  },
+  "openGlobalCommandPaletteDescription": {
+    "message": "在目前網頁開啟 Yunji Tab 全域命令面板",
+    "description": "Description of the global command palette keyboard command."
+  },
+  "quickSaveCommandDescription": {
+    "message": "將目前頁面收藏到雲吉 Tab",
+    "description": "Description of the quick-save keyboard command."
+  }
+}

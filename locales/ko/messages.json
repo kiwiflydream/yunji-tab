@@ -1,0 +1,18 @@
+{
+  "extensionName": {
+    "message": "Yunji Tab",
+    "description": "Extension name."
+  },
+  "extensionDescription": {
+    "message": "무료 오픈 소스 새 탭 북마크 관리 도구. 브라우저 기본 북마크 동기화, 빠른 검색, 태그, 고정, 일괄 관리 및 링크 상태 점검 지원.",
+    "description": "확장 프로그램 목록과 브라우저 설정에 표시되며 Yunji Tab의 새 탭 북마크 워크스페이스 및 관리 기능을 설명합니다."
+  },
+  "openGlobalCommandPaletteDescription": {
+    "message": "현재 페이지에서 Yunji Tab 전역 명령 팔레트 열기",
+    "description": "Description of the global command palette keyboard command."
+  },
+  "quickSaveCommandDescription": {
+    "message": "현재 페이지를 Yunji Tab에 저장",
+    "description": "Description of the quick-save keyboard command."
+  }
+}

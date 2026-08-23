@@ -1,0 +1,18 @@
+{
+  "extensionName": {
+    "message": "Yunji Tab",
+    "description": "Extension name."
+  },
+  "extensionDescription": {
+    "message": "Gestionnaire gratuit et open source pour le nouvel onglet : synchronisez vos favoris, recherchez, classez et vérifiez les liens.",
+    "description": "Affiché dans la fiche de l’extension et les réglages du navigateur ; résume les fonctions d’espace de travail et de gestion des favoris."
+  },
+  "openGlobalCommandPaletteDescription": {
+    "message": "Ouvrir la palette globale Yunji Tab sur la page actuelle",
+    "description": "Description of the global command palette keyboard command."
+  },
+  "quickSaveCommandDescription": {
+    "message": "Enregistrer la page actuelle dans Yunji Tab",
+    "description": "Description of the quick-save keyboard command."
+  }
+}

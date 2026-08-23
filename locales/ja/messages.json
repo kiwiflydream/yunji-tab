@@ -1,0 +1,18 @@
+{
+  "extensionName": {
+    "message": "Yunji Tab",
+    "description": "Extension name."
+  },
+  "extensionDescription": {
+    "message": "無料・オープンソースの新タブ向けブックマーク管理ツール。ブラウザ標準との同期、高速検索、タグ、ピン留め、一括管理、リンク確認に対応。",
+    "description": "拡張機能の一覧とブラウザ設定に表示され、Yunji Tab の新規タブでのブックマークワークスペースと管理機能を説明します。"
+  },
+  "openGlobalCommandPaletteDescription": {
+    "message": "現在のページで Yunji Tab のグローバルコマンドパレットを開く",
+    "description": "Description of the global command palette keyboard command."
+  },
+  "quickSaveCommandDescription": {
+    "message": "現在のページを Yunji Tab に保存",
+    "description": "Description of the quick-save keyboard command."
+  }
+}

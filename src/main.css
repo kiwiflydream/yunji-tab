@@ -1,0 +1,220 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 24% 97%;
+    --foreground: 222 22% 12%;
+    --card: 40 33% 99%;
+    --card-foreground: 222 22% 12%;
+    --popover: 40 33% 99%;
+    --popover-foreground: 222 22% 12%;
+    --primary: 222 22% 14%;
+    --primary-foreground: 40 33% 99%;
+    --secondary: 36 20% 93%;
+    --secondary-foreground: 222 18% 18%;
+    --muted: 36 18% 93%;
+    --muted-foreground: 220 8% 42%;
+    --accent: 36 18% 91%;
+    --accent-foreground: 222 18% 16%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 34 14% 86%;
+    --input: 34 14% 82%;
+    --ring: 211 88% 52%;
+    --brand: 211 88% 52%;
+    --radius: 0.875rem;
+  }
+
+  .dark {
+    --background: 225 14% 8%;
+    --foreground: 36 18% 94%;
+    --card: 225 13% 10%;
+    --card-foreground: 36 18% 94%;
+    --popover: 225 13% 10%;
+    --popover-foreground: 36 18% 94%;
+    --primary: 36 18% 94%;
+    --primary-foreground: 225 14% 9%;
+    --secondary: 225 11% 15%;
+    --secondary-foreground: 36 18% 92%;
+    --muted: 225 11% 15%;
+    --muted-foreground: 220 9% 66%;
+    --accent: 225 10% 18%;
+    --accent-foreground: 36 18% 94%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 225 9% 19%;
+    --input: 225 9% 23%;
+    --ring: 211 92% 68%;
+    --brand: 211 92% 68%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body {
+    font-family:
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      "PingFang SC",
+      "Noto Sans CJK SC",
+      "Microsoft YaHei",
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    min-height: 100dvh;
+    @apply bg-background text-foreground;
+  }
+
+  ::selection {
+    background: hsl(var(--foreground) / 0.14);
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  select,
+  textarea {
+    @apply border-input bg-card text-foreground shadow-sm outline-none transition-colors;
+  }
+
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply border-ring ring-2 ring-ring/15;
+  }
+}
+
+@layer components {
+  .surface-panel {
+    @apply rounded-xl border border-border/70 bg-card shadow-[0_1px_2px_hsl(var(--foreground)/0.03),0_8px_30px_hsl(var(--foreground)/0.025)];
+  }
+
+  .glass-panel {
+    @apply rounded-xl border border-border/60 bg-card/85 backdrop-blur-md shadow-sm;
+  }
+
+  .kbd-pill {
+    @apply inline-flex items-center justify-center font-mono font-medium rounded-[5px] border border-border/70 bg-muted/60 text-muted-foreground/80 shadow-[0_1px_1px_rgba(0,0,0,0.05)];
+  }
+
+  .icon-button {
+    @apply inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-[color,background-color,transform] hover:bg-accent hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 disabled:pointer-events-none disabled:opacity-50;
+  }
+}
+
+[id^="settings-panel-"] > section {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+[id^="settings-panel-"] > * + * {
+  margin-top: 0.75rem !important;
+}
+
+[id^="settings-panel-"] > section + section {
+  border-top: 1px solid hsl(var(--border) / 0.72) !important;
+  padding-top: 0.75rem !important;
+}
+
+[role="dialog"] section.rounded-xl {
+  border-color: hsl(var(--border) / 0.72);
+  background-color: hsl(var(--card));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--border) / 0.7);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.4);
+}
+
+/* 严格 Kami 模式：纸张、墨色和排版作为一个整体，不受外观偏好拆分覆盖。 */
+html.theme-kami,
+html.theme-kami body {
+  font-family:
+    "TsangerJinKai02", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC",
+    STSong, Georgia, serif;
+  background-color: hsl(var(--background));
+}
+
+html.theme-kami *,
+html.theme-kami *::before,
+html.theme-kami *::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+}
+
+html.theme-kami :focus-visible {
+  box-shadow:
+    0 0 0 2px hsl(var(--background)),
+    0 0 0 4px hsl(var(--ring)) !important;
+}
+
+html.theme-kami .bg-muted\/35,
+html.theme-kami .bg-muted\/45,
+html.theme-kami .bg-muted\/75 {
+  background-color: hsl(var(--background)) !important;
+}
+
+html.theme-kami article {
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--background)) !important;
+}
+
+html.theme-kami article:hover {
+  background-color: hsl(var(--accent)) !important;
+}
+
+html.theme-kami .rounded-xl,
+html.theme-kami .rounded-lg,
+html.theme-kami .rounded-md,
+html.theme-kami .sm\:rounded-xl,
+html.theme-kami .sm\:rounded-lg {
+  border-radius: var(--radius) !important;
+}
+
+html.theme-kami img {
+  filter: grayscale(1) contrast(0.9);
+}

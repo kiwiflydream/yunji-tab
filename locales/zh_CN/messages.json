@@ -1,0 +1,18 @@
+{
+  "extensionName": {
+    "message": "云吉 Tab",
+    "description": "Extension name."
+  },
+  "extensionDescription": {
+    "message": "免费开源的新标签页书签工作台：原生双向同步、分类看板、拼音搜索、标签置顶、批量管理与健康检查。",
+    "description": "显示在扩展商店与浏览器扩展管理页，用于说明云吉 Tab 的新标签页书签工作台与深度管理功能。"
+  },
+  "openGlobalCommandPaletteDescription": {
+    "message": "在当前网页打开云吉 Tab 全局命令面板",
+    "description": "Description of the global command palette keyboard command."
+  },
+  "quickSaveCommandDescription": {
+    "message": "收藏当前页面到云吉 Tab",
+    "description": "Description of the quick-save keyboard command."
+  }
+}
