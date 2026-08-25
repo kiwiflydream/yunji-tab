@@ -105,6 +105,12 @@ export function SearchEngineSettings() {
       </div>
 
       <div className="divide-y divide-border border-t border-border">
+        <div className="flex min-h-11 items-center gap-2 px-4 py-2">
+          <span className="w-6 text-center">🌐</span>
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+            {t('browserDefaultSearchEngine')}
+          </span>
+        </div>
         {[...searchEngines, ...customEngines].map((engine) => {
           const custom = engine.id.startsWith('custom-')
           return (

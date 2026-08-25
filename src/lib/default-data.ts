@@ -90,13 +90,6 @@ export const searchEngines: SearchEngine[] = [
     keyword: 'b',
   },
   {
-    id: 'baidu',
-    name: '百度',
-    url: 'https://www.baidu.com/s?wd=%s',
-    emoji: '🇨🇳',
-    keyword: 'bd',
-  },
-  {
     id: 'duckduckgo',
     name: 'DuckDuckGo',
     url: 'https://duckduckgo.com/?q=%s',

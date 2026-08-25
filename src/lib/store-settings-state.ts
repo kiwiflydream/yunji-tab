@@ -27,10 +27,7 @@ import {
   normalizeKeyboardShortcuts,
 } from './keyboard-shortcuts'
 import { normalizeMetadataSyncScope } from './metadata-sync'
-import {
-  getAvailableSearchEngines,
-  normalizeCustomSearchEngines,
-} from './search-engines'
+import { normalizeCustomSearchEngines } from './search-engines'
 
 export type AppearanceSettingsPatch = Partial<
   Omit<AppearanceSettings, 'cardFields' | 'navItems'>
@@ -41,7 +38,6 @@ export type AppearanceSettingsPatch = Partial<
 
 export interface SettingsSlice {
   setLanguage: (language: Language) => Promise<void>
-  setSearchEngine: (id: string) => Promise<void>
   addCustomSearchEngine: (engine: Omit<SearchEngine, 'id'>) => Promise<void>
   updateCustomSearchEngine: (
     id: string,
@@ -81,7 +77,6 @@ export interface SettingsSlice {
 
 export const DEFAULT_SETTINGS: Settings = {
   language: getBrowserLanguage(),
-  searchEngineId: 'google',
   theme: 'system',
   defaultCategoryId: 'all',
   singleHomeTab: false,
@@ -116,16 +111,10 @@ export function normalizeSettings(settings?: Partial<Settings>): Settings {
   const customSearchEngines = normalizeCustomSearchEngines(
     settings?.customSearchEngines,
   )
-  const availableEngines = getAvailableSearchEngines(customSearchEngines)
   return {
     language: isLanguage(settings?.language)
       ? settings.language
       : DEFAULT_SETTINGS.language,
-    searchEngineId: availableEngines.some(
-      engine => engine.id === settings?.searchEngineId,
-    )
-      ? (settings?.searchEngineId ?? DEFAULT_SETTINGS.searchEngineId)
-      : DEFAULT_SETTINGS.searchEngineId,
     theme:
       settings?.theme === 'light'
       || settings?.theme === 'dark'

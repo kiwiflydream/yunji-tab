@@ -226,6 +226,8 @@ test('separates local bookmark search from web search', async ({
   await newTabPage.keyboard.press('Enter')
   const engineOptions = newTabPage.getByRole('menuitemradio')
   await expect(engineOptions.first()).toBeFocused()
+  await expect(engineOptions.first()).toContainText('浏览器默认')
+  await expect(newTabPage.getByRole('menuitemradio', { name: /百度/ })).toHaveCount(0)
   await newTabPage.keyboard.press('ArrowDown')
   await expect(engineOptions.nth(1)).toBeFocused()
   await newTabPage.keyboard.press('Escape')

@@ -12,7 +12,6 @@ import { DEFAULT_KEYBOARD_SHORTCUTS } from './keyboard-shortcuts'
 
 const settings: Settings = {
   language: 'zh-CN',
-  searchEngineId: 'google',
   theme: 'system',
   defaultCategoryId: 'cat-docs',
   singleHomeTab: true,

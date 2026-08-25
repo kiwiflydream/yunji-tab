@@ -36,23 +36,25 @@ interface SearchBarProps {
 }
 
 type SearchMode = 'bookmarks' | 'web'
+const BROWSER_DEFAULT_ENGINE_ID = 'browser-default'
 
 export function SearchBar({ onOpenCommand }: SearchBarProps) {
   const { t } = useI18n()
   const settings = useNavStore(s => s.settings)
   const query = useNavStore(s => s.bookmarkSearchQuery)
-  const setSearchEngine = useNavStore(s => s.setSearchEngine)
   const setBookmarkSearchQuery = useNavStore(s => s.setBookmarkSearchQuery)
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [mode, setMode] = useState<SearchMode>('bookmarks')
   const [webQuery, setWebQuery] = useState('')
+  const [engineId, setEngineId] = useState(BROWSER_DEFAULT_ENGINE_ID)
   const savedBookmarkQueryRef = useRef('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   const engines = getAvailableSearchEngines(settings.customSearchEngines)
-  const engine
-    = engines.find(e => e.id === settings.searchEngineId) ?? engines[0]
+  const engine = engines.find(item => item.id === engineId)
+  const selectedEngineId = engine?.id ?? BROWSER_DEFAULT_ENGINE_ID
+  const engineName = engine?.name ?? t('browserDefaultSearchEngine')
   const activeQuery = mode === 'bookmarks' ? query : webQuery
   const commandShortcut = formatShortcut(
     settings.keyboardShortcuts.openCommandPalette,
@@ -78,13 +80,22 @@ export function SearchBar({ onOpenCommand }: SearchBarProps) {
     const q = webQuery.trim()
     if (!q)
       return
-    const intent = resolveSearchIntent(q, engines, settings.searchEngineId)
-    const target = looksLikeUrl(q)
-      ? q.startsWith('http')
-        ? q
-        : `https://${q}`
-      : intent.engine.url.replace('%s', encodeURIComponent(intent.query))
-    window.location.href = target
+    if (looksLikeUrl(q)) {
+      window.location.href = q.startsWith('http') ? q : `https://${q}`
+      return
+    }
+    const intent = resolveSearchIntent(q, engines, selectedEngineId)
+    if (!intent.engine) {
+      void chrome.search.query({
+        text: intent.query,
+        disposition: chrome.search.Disposition.CURRENT_TAB,
+      })
+      return
+    }
+    window.location.href = intent.engine.url.replace(
+      '%s',
+      encodeURIComponent(intent.query),
+    )
   }
 
   const changeMode = (nextMode: SearchMode) => {
@@ -160,8 +171,8 @@ export function SearchBar({ onOpenCommand }: SearchBarProps) {
                     aria-label={t('selectSearchEngine')}
                     className="flex h-9 items-center gap-1 rounded-md px-2 text-xs font-medium text-muted-foreground transition-[color,background-color] hover:bg-accent/70 hover:text-foreground active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25"
                   >
-                    <span className="text-sm">{engine.emoji}</span>
-                    <span className="hidden sm:inline">{engine.name}</span>
+                    <span className="text-sm">{engine?.emoji ?? '🌐'}</span>
+                    <span className="hidden sm:inline">{engineName}</span>
                     <ChevronDown className="size-3 text-muted-foreground/70" />
                   </button>
                 </DropdownMenuTrigger>
@@ -175,11 +186,15 @@ export function SearchBar({ onOpenCommand }: SearchBarProps) {
                   }}
                 >
                   <DropdownMenuRadioGroup
-                    value={engine.id}
-                    onValueChange={(engineId) => {
-                      void setSearchEngine(engineId).catch(() => undefined)
-                    }}
+                    value={selectedEngineId}
+                    onValueChange={setEngineId}
                   >
+                    <DropdownMenuRadioItem value={BROWSER_DEFAULT_ENGINE_ID}>
+                      <span aria-hidden="true">🌐</span>
+                      <span className="min-w-0 flex-1 truncate font-medium">
+                        {t('browserDefaultSearchEngine')}
+                      </span>
+                    </DropdownMenuRadioItem>
                     {engines.map(item => (
                       <DropdownMenuRadioItem key={item.id} value={item.id}>
                         <span aria-hidden="true">{item.emoji}</span>
@@ -217,7 +232,9 @@ export function SearchBar({ onOpenCommand }: SearchBarProps) {
           placeholder={
             mode === 'bookmarks'
               ? t('searchBookmarksAndFolders')
-              : t('enterUrlOrKeyword', { keyword: engine.keyword })
+              : engine
+                ? t('enterUrlOrKeyword', { keyword: engine.keyword })
+                : t('searchWebOrEnterUrl')
           }
           className="h-11 min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground"
         />
@@ -258,7 +275,7 @@ export function SearchBar({ onOpenCommand }: SearchBarProps) {
           title={
             mode === 'bookmarks'
               ? t('openFirstResult')
-              : t('searchWithEngine', { engine: engine.name })
+              : t('searchWithEngine', { engine: engineName })
           }
           className="flex h-11 w-10 items-center justify-center rounded-r-xl text-muted-foreground/70 transition-colors hover:text-foreground"
         >

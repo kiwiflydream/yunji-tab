@@ -37,7 +37,6 @@ const intentionalRuntimeHan = new Map<string, Set<string>>([
     '置顶',
     '无标签',
     '无描述',
-    '百度',
   ])],
 ])
 

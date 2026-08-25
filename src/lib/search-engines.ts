@@ -2,7 +2,7 @@ import type { SearchEngine } from './types'
 import { searchEngines } from './default-data'
 
 export interface SearchIntent {
-  engine: SearchEngine
+  engine: SearchEngine | null
   query: string
   usedKeyword: boolean
 }
@@ -109,7 +109,7 @@ export function resolveSearchIntent(
         )
       : undefined
   const defaultEngine
-    = engines.find(engine => engine.id === defaultEngineId) ?? engines[0]
+    = engines.find(engine => engine.id === defaultEngineId) ?? null
   return {
     engine: keywordEngine ?? defaultEngine,
     query: keywordEngine ? rest.join(' ') : trimmed,

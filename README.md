@@ -96,7 +96,7 @@ site:github.com
 folder:文档
 ```
 
-内置搜索引擎包括 Google、Bing、百度、DuckDuckGo 和 GitHub，也可以添加包含 `%s` 占位符的自定义搜索地址。
+网页搜索默认使用 Chrome 当前选择的搜索提供商，也可以显式切换到 Google、Bing、DuckDuckGo、GitHub，或添加包含 `%s` 占位符的自定义搜索地址。
 
 | 快捷键                                    | 默认操作             |
 | ----------------------------------------- | -------------------- |
@@ -131,6 +131,7 @@ Yunji Tab 不需要账号，也不收集分析数据。设置、访问记录、�
 | `scripting`                        | 按需向普通网页注入隔离的全局命令面板                     |
 | `contextMenus`                     | 提供「收藏到 Yunji Tab」右键菜单                         |
 | `tabs`                             | 保存、恢复标签页会话，并复用主页标签页                   |
+| `search`                           | 使用浏览器当前默认搜索服务执行未指定引擎的网页搜索       |
 | `https://www.google.com/*`         | 请求 Google Favicon 服务                                 |
 | `https://*.gstatic.com/*`          | 加载 Google 返回的图标资源                               |
 | 可选的 `http://*/*`、`https://*/*` | 用户触发网页描述、链接检查或 AI 分类时访问指定网站或服务 |

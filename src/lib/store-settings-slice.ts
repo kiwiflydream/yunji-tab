@@ -17,20 +17,14 @@ import {
   markLocalMetadataChanged,
   normalizeMetadataSyncScope,
 } from './metadata-sync'
-import {
-  getAvailableSearchEngines,
-  validateCustomSearchEngine,
-} from './search-engines'
+import { validateCustomSearchEngine } from './search-engines'
 import {
   metaStorage,
   persist,
   settingsStorage,
   STORAGE_KEYS,
 } from './store-persistence'
-import {
-  DEFAULT_SETTINGS,
-  resolveAvailableCategoryId,
-} from './store-settings-state'
+import { resolveAvailableCategoryId } from './store-settings-state'
 
 export const createSettingsSlice: StateCreator<
   NavState,
@@ -40,19 +34,6 @@ export const createSettingsSlice: StateCreator<
 > = (set, get) => ({
   setLanguage: async (language) => {
     const settings = { ...get().settings, language }
-    set({ settings })
-    await persist(settingsStorage, STORAGE_KEYS.settings, settings)
-  },
-
-  setSearchEngine: async (id) => {
-    if (
-      !getAvailableSearchEngines(get().settings.customSearchEngines).some(
-        engine => engine.id === id,
-      )
-    ) {
-      throw new Error('search_engine.not_found')
-    }
-    const settings = { ...get().settings, searchEngineId: id }
     set({ settings })
     await persist(settingsStorage, STORAGE_KEYS.settings, settings)
   },
@@ -93,14 +74,7 @@ export const createSettingsSlice: StateCreator<
     const customSearchEngines = get().settings.customSearchEngines.filter(
       engine => engine.id !== id,
     )
-    const settings = {
-      ...get().settings,
-      customSearchEngines,
-      searchEngineId:
-        get().settings.searchEngineId === id
-          ? DEFAULT_SETTINGS.searchEngineId
-          : get().settings.searchEngineId,
-    }
+    const settings = { ...get().settings, customSearchEngines }
     set({ settings })
     await persist(settingsStorage, STORAGE_KEYS.settings, settings)
   },

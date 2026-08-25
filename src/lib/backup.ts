@@ -206,10 +206,6 @@ export function parseYunjiTabBackup(raw: string): YunjiTabBackup {
       language: isLanguage(settings.language)
         ? settings.language
         : getBrowserLanguage(),
-      searchEngineId:
-        typeof settings.searchEngineId === 'string'
-          ? settings.searchEngineId
-          : 'google',
       theme:
         settings.theme === 'light'
         || settings.theme === 'dark'

@@ -157,7 +157,6 @@ export interface AutoOrganizeRule {
 export interface Settings {
   /** 界面语言 */
   language: Language
-  searchEngineId: string
   theme: ThemeMode
   /** 打开主页时默认展示的分类目录 */
   defaultCategoryId: string
