@@ -63,6 +63,7 @@
     "name": "__MSG_extensionName__",
     "description": "__MSG_extensionDescription__",
     "default_locale": "zh_CN",
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArolBLQoPtxSaZS8w1J78aitogrnZFDF9f2BtWDIMwLxC2j7UOYp6HSLuXjZM1eh9rt9yPZNyMvRuoP6MSrd0AwVXsVMo1QVFOp2sDCw8j4JHJxAtT8LnWcGE2HMQPd6qvm6qY0MJtEvwPwXa3FieXqvJnKX1wEj4UwL4XA484aD8zIB2KsRX2jnAZiqlYw+v8JECCBR9Ia5LvZtFVQXztA2yo3wR+b0rZ47iMZu5kIFKJ5ql7AG/a/zbkVJrYAB80JCZQkUEW1uTcURaOIJUI/YAu2FVMnAZRmDRzsRNm8YhTpExO/QFCQyGaFvYFJIvCVH3wseospWSgVwPm+Ty/wIDAQAB",
     "permissions": [
       "storage",
       "bookmarks",
