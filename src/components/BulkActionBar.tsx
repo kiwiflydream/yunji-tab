@@ -148,7 +148,7 @@ export function BulkActionBar({
         <Trash2 data-icon="inline-start" />
         {t('delete')}
       </Button>
-      <DropdownMenu>
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
             type="button"

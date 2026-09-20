@@ -1,7 +1,7 @@
 {
   "name": "yunji-tab",
   "displayName": "Yunji Tab",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A minimal yet powerful new-tab bookmark workspace: 2-way native sync, categorized dashboard, fast search, tags, pin, bulk management, and link health check.",
   "author": "KIWI",
   "packageManager": "pnpm@10.34.4",

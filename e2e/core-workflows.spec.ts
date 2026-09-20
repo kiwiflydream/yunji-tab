@@ -95,6 +95,43 @@ test('loads the real extension and manages a native bookmark', async ({
   expect(matches).toHaveLength(1)
 })
 
+test('keeps the page scrollable when bookmark menus open', async ({
+  extensionWorker,
+  newTabPage,
+}) => {
+  const folderId = await extensionWorker.evaluate(async () => {
+    const folder = await chrome.bookmarks.create({ parentId: '1', title: 'E2E Menu Folder' })
+    for (let index = 0; index < 60; index += 1) {
+      await chrome.bookmarks.create({
+        parentId: folder.id,
+        title: `E2E Menu ${index}`,
+        url: `https://example.com/menu-${index}`,
+      })
+    }
+    return folder.id
+  })
+  try {
+    await newTabPage.reload()
+    await newTabPage.getByRole('button', { name: /E2E Menu Folder/ }).first().click()
+    await expect(newTabPage.getByRole('button', { name: '更多操作 E2E Menu 0' })).toBeVisible()
+    expect(await newTabPage.evaluate(() => document.documentElement.scrollHeight > innerHeight)).toBe(true)
+
+    await newTabPage.getByRole('button', { name: '更多操作 E2E Menu 0' }).click()
+    await expect(newTabPage.getByRole('menu')).toBeVisible()
+    expect(await newTabPage.evaluate(() => getComputedStyle(document.body).overflow)).not.toBe('hidden')
+    await newTabPage.keyboard.press('Escape')
+
+    await newTabPage.getByRole('button', { name: '批量管理' }).click()
+    await newTabPage.getByRole('checkbox', { name: '选择 E2E Menu 0' }).click()
+    await newTabPage.getByRole('button', { name: '更多', exact: true }).click()
+    await expect(newTabPage.getByRole('menu')).toBeVisible()
+    expect(await newTabPage.evaluate(() => getComputedStyle(document.body).overflow)).not.toBe('hidden')
+  }
+  finally {
+    await extensionWorker.evaluate(async id => chrome.bookmarks.removeTree(id), folderId)
+  }
+})
+
 test('limits the initial bookmark render batch', async ({
   extensionWorker,
   newTabPage,

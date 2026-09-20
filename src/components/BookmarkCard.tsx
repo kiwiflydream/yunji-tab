@@ -441,7 +441,7 @@ export function BookmarkCard({
               >
                 <GripVertical className="h-3.5 w-3.5" />
               </button>
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
