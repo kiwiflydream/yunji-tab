@@ -181,6 +181,10 @@ export default function NewTab() {
     ) => {
       if (areaName === 'sync' && changes[metadataSyncManifestKey])
         void useNavStore.getState().syncMetadataNow()
+      if (areaName === 'local'
+        && (changes[STORAGE_KEYS.meta] || changes[STORAGE_KEYS.categoryMeta])) {
+        void useNavStore.getState().refreshSupplementaryMetadata()
+      }
       if (areaName === 'local' && changes[trashStorageKey]) {
         useNavStore.setState({
           trash: pruneTrash(changes[trashStorageKey].newValue),

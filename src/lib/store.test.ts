@@ -1,16 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import * as metadataSync from './metadata-sync'
 import { applyMaterializedBookmarkMetadata } from './metadata-sync'
+import * as siteMetadata from './site-metadata'
 import {
   mergeAlternateUrlsForDuplicate,
   metadataAutoSyncDelayMs,
   usagePersistDelayMs,
   useNavStore,
 } from './store'
+import { metaStorage, withBookmarkMetadataLock } from './store-persistence'
 
 const storageState = vi.hoisted(() => ({
   writes: [] as Array<{ area: string, key: string, value: unknown }>,
+  values: new Map<string, unknown>(),
   setError: null as Error | null,
+  setHook: null as ((key: string) => Promise<void>) | null,
 }))
 
 vi.mock('@plasmohq/storage', () => ({
@@ -21,14 +26,16 @@ vi.mock('@plasmohq/storage', () => ({
       this.area = options.area
     }
 
-    async get() {
-      return undefined
+    async get(key: string) {
+      return structuredClone(storageState.values.get(`${this.area}:${key}`))
     }
 
     async set(key: string, value: unknown) {
+      await storageState.setHook?.(key)
       if (storageState.setError)
         throw storageState.setError
       storageState.writes.push({ area: this.area, key, value })
+      storageState.values.set(`${this.area}:${key}`, structuredClone(value))
     }
 
     async remove() {}
@@ -39,17 +46,75 @@ const initialState = useNavStore.getInitialState()
 
 beforeEach(() => {
   storageState.writes.length = 0
+  storageState.values.clear()
   storageState.setError = null
+  storageState.setHook = null
   useNavStore.setState(initialState, true)
   vi.stubGlobal('chrome', { bookmarks: {} })
 })
 
 afterEach(() => {
+  vi.restoreAllMocks()
   vi.clearAllTimers()
   vi.useRealTimers()
 })
 
 describe('navigation store boundaries', () => {
+  it('preserves metadata saved by another page when editing a stale bookmark', async () => {
+    vi.useFakeTimers()
+    storageState.values.set('local:yunji-tab:meta', {
+      'https://example.com/': { alternateUrls: ['https://backup.example.com/'] },
+      'https://other.example/': { tags: ['other'] },
+    })
+
+    await useNavStore.getState().setBookmarkMeta('https://example.com/', {
+      description: 'Only edit description',
+    })
+
+    expect(useNavStore.getState().meta).toEqual({
+      'https://example.com/': {
+        alternateUrls: ['https://backup.example.com/'],
+        description: 'Only edit description',
+      },
+      'https://other.example/': { tags: ['other'] },
+    })
+    expect(storageState.values.get('local:yunji-tab:meta'))
+      .toEqual(useNavStore.getState().meta)
+    await vi.advanceTimersByTimeAsync(metadataAutoSyncDelayMs)
+  })
+
+  it('preserves both metadata edits when saves overlap', async () => {
+    vi.useFakeTimers()
+    await Promise.all([
+      useNavStore.getState().setBookmarkMeta('https://example.com/', {
+        alternateUrls: ['https://backup.example.com/'],
+      }),
+      useNavStore.getState().setBookmarkMeta('https://example.com/', {
+        description: 'Concurrent description',
+      }),
+    ])
+
+    expect(storageState.values.get('local:yunji-tab:meta')).toEqual({
+      'https://example.com/': {
+        alternateUrls: ['https://backup.example.com/'],
+        description: 'Concurrent description',
+      },
+    })
+    await vi.advanceTimersByTimeAsync(metadataAutoSyncDelayMs)
+  })
+
+  it('does not display an unsaved metadata edit when storage rejects it', async () => {
+    const meta = { 'https://example.com/': { tags: ['saved'] } }
+    useNavStore.setState({ meta })
+    storageState.setError = new Error('storage failed')
+
+    await expect(useNavStore.getState().setBookmarkMeta('https://example.com/', {
+      alternateUrls: ['https://backup.example.com/'],
+    })).rejects.toThrow('storage failed')
+
+    expect(useNavStore.getState().meta).toBe(meta)
+  })
+
   it('updates and persists the interface language', async () => {
     await useNavStore.getState().setLanguage('en')
 
@@ -415,5 +480,215 @@ describe('navigation store boundaries', () => {
       'cat-1': { emoji: 'A' },
     })
     expect(useNavStore.getState().metadataSyncRecovery).toEqual([])
+    expect(storageState.values.get('local:yunji-tab:meta')).toEqual(useNavStore.getState().meta)
+  })
+})
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  const promise = new Promise<T>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
+}
+
+async function drainMetadataTimer() {
+  vi.stubGlobal('chrome', { bookmarks: {} })
+  await vi.advanceTimersByTimeAsync(metadataAutoSyncDelayMs)
+}
+
+describe('metadata concurrency regressions', () => {
+  it('ignores an older storage refresh that finishes after a newer refresh', async () => {
+    const oldRead = deferred<Record<string, { alternateUrls: string[] }>>()
+    vi.spyOn(metaStorage, 'get').mockImplementationOnce(() => oldRead.promise)
+    const oldRefresh = useNavStore.getState().refreshSupplementaryMetadata()
+    storageState.values.set('local:yunji-tab:meta', {
+      'https://example.test': { alternateUrls: ['https://new.example'] },
+    })
+    await useNavStore.getState().refreshSupplementaryMetadata()
+    oldRead.resolve({ 'https://example.test': { alternateUrls: ['https://old.example'] } })
+    await oldRefresh
+    expect(useNavStore.getState().meta['https://example.test'].alternateUrls)
+      .toEqual(['https://new.example'])
+  })
+
+  it('keeps a durable edit made during a pending storage refresh', async () => {
+    vi.useFakeTimers()
+    const oldRead = deferred<Record<string, { alternateUrls: string[] }>>()
+    vi.spyOn(metaStorage, 'get').mockImplementationOnce(() => oldRead.promise)
+    const refresh = useNavStore.getState().refreshSupplementaryMetadata()
+    await useNavStore.getState().setBookmarkMeta('https://example.test', {
+      alternateUrls: ['https://new.example'],
+    })
+    oldRead.resolve({ 'https://example.test': { alternateUrls: ['https://old.example'] } })
+    await refresh
+    expect(useNavStore.getState().meta['https://example.test'].alternateUrls)
+      .toEqual(['https://new.example'])
+    await drainMetadataTimer()
+  })
+
+  it('moves metadata through rapid native URL changes before refreshing or saving', async () => {
+    vi.useFakeTimers()
+    const oldUrl = 'https://old.example'
+    const newUrl = 'https://new.example'
+    const finalUrl = 'https://final.example'
+    useNavStore.setState({
+      bookmarks: [{ id: 'bm-1', name: 'Site', url: oldUrl, categoryId: 'all' }],
+      meta: { [oldUrl]: { alternateUrls: ['https://old-backup.example'] } },
+    })
+    vi.stubGlobal('chrome', { bookmarks: { getTree: async () => [{
+      id: '0',
+      title: '',
+      children: [{ id: '1', title: 'Site', url: finalUrl }],
+    }] } })
+    const entered = deferred<void>()
+    const release = deferred<void>()
+    const blocker = withBookmarkMetadataLock(async () => {
+      entered.resolve()
+      await release.promise
+    })
+    await entered.promise
+    const firstMigration = useNavStore.getState().reconcileBookmarkUrlChange('1', newUrl)
+    const secondMigration = useNavStore.getState().reconcileBookmarkUrlChange('1', finalUrl)
+    const save = useNavStore.getState().updateBookmark('bm-1', {
+      alternateUrls: ['https://new-backup.example'],
+    })
+    const refresh = useNavStore.getState().loadBookmarks()
+    release.resolve()
+    await Promise.all([blocker, firstMigration, secondMigration, save, refresh])
+    expect(storageState.values.get('local:yunji-tab:meta')).toEqual({
+      [finalUrl]: { alternateUrls: ['https://new-backup.example'] },
+    })
+    expect(useNavStore.getState().bookmarks[0]).toMatchObject({
+      url: finalUrl,
+      alternateUrls: ['https://new-backup.example'],
+    })
+    await drainMetadataTimer()
+  })
+
+  it('discards a native tree snapshot captured before an URL migration', async () => {
+    vi.useFakeTimers()
+    const oldUrl = 'https://old.example'
+    const newUrl = 'https://new.example'
+    useNavStore.setState({
+      bookmarks: [{ id: 'bm-1', name: 'Site', url: oldUrl, categoryId: 'all' }],
+      meta: { [oldUrl]: { alternateUrls: ['https://backup.example'] } },
+    })
+    const oldTree = deferred<chrome.bookmarks.BookmarkTreeNode[]>()
+    const entered = deferred<void>()
+    const getTree = vi.fn().mockImplementationOnce(() => {
+      entered.resolve()
+      return oldTree.promise
+    }).mockResolvedValue([{
+      id: '0',
+      title: '',
+      children: [{ id: '1', title: 'Site', url: newUrl }],
+    }])
+    vi.stubGlobal('chrome', { bookmarks: { getTree } })
+    const load = useNavStore.getState().loadBookmarks()
+    await entered.promise
+    await useNavStore.getState().reconcileBookmarkUrlChange('1', newUrl)
+    oldTree.resolve([{
+      id: '0',
+      title: '',
+      syncing: false,
+      children: [{ id: '1', title: 'Site', url: oldUrl, syncing: false }],
+    }])
+    await load
+    expect(getTree).toHaveBeenCalledTimes(2)
+    expect(useNavStore.getState().bookmarks[0]).toMatchObject({
+      url: newUrl,
+      alternateUrls: ['https://backup.example'],
+    })
+    await drainMetadataTimer()
+  })
+
+  it('merges duplicate alternate URLs against the latest stored values', async () => {
+    vi.useFakeTimers()
+    storageState.values.set('local:yunji-tab:meta', {
+      'https://example.test': { alternateUrls: ['https://other-page.example'] },
+    })
+    await useNavStore.getState().setBookmarkMeta('https://example.test', latest => ({
+      alternateUrls: mergeAlternateUrlsForDuplicate(
+        latest.alternateUrls,
+        ['https://entered.example'],
+        'https://example.test',
+      ),
+    }))
+    expect(useNavStore.getState().meta['https://example.test'].alternateUrls)
+      .toEqual(['https://other-page.example', 'https://entered.example'])
+    await drainMetadataTimer()
+  })
+
+  it('preserves other-page metadata when importing a backup into stale state', async () => {
+    vi.useFakeTimers()
+    const backup = JSON.parse(useNavStore.getState().exportBackup())
+    backup.bookmarkMeta = { 'https://example.test': { description: 'Imported' } }
+    storageState.values.set('local:yunji-tab:meta', {
+      'https://example.test': { alternateUrls: ['https://backup.example'] },
+      'https://other.example': { tags: ['keep'] },
+    })
+    vi.stubGlobal('chrome', { bookmarks: { getTree: async () => [{ id: '0', title: '', children: [] }] } })
+    await useNavStore.getState().importBackup(JSON.stringify(backup))
+    expect(storageState.values.get('local:yunji-tab:meta')).toEqual({
+      'https://example.test': { alternateUrls: ['https://backup.example'], description: 'Imported' },
+      'https://other.example': { tags: ['keep'] },
+    })
+    await drainMetadataTimer()
+  })
+
+  it('preserves alternate URLs saved while a description is being fetched', async () => {
+    vi.useFakeTimers()
+    const fetched = deferred<string | undefined>()
+    vi.spyOn(siteMetadata, 'fetchSiteDescription').mockReturnValue(fetched.promise)
+    useNavStore.setState({
+      bookmarks: [{ id: 'bm-1', name: 'Site', url: 'https://example.test', categoryId: 'all' }],
+    })
+    const fetch = useNavStore.getState().syncBookmarkDescriptions(['bm-1'])
+    await useNavStore.getState().setBookmarkMeta('https://example.test', {
+      alternateUrls: ['https://backup.example'],
+    })
+    fetched.resolve('Fetched description')
+    await fetch
+    expect(storageState.values.get('local:yunji-tab:meta')).toEqual({
+      'https://example.test': {
+        alternateUrls: ['https://backup.example'],
+        description: 'Fetched description',
+      },
+    })
+    await drainMetadataTimer()
+  })
+
+  it('preserves an edit queued while cloud application saves its recovery point', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('chrome', { bookmarks: {}, storage: { sync: {} } })
+    vi.spyOn(metadataSync, 'synchronizeMetadata').mockResolvedValue({
+      direction: 'downloaded',
+      document: { bookmarkMeta: { 'https://example.test': { description: 'Remote' } }, categoryMeta: [] },
+      omittedBookmarkCount: 0,
+      omittedBookmarkUrls: [],
+      byteCount: 100,
+      syncedAt: 1,
+      retryCount: 0,
+    })
+    const entered = deferred<void>()
+    const release = deferred<void>()
+    storageState.setHook = async (key) => {
+      if (key === 'yunji-tab:metadata-sync-recovery') {
+        entered.resolve()
+        await release.promise
+      }
+    }
+    const sync = useNavStore.getState().syncMetadataNow()
+    await entered.promise
+    const save = useNavStore.getState().setBookmarkMeta('https://example.test', {
+      alternateUrls: ['https://backup.example'],
+    })
+    release.resolve()
+    await Promise.all([sync, save])
+    expect(storageState.values.get('local:yunji-tab:meta')).toEqual({
+      'https://example.test': { description: 'Remote', alternateUrls: ['https://backup.example'] },
+    })
+    await drainMetadataTimer()
   })
 })

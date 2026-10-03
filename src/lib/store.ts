@@ -68,6 +68,8 @@ import {
   registerSupplementaryPersisted,
   settingsStorage,
   STORAGE_KEYS,
+  updateBookmarkMetadata,
+  withBookmarkMetadataLock,
 } from './store-persistence'
 import { createSettingsSlice } from './store-settings-slice'
 import {
@@ -93,6 +95,9 @@ let deletionTimer: ReturnType<typeof setTimeout> | undefined
 let metadataSyncTimer: ReturnType<typeof setTimeout> | undefined
 let metadataSyncPromise: Promise<void> | undefined
 let metadataSyncQuotaFailures = 0
+let metadataRefreshRevision = 0
+const bookmarkUrlMigrations = new Set<Promise<void>>()
+let bookmarkUrlMigrationRevision = 0
 let runScheduledMetadataSync: () => void = () => {}
 let scheduleUsagePersist: () => void = () => {}
 const runBookmarkLoad = createCoalescedAsyncRunner()
@@ -277,17 +282,18 @@ function applyMeta(
   meta: Record<string, BookmarkMeta>,
 ): Bookmark[] {
   return bookmarks.map((b) => {
-    const m = meta[b.url]
-    if (!m)
+    const m = meta[b.url] ?? {}
+    const fields = ['description', 'icon', 'alternateUrls', 'pinnedAt', 'tags', 'inboxAt'] as const
+    if (fields.every(field => JSON.stringify(b[field]) === JSON.stringify(m[field])))
       return b
     return {
       ...b,
-      description: m.description ?? b.description,
-      icon: m.icon ?? b.icon,
-      alternateUrls: m.alternateUrls ?? b.alternateUrls,
-      pinnedAt: m.pinnedAt ?? b.pinnedAt,
-      tags: m.tags ?? b.tags,
-      inboxAt: m.inboxAt ?? b.inboxAt,
+      description: m.description,
+      icon: m.icon,
+      alternateUrls: m.alternateUrls,
+      pinnedAt: m.pinnedAt,
+      tags: m.tags,
+      inboxAt: m.inboxAt,
     }
   })
 }
@@ -301,24 +307,6 @@ export function mergeAlternateUrlsForDuplicate(
     [...(existing ?? []), ...candidates],
     primaryUrl,
   )
-}
-
-function applyMetaForUrl(
-  bookmarks: Bookmark[],
-  url: string,
-  meta: BookmarkMeta | undefined,
-): Bookmark[] {
-  return bookmarks.map(bookmark => bookmark.url === url
-    ? {
-        ...bookmark,
-        description: meta?.description,
-        icon: meta?.icon,
-        alternateUrls: meta?.alternateUrls,
-        pinnedAt: meta?.pinnedAt,
-        tags: meta?.tags,
-        inboxAt: meta?.inboxAt,
-      }
-    : bookmark)
 }
 
 function applyCategoryMeta(
@@ -472,7 +460,8 @@ export interface NavState extends SettingsSlice {
   removeCategory: (id: string) => Promise<void>
   undoLastDeletion: () => Promise<void>
   /** 更新某 URL 的描述/图标元数据 */
-  setBookmarkMeta: (url: string, patch: Partial<BookmarkMeta>) => Promise<void>
+  setBookmarkMeta: (url: string, patch: Partial<BookmarkMeta> | ((latest: BookmarkMeta) => Partial<BookmarkMeta>), bookmarkId?: string) => Promise<void>
+  refreshSupplementaryMetadata: () => Promise<void>
   setBookmarkPinned: (url: string, pinned: boolean) => Promise<void>
   setBookmarkTags: (url: string, tags: string[]) => Promise<void>
   markBookmarksOrganized: (ids: string[]) => Promise<void>
@@ -581,7 +570,10 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
         initialized: true,
       })
       if (normalizedMeta.changed) {
-        void persist(metaStorage, STORAGE_KEYS.meta, normalizedMeta.meta)
+        void updateBookmarkMetadata((latest) => {
+          const normalized = removeLegacyFaviconMeta(latest)
+          return normalized.changed ? normalized.meta : latest
+        }, () => get().meta)
       }
     }
     catch {
@@ -591,7 +583,19 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
   },
 
   loadBookmarks: () => runBookmarkLoad(async () => {
-    const { categories, bookmarks } = await loadBookmarkTreeData()
+    // Keep the old URL available until migrations finish. If the native tree
+    // was read during a migration, read it again instead of applying an old URL.
+    let tree: Awaited<ReturnType<typeof loadBookmarkTreeData>>
+    let revision: number
+    do {
+      while (bookmarkUrlMigrations.size > 0)
+        await Promise.allSettled([...bookmarkUrlMigrations])
+      revision = bookmarkUrlMigrationRevision
+      tree = await loadBookmarkTreeData()
+      while (bookmarkUrlMigrations.size > 0)
+        await Promise.allSettled([...bookmarkUrlMigrations])
+    } while (revision !== bookmarkUrlMigrationRevision)
+    const { categories, bookmarks } = tree
     const activeCategoryId = resolveAvailableCategoryId(
       get().activeCategoryId,
       categories,
@@ -636,72 +640,77 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
           encryptionPassphrase,
         })
         if (result.direction === 'downloaded' || result.direction === 'merged') {
-          const previousMeta = get().meta
-          const previousCategoryMeta = get().categoryMeta
-          const categoryMeta: Record<string, CategoryMeta> = {}
-          if (get().settings.metadataSyncScope.categoryIcons) {
-            for (const item of result.document.categoryMeta) {
-              const category = findCategoryByPath(item.path, get().categories)
-              if (category)
-                categoryMeta[category.id] = { emoji: item.emoji }
+          const direction = result.direction
+          let totalChanges = 0
+          await withBookmarkMetadataLock(async () => {
+            const previousMeta = await metaStorage.get<Record<string, BookmarkMeta>>(STORAGE_KEYS.meta)
+              ?? get().meta
+            const previousCategoryMeta = get().categoryMeta
+            const categoryMeta: Record<string, CategoryMeta> = {}
+            if (get().settings.metadataSyncScope.categoryIcons) {
+              for (const item of result.document.categoryMeta) {
+                const category = findCategoryByPath(item.path, get().categories)
+                if (category)
+                  categoryMeta[category.id] = { emoji: item.emoji }
+              }
             }
-          }
-          else {
-            Object.assign(categoryMeta, previousCategoryMeta)
-          }
-          const meta = applyMaterializedBookmarkMetadata(
-            previousMeta,
-            result.document.bookmarkMeta,
-            get().settings.metadataSyncScope,
-            {
-              baseline: metadataAtSyncStart,
-              omittedUrls: result.omittedBookmarkUrls,
-            },
-          )
-          const summary = summarizeMetadataChanges(
-            previousMeta,
-            meta,
-            previousCategoryMeta,
-            categoryMeta,
-          )
-          const totalChanges = summary.changedBookmarkCount + summary.changedCategoryCount
-          let metadataSyncRecovery = get().metadataSyncRecovery
-          if (totalChanges > 0) {
-            const createdAt = Date.now()
-            const recovery: MetadataSyncRecoveryEntry = {
-              id: crypto.randomUUID(),
-              label: localizedMessage(
-                'runtimeMetadataRecoveryLabel',
-                {
-                  bookmarks: summary.changedBookmarkCount,
-                  categories: summary.changedCategoryCount,
-                  removed: summary.removedFieldCount,
-                },
-              ),
-              createdAt,
-              expiresAt: createdAt + metadataSyncRecoveryRetentionMs,
-              direction: result.direction,
-              bookmarkMeta: structuredClone(previousMeta),
-              categoryMeta: structuredClone(previousCategoryMeta),
-              ...summary,
+            else {
+              Object.assign(categoryMeta, previousCategoryMeta)
             }
-            metadataSyncRecovery = [
-              recovery,
-              ...pruneMetadataSyncRecovery(metadataSyncRecovery),
-            ].slice(0, 20)
-            // The recovery point must be durable before remote values replace local data.
-            await metaStorage.set(metadataSyncRecoveryStorageKey, metadataSyncRecovery)
-          }
-          await Promise.all([
-            metaStorage.set(STORAGE_KEYS.meta, meta),
-            metaStorage.set(STORAGE_KEYS.categoryMeta, categoryMeta),
-          ])
-          set({
-            meta,
-            categoryMeta,
-            metadataSyncRecovery,
-            bookmarks: applyMeta(get().bookmarks, meta),
-            categories: applyCategoryMeta(get().categories, categoryMeta),
+            const meta = applyMaterializedBookmarkMetadata(
+              previousMeta,
+              result.document.bookmarkMeta,
+              get().settings.metadataSyncScope,
+              {
+                baseline: metadataAtSyncStart,
+                omittedUrls: result.omittedBookmarkUrls,
+              },
+            )
+            const summary = summarizeMetadataChanges(
+              previousMeta,
+              meta,
+              previousCategoryMeta,
+              categoryMeta,
+            )
+            totalChanges = summary.changedBookmarkCount + summary.changedCategoryCount
+            let metadataSyncRecovery = get().metadataSyncRecovery
+            if (totalChanges > 0) {
+              const createdAt = Date.now()
+              const recovery: MetadataSyncRecoveryEntry = {
+                id: crypto.randomUUID(),
+                label: localizedMessage(
+                  'runtimeMetadataRecoveryLabel',
+                  {
+                    bookmarks: summary.changedBookmarkCount,
+                    categories: summary.changedCategoryCount,
+                    removed: summary.removedFieldCount,
+                  },
+                ),
+                createdAt,
+                expiresAt: createdAt + metadataSyncRecoveryRetentionMs,
+                direction,
+                bookmarkMeta: structuredClone(previousMeta),
+                categoryMeta: structuredClone(previousCategoryMeta),
+                ...summary,
+              }
+              metadataSyncRecovery = [
+                recovery,
+                ...pruneMetadataSyncRecovery(metadataSyncRecovery),
+              ].slice(0, 20)
+              // The recovery point must be durable before remote values replace local data.
+              await metaStorage.set(metadataSyncRecoveryStorageKey, metadataSyncRecovery)
+            }
+            await Promise.all([
+              metaStorage.set(STORAGE_KEYS.meta, meta),
+              metaStorage.set(STORAGE_KEYS.categoryMeta, categoryMeta),
+            ])
+            set({
+              meta,
+              categoryMeta,
+              metadataSyncRecovery,
+              bookmarks: applyMeta(get().bookmarks, meta),
+              categories: applyCategoryMeta(get().categories, categoryMeta),
+            })
           })
           if (totalChanges > 0) {
             await get().recordActivity(
@@ -789,20 +798,22 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
     const recovery = get().metadataSyncRecovery.find(item => item.id === id)
     if (!recovery)
       return false
-    const meta = structuredClone(recovery.bookmarkMeta)
-    const categoryMeta = structuredClone(recovery.categoryMeta)
-    await Promise.all([
-      persist(metaStorage, STORAGE_KEYS.meta, meta),
-      persist(metaStorage, STORAGE_KEYS.categoryMeta, categoryMeta),
-    ])
-    const metadataSyncRecovery = get().metadataSyncRecovery.filter(item => item.id !== id)
-    await metaStorage.set(metadataSyncRecoveryStorageKey, metadataSyncRecovery)
-    set({
-      meta,
-      categoryMeta,
-      metadataSyncRecovery,
-      bookmarks: applyMeta(get().bookmarks, meta),
-      categories: applyCategoryMeta(get().categories, categoryMeta),
+    await withBookmarkMetadataLock(async () => {
+      const meta = structuredClone(recovery.bookmarkMeta)
+      const categoryMeta = structuredClone(recovery.categoryMeta)
+      await Promise.all([
+        persist(metaStorage, STORAGE_KEYS.meta, meta),
+        persist(metaStorage, STORAGE_KEYS.categoryMeta, categoryMeta),
+      ])
+      const metadataSyncRecovery = get().metadataSyncRecovery.filter(item => item.id !== id)
+      await metaStorage.set(metadataSyncRecoveryStorageKey, metadataSyncRecovery)
+      set({
+        meta,
+        categoryMeta,
+        metadataSyncRecovery,
+        bookmarks: applyMeta(get().bookmarks, meta),
+        categories: applyCategoryMeta(get().categories, categoryMeta),
+      })
     })
     await get().recordActivity(
       'restore',
@@ -985,13 +996,15 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
   },
 
   clearSupplementaryMetadata: async () => {
-    set({ meta: {}, categoryMeta: {}, metadataSyncRecovery: [] })
-    await Promise.all([
-      metaStorage.set(STORAGE_KEYS.meta, {}),
-      metaStorage.set(STORAGE_KEYS.categoryMeta, {}),
-      metaStorage.set(metadataSyncRecoveryStorageKey, []),
-      clearMetadataSyncStorage(),
-    ])
+    await withBookmarkMetadataLock(async () => {
+      await Promise.all([
+        metaStorage.set(STORAGE_KEYS.meta, {}),
+        metaStorage.set(STORAGE_KEYS.categoryMeta, {}),
+        metaStorage.set(metadataSyncRecoveryStorageKey, []),
+        clearMetadataSyncStorage(),
+      ])
+      set({ meta: {}, categoryMeta: {}, metadataSyncRecovery: [] })
+    })
     await get().loadBookmarks()
   },
 
@@ -1030,6 +1043,7 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
 
       let updated = 0
       let completed = 0
+      const descriptions: Record<string, string> = {}
       await forEachConcurrent(
         targets,
         DESCRIPTION_FETCH_CONCURRENCY,
@@ -1054,22 +1068,8 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
             const state = get()
             if (state.meta[bookmark.url]?.description)
               return
-            const meta = {
-              ...state.meta,
-              [bookmark.url]: {
-                ...state.meta[bookmark.url],
-                description,
-              },
-            }
+            descriptions[bookmark.url] = description
             updated += 1
-            set({
-              meta,
-              bookmarks: applyMetaForUrl(
-                state.bookmarks,
-                bookmark.url,
-                meta[bookmark.url],
-              ),
-            })
           }
           catch {
             // 单个站点失败不影响本次手动同步的其他书签。
@@ -1087,8 +1087,20 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
         },
       )
 
-      if (updated > 0)
-        await persist(metaStorage, STORAGE_KEYS.meta, get().meta)
+      if (updated > 0) {
+        const meta = await updateBookmarkMetadata((latest) => {
+          const meta = { ...latest }
+          updated = 0
+          for (const [url, description] of Object.entries(descriptions)) {
+            if (!meta[url]?.description) {
+              meta[url] = { ...meta[url], description }
+              updated += 1
+            }
+          }
+          return meta
+        }, () => get().meta)
+        set({ meta, bookmarks: applyMeta(get().bookmarks, meta) })
+      }
       return { attempted: targets.length, updated }
     })()
 
@@ -1327,59 +1339,89 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
     await get().loadBookmarks()
   },
 
-  setBookmarkMeta: async (url, patch) => {
-    if (!url)
+  refreshSupplementaryMetadata: async () => {
+    const revision = ++metadataRefreshRevision
+    const previousMeta = get().meta
+    const previousCategoryMeta = get().categoryMeta
+    const [meta, categoryMeta] = await Promise.all([
+      metaStorage.get<Record<string, BookmarkMeta>>(STORAGE_KEYS.meta),
+      metaStorage.get<Record<string, CategoryMeta>>(STORAGE_KEYS.categoryMeta),
+    ])
+    if (revision !== metadataRefreshRevision)
       return
-    const meta = { ...get().meta }
-    const next = { ...(meta[url] ?? {}) }
-    if (patch.description !== undefined) {
-      next.description = patch.description || undefined
-    }
-    if (patch.icon !== undefined) {
-      next.icon = patch.icon || undefined
-    }
-    if (patch.alternateUrls !== undefined) {
-      next.alternateUrls = normalizeAlternateBookmarkUrls(
-        patch.alternateUrls,
-        url,
-      )
-      if (next.alternateUrls.length === 0) {
-        next.alternateUrls = undefined
+    set((state) => {
+      const currentMeta = state.meta === previousMeta ? meta ?? {} : state.meta
+      const currentCategoryMeta = state.categoryMeta === previousCategoryMeta
+        ? categoryMeta ?? {}
+        : state.categoryMeta
+      return {
+        meta: currentMeta,
+        categoryMeta: currentCategoryMeta,
+        bookmarks: applyMeta(state.bookmarks, currentMeta),
+        categories: applyCategoryMeta(state.categories, currentCategoryMeta),
       }
-    }
-    if (patch.pinnedAt !== undefined) {
-      next.pinnedAt = patch.pinnedAt > 0 ? patch.pinnedAt : undefined
-    }
-    if (patch.tags !== undefined) {
-      next.tags = [...new Set(patch.tags.flatMap((tag) => {
-        const normalized = tag.trim()
-        return normalized ? [normalized] : []
-      }))]
-      if (next.tags.length === 0) {
-        next.tags = undefined
+    })
+  },
+
+  setBookmarkMeta: async (originalUrl, edit, bookmarkId) => {
+    if (!originalUrl)
+      return
+    const meta = await updateBookmarkMetadata((latest) => {
+      const url = bookmarkId
+        ? get().bookmarks.find(bookmark => bookmark.id === bookmarkId)?.url ?? originalUrl
+        : originalUrl
+      const meta = { ...latest }
+      const next = { ...(meta[url] ?? {}) }
+      const patch = typeof edit === 'function' ? edit(next) : edit
+      if (patch.description !== undefined) {
+        next.description = patch.description || undefined
       }
-    }
-    if (patch.inboxAt !== undefined) {
-      next.inboxAt = patch.inboxAt > 0 ? patch.inboxAt : undefined
-    }
-    if (
-      !next.description
-      && !next.icon
-      && !next.alternateUrls?.length
-      && !next.pinnedAt
-      && !next.tags?.length
-      && !next.inboxAt
-    ) {
-      delete meta[url]
-    }
-    else {
-      meta[url] = next
-    }
+      if (patch.icon !== undefined) {
+        next.icon = patch.icon || undefined
+      }
+      if (patch.alternateUrls !== undefined) {
+        next.alternateUrls = normalizeAlternateBookmarkUrls(
+          patch.alternateUrls,
+          url,
+        )
+        if (next.alternateUrls.length === 0) {
+          next.alternateUrls = undefined
+        }
+      }
+      if (patch.pinnedAt !== undefined) {
+        next.pinnedAt = patch.pinnedAt > 0 ? patch.pinnedAt : undefined
+      }
+      if (patch.tags !== undefined) {
+        next.tags = [...new Set(patch.tags.flatMap((tag) => {
+          const normalized = tag.trim()
+          return normalized ? [normalized] : []
+        }))]
+        if (next.tags.length === 0) {
+          next.tags = undefined
+        }
+      }
+      if (patch.inboxAt !== undefined) {
+        next.inboxAt = patch.inboxAt > 0 ? patch.inboxAt : undefined
+      }
+      if (
+        !next.description
+        && !next.icon
+        && !next.alternateUrls?.length
+        && !next.pinnedAt
+        && !next.tags?.length
+        && !next.inboxAt
+      ) {
+        delete meta[url]
+      }
+      else {
+        meta[url] = next
+      }
+      return meta
+    }, () => get().meta)
     set({
       meta,
-      bookmarks: applyMetaForUrl(get().bookmarks, url, meta[url]),
+      bookmarks: applyMeta(get().bookmarks, meta),
     })
-    await persist(metaStorage, STORAGE_KEYS.meta, meta)
   },
 
   setBookmarkPinned: async (url, pinned) => {
@@ -1393,20 +1435,22 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
   markBookmarksOrganized: async (ids) => {
     const selectedIds = new Set(ids)
     const targets = get().bookmarks.filter(bookmark => selectedIds.has(bookmark.id))
-    const meta = { ...get().meta }
-    for (const bookmark of targets) {
-      const next = { ...(meta[bookmark.url] ?? {}) }
-      delete next.inboxAt
-      if (!next.description && !next.icon && !next.alternateUrls?.length
-        && !next.pinnedAt && !next.tags?.length) {
-        delete meta[bookmark.url]
+    const meta = await updateBookmarkMetadata((latest) => {
+      const meta = { ...latest }
+      for (const bookmark of targets) {
+        const next = { ...(meta[bookmark.url] ?? {}) }
+        delete next.inboxAt
+        if (!next.description && !next.icon && !next.alternateUrls?.length
+          && !next.pinnedAt && !next.tags?.length) {
+          delete meta[bookmark.url]
+        }
+        else {
+          meta[bookmark.url] = next
+        }
       }
-      else {
-        meta[bookmark.url] = next
-      }
-    }
+      return meta
+    }, () => get().meta)
     set({ meta, bookmarks: applyMeta(get().bookmarks, meta) })
-    await persist(metaStorage, STORAGE_KEYS.meta, meta)
   },
 
   setActiveCategory: id => set({ activeCategoryId: id }),
@@ -1480,7 +1524,7 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
         alternateUrls: patch.alternateUrls,
         tags: patch.tags,
         inboxAt: patch.inboxAt,
-      })
+      }, id)
     }
     await get().loadBookmarks()
     await get().recordActivity(
@@ -1492,49 +1536,59 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
   },
 
   reconcileBookmarkUrlChange: async (nativeId, url) => {
-    const id = `bm-${nativeId}`
-    const current = get().bookmarks.find(bookmark => bookmark.id === id)
-    if (!current || !url || current.url === url)
-      return
+    bookmarkUrlMigrationRevision += 1
+    const migration = withBookmarkMetadataLock(async () => {
+      const id = `bm-${nativeId}`
+      const current = get().bookmarks.find(bookmark => bookmark.id === id)
+      if (!current || !url || current.url === url)
+        return
 
-    const meta = { ...get().meta }
-    const previousMeta = meta[current.url]
-    const oldUrlStillInUse = get().bookmarks.some(bookmark =>
-      bookmark.id !== id && bookmark.url === current.url,
-    )
-    if (previousMeta) {
-      meta[url] = { ...previousMeta, ...meta[url] }
-      if (!oldUrlStillInUse)
-        delete meta[current.url]
+      const oldUrlStillInUse = get().bookmarks.some(bookmark =>
+        bookmark.id !== id && bookmark.url === current.url,
+      )
+      const latest = await metaStorage.get<Record<string, BookmarkMeta>>(STORAGE_KEYS.meta)
+        ?? get().meta
+      const meta = { ...latest }
+      const previousMeta = meta[current.url]
+      if (previousMeta) {
+        meta[url] = { ...previousMeta, ...meta[url] }
+        if (!oldUrlStillInUse)
+          delete meta[current.url]
+        await persist(metaStorage, STORAGE_KEYS.meta, meta)
+      }
+
+      const usage = { ...get().usage }
+      const previousUsage = usage[current.url]
+      if (previousUsage && !oldUrlStillInUse) {
+        const existingUsage = usage[url]
+        usage[url] = existingUsage
+          ? {
+              openCount: existingUsage.openCount + previousUsage.openCount,
+              lastOpenedAt: Math.max(
+                existingUsage.lastOpenedAt,
+                previousUsage.lastOpenedAt,
+              ),
+            }
+          : previousUsage
+        delete usage[current.url]
+      }
+
+      // Advance the cached URL before releasing the lock, so another native
+      // URL change migrates from this destination even before the tree reload.
+      const bookmarks = get().bookmarks.map(bookmark => bookmark.id === id
+        ? { ...bookmark, url }
+        : bookmark)
+      set({ meta, usage, bookmarks: applyMeta(bookmarks, meta) })
+      if (previousUsage && !oldUrlStillInUse)
+        await persist(metaStorage, STORAGE_KEYS.usage, usage)
+    })
+    bookmarkUrlMigrations.add(migration)
+    try {
+      await migration
     }
-
-    const usage = { ...get().usage }
-    const previousUsage = usage[current.url]
-    if (previousUsage && !oldUrlStillInUse) {
-      const existingUsage = usage[url]
-      usage[url] = existingUsage
-        ? {
-            openCount: existingUsage.openCount + previousUsage.openCount,
-            lastOpenedAt: Math.max(
-              existingUsage.lastOpenedAt,
-              previousUsage.lastOpenedAt,
-            ),
-          }
-        : previousUsage
-      delete usage[current.url]
+    finally {
+      bookmarkUrlMigrations.delete(migration)
     }
-
-    if (!previousMeta && !previousUsage)
-      return
-    set({ meta, usage })
-    await Promise.all([
-      previousMeta
-        ? persist(metaStorage, STORAGE_KEYS.meta, meta)
-        : Promise.resolve(),
-      previousUsage && !oldUrlStillInUse
-        ? persist(metaStorage, STORAGE_KEYS.usage, usage)
-        : Promise.resolve(),
-    ])
   },
 
   removeBookmark: async (id) => {
@@ -1647,7 +1701,13 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
       bookmarks: reorderedBookmarks,
     })
     try {
-      await persist(metaStorage, STORAGE_KEYS.meta, meta)
+      const persistedMeta = await updateBookmarkMetadata((latest) => {
+        const next = { ...latest }
+        for (const [url, pinnedAt] of ranks)
+          next[url] = { ...next[url], pinnedAt }
+        return next
+      }, () => get().meta)
+      set({ meta: persistedMeta, bookmarks: applyMeta(get().bookmarks, persistedMeta) })
     }
     catch (cause) {
       set(state => state.meta === meta
@@ -1743,36 +1803,39 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
 
   importBackup: async (raw, strategy = 'merge') => {
     const backup = parseYunjiTabBackup(raw)
-    const meta = { ...get().meta }
-    for (const [url, importedMeta] of Object.entries(backup.bookmarkMeta)) {
-      const existing = meta[url]
-      if (existing && strategy === 'skip')
-        continue
-      const normalizedImported = {
-        ...importedMeta,
-        alternateUrls: normalizeAlternateBookmarkUrls(
-          importedMeta.alternateUrls ?? [],
-          url,
-        ),
-        tags: importedMeta.tags?.flatMap((tag) => {
-          const normalized = tag.trim()
-          return normalized ? [normalized] : []
-        }),
+    const meta = await updateBookmarkMetadata((latest) => {
+      const meta = { ...latest }
+      for (const [url, importedMeta] of Object.entries(backup.bookmarkMeta)) {
+        const existing = meta[url]
+        if (existing && strategy === 'skip')
+          continue
+        const normalizedImported = {
+          ...importedMeta,
+          alternateUrls: normalizeAlternateBookmarkUrls(
+            importedMeta.alternateUrls ?? [],
+            url,
+          ),
+          tags: importedMeta.tags?.flatMap((tag) => {
+            const normalized = tag.trim()
+            return normalized ? [normalized] : []
+          }),
+        }
+        meta[url] = existing && strategy === 'merge'
+          ? {
+              ...normalizedImported,
+              ...existing,
+              tags: [...new Set([...(existing.tags ?? []), ...(normalizedImported.tags ?? [])])],
+            }
+          : normalizedImported
+        if (!meta[url].alternateUrls?.length) {
+          meta[url].alternateUrls = undefined
+        }
+        if (!meta[url].tags?.length) {
+          meta[url].tags = undefined
+        }
       }
-      meta[url] = existing && strategy === 'merge'
-        ? {
-            ...normalizedImported,
-            ...existing,
-            tags: [...new Set([...(existing.tags ?? []), ...(normalizedImported.tags ?? [])])],
-          }
-        : normalizedImported
-      if (!meta[url].alternateUrls?.length) {
-        meta[url].alternateUrls = undefined
-      }
-      if (!meta[url].tags?.length) {
-        meta[url].tags = undefined
-      }
-    }
+      return meta
+    }, () => get().meta)
     const usage = { ...get().usage, ...backup.usage }
     const categoryMeta = { ...get().categoryMeta }
     let restoredCategoryMetaCount = 0
@@ -1798,7 +1861,6 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
 
     set({ meta, categoryMeta, usage, settings })
     await Promise.all([
-      persist(metaStorage, STORAGE_KEYS.meta, meta),
       persist(metaStorage, STORAGE_KEYS.categoryMeta, categoryMeta),
       persist(metaStorage, STORAGE_KEYS.usage, usage),
       persist(settingsStorage, STORAGE_KEYS.settings, settings),
@@ -1854,29 +1916,31 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
       )
     }
 
-    const meta = { ...get().meta }
-    for (const [url, importedMeta] of Object.entries(
-      snapshot.yunjiTab.bookmarkMeta,
-    )) {
-      meta[url] = {
-        ...importedMeta,
-        alternateUrls: normalizeAlternateBookmarkUrls(
-          importedMeta.alternateUrls ?? [],
-          url,
-        ),
-        tags: importedMeta.tags?.flatMap((tag) => {
-          const normalized = tag.trim()
-          return normalized ? [normalized] : []
-        }),
+    const meta = await updateBookmarkMetadata((latest) => {
+      const meta = { ...latest }
+      for (const [url, importedMeta] of Object.entries(
+        snapshot.yunjiTab.bookmarkMeta,
+      )) {
+        meta[url] = {
+          ...importedMeta,
+          alternateUrls: normalizeAlternateBookmarkUrls(
+            importedMeta.alternateUrls ?? [],
+            url,
+          ),
+          tags: importedMeta.tags?.flatMap((tag) => {
+            const normalized = tag.trim()
+            return normalized ? [normalized] : []
+          }),
+        }
+        if (!meta[url].alternateUrls?.length) {
+          meta[url].alternateUrls = undefined
+        }
+        if (!meta[url].tags?.length) {
+          meta[url].tags = undefined
+        }
       }
-      if (!meta[url].alternateUrls?.length) {
-        meta[url].alternateUrls = undefined
-      }
-      if (!meta[url].tags?.length) {
-        meta[url].tags = undefined
-      }
-    }
-
+      return meta
+    }, () => get().meta)
     const categoryMeta = { ...get().categoryMeta }
     let restoredCategoryMetaCount = 0
     for (const item of snapshot.yunjiTab.categoryMeta) {
@@ -1902,7 +1966,6 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
 
     set({ meta, categoryMeta, settings, usage })
     await Promise.all([
-      persist(metaStorage, STORAGE_KEYS.meta, meta),
       persist(metaStorage, STORAGE_KEYS.categoryMeta, categoryMeta),
       persist(metaStorage, STORAGE_KEYS.usage, usage),
       persist(settingsStorage, STORAGE_KEYS.settings, settings),

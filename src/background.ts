@@ -58,6 +58,7 @@ import {
   quickSaveBookmarkMessage,
   quickSaveCategoryKey,
 } from '~/lib/quick-save'
+import { updateBookmarkMetadata } from '~/lib/store-persistence'
 
 const MENU_ID = 'yunji-tab-save-page'
 const META_KEY = 'yunji-tab:meta'
@@ -376,15 +377,16 @@ async function saveQuickBookmark(input: unknown): Promise<void> {
         (tag): tag is string => typeof tag === 'string' && Boolean(tag.trim()),
       ).map(tag => tag.trim()))].slice(0, 12)
     : []
-  const meta = await localStorage.get<Record<string, BookmarkMeta>>(META_KEY) ?? {}
-  meta[page.url] = {
-    ...(meta[page.url] ?? {}),
-    tags: tags.length > 0 ? tags : undefined,
-    inboxAt: typeof candidate.inboxAt === 'number' && candidate.inboxAt > 0
-      ? candidate.inboxAt
-      : Date.now(),
-  }
-  await localStorage.set(META_KEY, meta)
+  await updateBookmarkMetadata(latest => ({
+    ...latest,
+    [page.url]: {
+      ...latest[page.url],
+      tags: tags.length > 0 ? tags : undefined,
+      inboxAt: typeof candidate.inboxAt === 'number' && candidate.inboxAt > 0
+        ? candidate.inboxAt
+        : Date.now(),
+    },
+  }), () => ({}))
   await markLocalMetadataChanged()
 }
 
@@ -407,9 +409,10 @@ async function saveTab(tab?: chrome.tabs.Tab): Promise<SaveTabResult> {
     title: page.title,
     url: page.url,
   })
-  const meta = await localStorage.get<Record<string, BookmarkMeta>>(META_KEY) ?? {}
-  meta[page.url] = { ...(meta[page.url] ?? {}), inboxAt: Date.now() }
-  await localStorage.set(META_KEY, meta)
+  await updateBookmarkMetadata(latest => ({
+    ...latest,
+    [page.url]: { ...latest[page.url], inboxAt: Date.now() },
+  }), () => ({}))
   await markLocalMetadataChanged()
   setBadge('✓', '#15803d')
   return 'saved'

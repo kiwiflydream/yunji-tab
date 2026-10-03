@@ -1,3 +1,4 @@
+import type { BookmarkMeta } from './types'
 import { Storage } from '@plasmohq/storage'
 
 // 补充描述和图标可能较多，使用 local 避免 sync 配额导致刷新后丢失。
@@ -15,6 +16,7 @@ export const STORAGE_KEYS = {
 } as const
 
 let supplementaryPersisted: () => Promise<void> = async () => {}
+let metadataWriteQueue: Promise<unknown> = Promise.resolve()
 
 export function registerSupplementaryPersisted(callback: () => Promise<void>) {
   supplementaryPersisted = callback
@@ -29,4 +31,29 @@ export async function persist(client: Storage, key: string, value: unknown) {
   ) {
     await supplementaryPersisted()
   }
+}
+
+// All pages of this extension share the same Web Lock. Read inside the lock so
+// a stale page only changes the requested fields of the latest stored metadata.
+export async function withBookmarkMetadataLock<T>(commit: () => Promise<T>): Promise<T> {
+  if (typeof navigator !== 'undefined' && navigator.locks)
+    return navigator.locks.request(STORAGE_KEYS.meta, commit)
+
+  const pending = metadataWriteQueue.then(commit, commit)
+  metadataWriteQueue = pending.catch(() => undefined)
+  return pending
+}
+
+export function updateBookmarkMetadata(
+  update: (latest: Record<string, BookmarkMeta>) => Record<string, BookmarkMeta>,
+  fallback: () => Record<string, BookmarkMeta>,
+): Promise<Record<string, BookmarkMeta>> {
+  return withBookmarkMetadataLock(async () => {
+    const latest = await metaStorage.get<Record<string, BookmarkMeta>>(STORAGE_KEYS.meta)
+      ?? fallback()
+    const meta = update(latest)
+    if (meta !== latest)
+      await persist(metaStorage, STORAGE_KEYS.meta, meta)
+    return meta
+  })
 }

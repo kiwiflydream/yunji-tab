@@ -92,6 +92,7 @@ export function BookmarkDialog({ open, onOpenChange, bookmark }: BookmarkDialogP
   const addCategory = useNavStore(s => s.addCategory)
   const addBookmark = useNavStore(s => s.addBookmark)
   const updateBookmark = useNavStore(s => s.updateBookmark)
+  const setBookmarkMeta = useNavStore(s => s.setBookmarkMeta)
 
   const [form, setForm] = useState<FormState>({
     name: '',
@@ -106,6 +107,7 @@ export function BookmarkDialog({ open, onOpenChange, bookmark }: BookmarkDialogP
   const [fetching, setFetching] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const formSessionRef = useRef<string | null>(null)
+  const initialFormRef = useRef<FormState | null>(null)
   const normalizedFormUrl = normalizeUrl(form.url)
   const duplicate = bookmark
     ? undefined
@@ -126,7 +128,7 @@ export function BookmarkDialog({ open, onOpenChange, bookmark }: BookmarkDialogP
     formSessionRef.current = formSession
     if (bookmark) {
       const cat = categories.find(c => c.id === bookmark.categoryId)
-      setForm({
+      const initialForm = {
         name: bookmark.name,
         url: bookmark.url,
         alternateUrls: bookmark.alternateUrls?.join('\n') ?? '',
@@ -134,7 +136,9 @@ export function BookmarkDialog({ open, onOpenChange, bookmark }: BookmarkDialogP
         tags: bookmark.tags?.join(', ') ?? '',
         categoryName: cat?.name ?? '',
         icon: bookmark.icon ?? '',
-      })
+      }
+      initialFormRef.current = initialForm
+      setForm(initialForm)
       setAdvancedOpen(Boolean(
         bookmark.alternateUrls?.length
         || bookmark.description
@@ -143,6 +147,7 @@ export function BookmarkDialog({ open, onOpenChange, bookmark }: BookmarkDialogP
       ))
     }
     else {
+      initialFormRef.current = null
       const activeCategory = categories.find(c => c.id === activeCategoryId)
         ?? categories[0]
       setForm({
@@ -223,7 +228,10 @@ export function BookmarkDialog({ open, onOpenChange, bookmark }: BookmarkDialogP
     }
     const alternateUrls = normalizeAlternateBookmarkUrls(normalizedUrls, url)
     // 确保分类存在（输入新名称时自动创建），拿到其 id
-    const categoryId = await addCategory(form.categoryName)
+    const initialForm = initialFormRef.current
+    const categoryId = !bookmark || form.categoryName !== initialForm?.categoryName
+      ? await addCategory(form.categoryName)
+      : bookmark.categoryId
     const payload = {
       name,
       url,
@@ -234,7 +242,17 @@ export function BookmarkDialog({ open, onOpenChange, bookmark }: BookmarkDialogP
       icon: form.icon.trim() || undefined,
     }
     if (bookmark) {
-      await updateBookmark(bookmark.id, payload)
+      // An editor can stay open while another page changes this bookmark. Only
+      // submit fields edited in this session; clearing a field is an explicit edit.
+      await updateBookmark(bookmark.id, {
+        ...(form.name !== initialForm?.name ? { name } : {}),
+        ...(form.url !== initialForm?.url ? { url } : {}),
+        ...(form.categoryName !== initialForm?.categoryName ? { categoryId } : {}),
+        ...(form.alternateUrls !== initialForm?.alternateUrls ? { alternateUrls } : {}),
+        ...(form.description !== initialForm?.description ? { description: form.description.trim() } : {}),
+        ...(form.tags !== initialForm?.tags ? { tags: parseTags(form.tags) } : {}),
+        ...(form.icon !== initialForm?.icon ? { icon: form.icon.trim() } : {}),
+      })
     }
     else {
       await addBookmark(payload)
@@ -246,26 +264,22 @@ export function BookmarkDialog({ open, onOpenChange, bookmark }: BookmarkDialogP
     if (!duplicate)
       return
     const { rawUrls, normalizedUrls } = parseAlternateUrls(form.alternateUrls)
-    const mergedAlternateUrls = mergeAlternateUrlsForDuplicate(
-      duplicate.alternateUrls,
-      normalizedUrls,
-      duplicate.url,
-    )
     if (normalizedUrls.some(candidate => !candidate)) {
       setAdvancedOpen(true)
       setError(t('invalidAlternateUrl'))
       return
     }
     const categoryId = await addCategory(form.categoryName)
-    await updateBookmark(duplicate.id, {
-      categoryId,
-      description: duplicate.description || form.description.trim() || undefined,
-      tags: [...new Set([...(duplicate.tags ?? []), ...parseTags(form.tags)])],
+    await updateBookmark(duplicate.id, { categoryId })
+    const currentDuplicate = useNavStore.getState().bookmarks.find(item => item.id === duplicate.id) ?? duplicate
+    await setBookmarkMeta(currentDuplicate.url, latest => ({
+      description: latest.description || form.description.trim() || undefined,
+      tags: [...new Set([...(latest.tags ?? []), ...parseTags(form.tags)])],
       ...(rawUrls.length > 0
-        ? { alternateUrls: mergedAlternateUrls }
+        ? { alternateUrls: mergeAlternateUrlsForDuplicate(latest.alternateUrls, normalizedUrls, currentDuplicate.url) }
         : {}),
-      icon: duplicate.icon || form.icon.trim() || undefined,
-    })
+      icon: latest.icon || form.icon.trim() || undefined,
+    }), duplicate.id)
     onOpenChange(false)
   }
 
