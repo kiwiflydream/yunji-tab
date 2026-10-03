@@ -18,6 +18,8 @@ import {
   trashStorageKey,
 } from '~/lib/activity'
 import { consumeBookmarkDeletionSuppression } from '~/lib/bookmark-deletion-safety'
+import { bookmarkGroupsKeyPrefix } from '~/lib/bookmark-groups'
+import { useBookmarkGroupsStore } from '~/lib/bookmark-groups-store'
 import { toNodeId } from '~/lib/bookmark-tree'
 import {
   normalizeBookmarkUrl,
@@ -577,6 +579,8 @@ chrome.runtime.onInstalled.addListener(() => {
 })
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'sync' && Object.keys(changes).some(key => key.startsWith(bookmarkGroupsKeyPrefix)))
+    void useBookmarkGroupsStore.getState().reconcileSources().catch(() => undefined)
   if (areaName === 'sync' && changes[SETTINGS_KEY])
     void refreshContextMenu()
 })
@@ -703,3 +707,14 @@ chrome.bookmarks.onRemoved.addListener((_id, removeInfo) => {
     archiveExternalBookmarkDeletion(removeInfo.node))
   bookmarkDeletionQueue = task.catch(() => undefined)
 })
+
+// Source bindings are local to this profile. Keep them current even with every
+// home page closed; pending URL migrations survive service-worker restarts.
+function reconcileGroupSources() {
+  void useBookmarkGroupsStore.getState().reconcileSources().catch(() => undefined)
+}
+chrome.bookmarks.onCreated.addListener(reconcileGroupSources)
+chrome.bookmarks.onChanged.addListener(reconcileGroupSources)
+chrome.bookmarks.onRemoved.addListener(reconcileGroupSources)
+chrome.runtime.onStartup.addListener(reconcileGroupSources)
+reconcileGroupSources()

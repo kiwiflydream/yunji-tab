@@ -58,6 +58,7 @@ describe('yunji tab backup', () => {
     const backup = createYunjiTabBackup({
       settings,
       categories,
+      bookmarkGroups: [{ id: 'tools', title: '工具', description: '日常使用', pinnedAt: 123, bookmarks: [{ id: 'docs', url: 'https://example.com', title: '组内文档' }] }],
       meta: {
         'https://example.com': {
           description: 'Example',
@@ -90,6 +91,10 @@ describe('yunji tab backup', () => {
     ])
     expect(parsed.defaultCategoryPath).toEqual(['工作', '文档'])
     expect(parsed.settings.globalCommandPaletteEnabled).toBe(true)
+    expect(parsed.bookmarkGroups).toEqual(backup.bookmarkGroups)
+    const legacy = { ...backup }
+    delete legacy.bookmarkGroups
+    expect(parseYunjiTabBackup(JSON.stringify(legacy)).bookmarkGroups).toEqual([])
   })
 
   it('parses full native bookmark snapshots', () => {

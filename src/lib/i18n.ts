@@ -3,6 +3,7 @@ import { activityMessages } from './i18n-activity'
 import { aiMessages } from './i18n-ai'
 import { appearanceMessages } from './i18n-appearance'
 import { autoOrganizeMessages } from './i18n-auto-organize'
+import { bookmarkGroupMessages } from './i18n-bookmark-groups'
 import { bookmarkHealthMessages } from './i18n-bookmark-health'
 import { bookmarkManagementMessages } from './i18n-bookmark-management'
 import { commandPaletteMessages } from './i18n-command-palette'
@@ -204,6 +205,7 @@ const zhCN = {
   ...settingsDataMessages['zh-CN'],
   ...settingsSyncMessages['zh-CN'],
   ...tabSessionsMessages['zh-CN'],
+  ...bookmarkGroupMessages['zh-CN'],
 } as const
 
 const en: Record<keyof typeof zhCN, string> = {
@@ -395,6 +397,7 @@ const en: Record<keyof typeof zhCN, string> = {
   ...settingsDataMessages.en,
   ...settingsSyncMessages.en,
   ...tabSessionsMessages.en,
+  ...bookmarkGroupMessages.en,
 }
 
 export type MessageKey = keyof typeof zhCN

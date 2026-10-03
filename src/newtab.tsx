@@ -24,6 +24,8 @@ import {
   colorThemeVars,
   contentWidthClass,
 } from '~/lib/appearance'
+import { bookmarkGroupsKeyPrefix } from '~/lib/bookmark-groups'
+import { useBookmarkGroupsStore } from '~/lib/bookmark-groups-store'
 import { mergeBookmarkUsageMaps } from '~/lib/bookmark-usage'
 import { globalPaletteHomeHash } from '~/lib/global-command-palette'
 import { homeTabReadyMessage } from '~/lib/home-tabs'
@@ -58,6 +60,8 @@ const CommandPalette = lazy(() =>
   })),
 )
 
+const BookmarkGroupsView = lazy(() => import('~/components/BookmarkGroupsView').then(module => ({ default: module.BookmarkGroupsView })))
+
 export default function NewTab() {
   const init = useNavStore(s => s.init)
   const theme = useNavStore(s => s.settings.theme)
@@ -65,6 +69,11 @@ export default function NewTab() {
   const language = useNavStore(s => s.settings.language)
   const keyboardShortcuts = useNavStore(s => s.settings.keyboardShortcuts)
 
+  const activeCategoryId = useNavStore(state => state.activeCategoryId)
+  const pinnedGroupCount = useBookmarkGroupsStore(state => state.groups.filter(group => group.pinnedAt).length)
+  const showPinnedGroups = activeCategoryId === 'pinned'
+
+  const [groupsOpen, setGroupsOpen] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [commandOpen, setCommandOpen] = useState(
     () => window.location.hash === globalPaletteHomeHash,
@@ -112,7 +121,7 @@ export default function NewTab() {
     let active = true
     void (async () => {
       try {
-        await init()
+        await Promise.all([init(), useBookmarkGroupsStore.getState().load()])
         await useNavStore.getState().loadBookmarks()
         await useNavStore.getState().syncMetadataNow()
         useNavStore.getState().applyDefaultCategory()
@@ -179,6 +188,8 @@ export default function NewTab() {
       changes: Record<string, chrome.storage.StorageChange>,
       areaName: string,
     ) => {
+      if (areaName === 'sync' && Object.keys(changes).some(key => key.startsWith(bookmarkGroupsKeyPrefix)))
+        void useBookmarkGroupsStore.getState().load()
       if (areaName === 'sync' && changes[metadataSyncManifestKey])
         void useNavStore.getState().syncMetadataNow()
       if (areaName === 'local'
@@ -385,7 +396,7 @@ export default function NewTab() {
                 : 'sticky top-[7.75rem] z-30 border-b border-border/60 bg-background/95 px-3 py-2 sm:px-5 lg:top-[4.5rem] lg:px-6'
             }
           >
-            <CategoryTabs onEditCategory={setEditingCategory} />
+            <CategoryTabs onEditCategory={setEditingCategory} groupsActive={groupsOpen} onSelectGroups={() => setGroupsOpen(true)} onSelectCategory={() => setGroupsOpen(false)} />
           </aside>
 
           <main className="relative min-w-0 px-3 py-5 sm:px-5 sm:py-6 lg:px-7 lg:py-7 xl:px-10">
@@ -396,12 +407,30 @@ export default function NewTab() {
                 contentWidthClass[appearance.contentWidth],
               )}
             >
-              <BookmarkGrid
-                loading={!bookmarksReady}
-                onEdit={openEdit}
-                onEditCategory={setEditingCategory}
-                onAdd={openAdd}
-              />
+              {groupsOpen
+                ? (
+                    <Suspense fallback={<LazyDialogFallback label={translate(language, 'bookmarkGroups')} />}>
+                      <BookmarkGroupsView />
+                    </Suspense>
+                  )
+                : (
+                    <>
+                      {showPinnedGroups
+                        ? (
+                            <Suspense fallback={<LazyDialogFallback label={translate(language, 'bookmarkGroups')} />}>
+                              <BookmarkGroupsView pinnedOnly />
+                            </Suspense>
+                          )
+                        : null}
+                      <BookmarkGrid
+                        loading={!bookmarksReady}
+                        hideEmptyState={showPinnedGroups && pinnedGroupCount > 0}
+                        onEdit={openEdit}
+                        onEditCategory={setEditingCategory}
+                        onAdd={openAdd}
+                      />
+                    </>
+                  )}
             </div>
           </main>
         </div>

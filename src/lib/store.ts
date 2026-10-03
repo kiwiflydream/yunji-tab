@@ -38,6 +38,7 @@ import {
   releaseBookmarkDeletionArchive,
   suppressBookmarkDeletionArchive,
 } from './bookmark-deletion-safety'
+import { useBookmarkGroupsStore } from './bookmark-groups-store'
 import { assertBookmarksApi, bookmarkApi } from './bookmark-repository'
 import {
   bookmarkTreeContainsNode,
@@ -1557,6 +1558,10 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
         await persist(metaStorage, STORAGE_KEYS.meta, meta)
       }
 
+      if (!oldUrlStillInUse && typeof chrome !== 'undefined' && chrome.storage?.sync) {
+        await useBookmarkGroupsStore.getState().migrateUrl(current.url, url).catch(() => useBookmarkGroupsStore.setState({ error: true }))
+      }
+
       const usage = { ...get().usage }
       const previousUsage = usage[current.url]
       if (previousUsage && !oldUrlStillInUse) {
@@ -1796,6 +1801,7 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
         categoryMeta: get().categoryMeta,
         usage: get().usage,
         categories: get().categories,
+        bookmarkGroups: useBookmarkGroupsStore.getState().groups,
       }),
       null,
       2,
@@ -1803,6 +1809,7 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
 
   importBackup: async (raw, strategy = 'merge') => {
     const backup = parseYunjiTabBackup(raw)
+    await useBookmarkGroupsStore.getState().restore(backup.bookmarkGroups ?? [], strategy)
     const meta = await updateBookmarkMetadata((latest) => {
       const meta = { ...latest }
       for (const [url, importedMeta] of Object.entries(backup.bookmarkMeta)) {
@@ -1884,6 +1891,7 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
           categoryMeta: get().categoryMeta,
           usage: get().usage,
           categories: get().categories,
+          bookmarkGroups: useBookmarkGroupsStore.getState().groups,
         }),
         nativeRoots: tree.children ?? [],
       }),
@@ -1941,6 +1949,7 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
       }
       return meta
     }, () => get().meta)
+    await useBookmarkGroupsStore.getState().restore(snapshot.yunjiTab.bookmarkGroups ?? [], 'replace')
     const categoryMeta = { ...get().categoryMeta }
     let restoredCategoryMetaCount = 0
     for (const item of snapshot.yunjiTab.categoryMeta) {

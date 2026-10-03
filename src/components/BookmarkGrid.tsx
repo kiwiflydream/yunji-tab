@@ -13,6 +13,7 @@ import { useI18n } from '~/lib/use-i18n'
 
 interface BookmarkGridProps {
   loading: boolean
+  hideEmptyState?: boolean
   onEdit: (bookmark: Bookmark) => void
   onEditCategory: (category: Category) => void
   onAdd: () => void
@@ -22,6 +23,7 @@ const RENDER_BATCH_SIZE = 50
 
 export function BookmarkGrid({
   loading,
+  hideEmptyState = false,
   onEdit,
   onEditCategory,
   onAdd,
@@ -78,6 +80,8 @@ export function BookmarkGrid({
     return <BookmarkGridLoadingState label={`${t('bookmarks')}…`} />
 
   if (bookmarks.length === 0 && categories.length === 0) {
+    if (hideEmptyState)
+      return null
     return <BookmarkGridEmptyState emptyLibrary onAdd={onAdd} />
   }
 
@@ -87,6 +91,8 @@ export function BookmarkGrid({
     && !bulk.selectionMode
     && activeCategoryId !== 'inbox'
   ) {
+    if (hideEmptyState && !rawSearchQuery.trim())
+      return null
     return (
       <BookmarkGridEmptyState
         searching={Boolean(rawSearchQuery.trim())}

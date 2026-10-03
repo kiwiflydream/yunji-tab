@@ -4,6 +4,7 @@ import { activityMessages } from './i18n-activity'
 import { aiMessages } from './i18n-ai'
 import { appearanceMessages } from './i18n-appearance'
 import { autoOrganizeMessages } from './i18n-auto-organize'
+import { bookmarkGroupMessages } from './i18n-bookmark-groups'
 import { bookmarkHealthMessages } from './i18n-bookmark-health'
 import { bookmarkManagementMessages } from './i18n-bookmark-management'
 import { commandPaletteMessages } from './i18n-command-palette'
@@ -200,6 +201,7 @@ const zhTW = {
   ...settingsDataMessages['zh-TW'],
   ...settingsSyncMessages['zh-TW'],
   ...tabSessionsMessages['zh-TW'],
+  ...bookmarkGroupMessages['zh-TW'],
 } satisfies Messages
 
 const ja = {
@@ -394,6 +396,7 @@ const ja = {
   ...settingsDataMessages.ja,
   ...settingsSyncMessages.ja,
   ...tabSessionsMessages.ja,
+  ...bookmarkGroupMessages.ja,
 } satisfies Messages
 
 const ko = {
@@ -581,6 +584,7 @@ const ko = {
   ...settingsDataMessages.ko,
   ...settingsSyncMessages.ko,
   ...tabSessionsMessages.ko,
+  ...bookmarkGroupMessages.ko,
 } satisfies Messages
 
 const es = {
@@ -772,6 +776,7 @@ const es = {
   ...settingsDataMessages.es,
   ...settingsSyncMessages.es,
   ...tabSessionsMessages.es,
+  ...bookmarkGroupMessages.es,
 } satisfies Messages
 
 const fr = {
@@ -968,6 +973,7 @@ const fr = {
   ...settingsDataMessages.fr,
   ...settingsSyncMessages.fr,
   ...tabSessionsMessages.fr,
+  ...bookmarkGroupMessages.fr,
 } satisfies Messages
 
 export const extraLocaleMessages: Record<ExtraLanguage, Messages> = {

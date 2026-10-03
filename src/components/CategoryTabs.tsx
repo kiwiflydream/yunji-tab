@@ -3,7 +3,7 @@ import type { CategoryTreeNode } from '~/lib/category-tree'
 import type { Category } from '~/lib/types'
 import { useDraggable } from '@dnd-kit/core'
 
-import { ChevronRight, GripVertical, Pencil } from 'lucide-react'
+import { ChevronRight, GripVertical, Layers, Pencil } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useMovePending } from '~/components/BookmarkDragDropContext'
 import { Button } from '~/components/ui/button'
@@ -13,6 +13,7 @@ import {
   CollapsibleTrigger,
 } from '~/components/ui/collapsible'
 import { useCategoryDropTarget } from '~/components/useCategoryDropTarget'
+import { useBookmarkGroupsStore } from '~/lib/bookmark-groups-store'
 import { bookmarkSearchEntryScore } from '~/lib/bookmark-search'
 import { getCategoryAncestorIds } from '~/lib/category-tree'
 import { VIRTUAL_CATEGORIES } from '~/lib/default-data'
@@ -261,14 +262,23 @@ function CategoryTreeItems({
 
 interface CategoryTabsProps {
   onEditCategory: (category: Category) => void
+  groupsActive?: boolean
+  onSelectGroups?: () => void
+  onSelectCategory?: () => void
 }
 
-export function CategoryTabs({ onEditCategory }: CategoryTabsProps) {
+export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onSelectCategory }: CategoryTabsProps) {
   const { t } = useI18n()
   const categories = useCategories()
   const bookmarks = useBookmarks()
   const activeId = useNavStore(s => s.activeCategoryId)
-  const setActive = useNavStore(s => s.setActiveCategory)
+  const setActiveCategory = useNavStore(s => s.setActiveCategory)
+  const groupCount = useBookmarkGroupsStore(state => state.groups.length)
+  const pinnedGroupCount = useBookmarkGroupsStore(state => state.groups.filter(group => group.pinnedAt).length)
+  const setActive = (id: string) => {
+    onSelectCategory?.()
+    setActiveCategory(id)
+  }
   const usage = useNavStore(s => s.usage)
   const searchQuery = useNavStore(s => s.bookmarkSearchQuery)
   const setSearchQuery = useNavStore(s => s.setBookmarkSearchQuery)
@@ -339,7 +349,7 @@ export function CategoryTabs({ onEditCategory }: CategoryTabsProps) {
     if (id === 'inbox')
       return smartCounts.inbox
     if (id === 'pinned')
-      return smartCounts.pinned
+      return smartCounts.pinned + pinnedGroupCount
     if (id === 'untagged')
       return smartCounts.untagged
     if (id === 'undescribed')
@@ -386,7 +396,7 @@ export function CategoryTabs({ onEditCategory }: CategoryTabsProps) {
       <CategoryTab
         key={category.id}
         category={category}
-        active={active}
+        active={!groupsActive && active}
         count={count(category.id)}
         fullWidth={navLayout === 'sidebar'}
         showCount={appearance.navItems.counts}
@@ -419,6 +429,15 @@ export function CategoryTabs({ onEditCategory }: CategoryTabsProps) {
           : 'lg:overflow-x-auto',
       )}
     >
+      {onSelectGroups
+        ? (
+            <Button variant="ghost" size="sm" aria-pressed={Boolean(groupsActive)} onClick={onSelectGroups} className={cn('shrink-0 justify-start gap-2', navLayout === 'sidebar' && 'lg:w-full', groupsActive && 'bg-accent text-accent-foreground')}>
+              <Layers />
+              {t('bookmarkGroups')}
+              {appearance.navItems.counts ? <span className="ml-auto text-xs tabular-nums opacity-60">{groupCount}</span> : null}
+            </Button>
+          )
+        : null}
       {smartCategoriesCollapsible
         ? (
             <>
@@ -466,7 +485,7 @@ export function CategoryTabs({ onEditCategory }: CategoryTabsProps) {
               <CategoryTreeItems
                 nodes={categoryTree}
                 depth={0}
-                activeId={activeId}
+                activeId={groupsActive ? '' : activeId}
                 collapsedIds={collapsedCategoryIds}
                 forcedExpandedIds={forcedExpandedIds}
                 showCount={appearance.navItems.counts}

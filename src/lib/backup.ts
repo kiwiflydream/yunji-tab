@@ -1,3 +1,4 @@
+import type { BookmarkGroup } from './bookmark-groups'
 import type {
   BookmarkMeta,
   BookmarkUsage,
@@ -7,6 +8,7 @@ import type {
 } from './types'
 import { normalizeAppearanceSettings } from './appearance'
 import { normalizeAutoOrganizeRules } from './auto-organize'
+import { parseBookmarkGroup } from './bookmark-groups'
 import { getCategoryPath } from './category-path'
 import { getBrowserLanguage, isLanguage } from './i18n'
 import { normalizeKeyboardShortcuts } from './keyboard-shortcuts'
@@ -27,6 +29,7 @@ export interface YunjiTabBackup {
   settings: Settings
   defaultCategoryPath?: string[]
   bookmarkMeta: Record<string, BookmarkMeta>
+  bookmarkGroups?: BookmarkGroup[]
   categoryMeta: CategoryMetaBackup[]
   usage: Record<string, BookmarkUsage>
 }
@@ -52,6 +55,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function createYunjiTabBackup(input: {
   settings: Settings
   meta: Record<string, BookmarkMeta>
+  bookmarkGroups?: BookmarkGroup[]
   categoryMeta: Record<string, CategoryMeta>
   usage: Record<string, BookmarkUsage>
   categories: Category[]
@@ -72,6 +76,7 @@ export function createYunjiTabBackup(input: {
       input.categories,
     ),
     bookmarkMeta: input.meta,
+    bookmarkGroups: input.bookmarkGroups ?? [],
     categoryMeta,
     usage: input.usage,
   }
@@ -268,6 +273,12 @@ export function parseYunjiTabBackup(raw: string): YunjiTabBackup {
         )
       : undefined,
     bookmarkMeta,
+    bookmarkGroups: Array.isArray(value.bookmarkGroups)
+      ? value.bookmarkGroups.flatMap((item) => {
+          const group = parseBookmarkGroup(item)
+          return group ? [group] : []
+        })
+      : [],
     categoryMeta,
     usage,
   }
