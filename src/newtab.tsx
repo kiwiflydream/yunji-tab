@@ -1,6 +1,7 @@
 import type { Bookmark, BookmarkUsage, Category } from '~/lib/types'
 
 import { lazy, Suspense, useEffect, useState } from 'react'
+import engravingArtworkUrl from 'url:~assets/themes/engraving-cat-astronaut.png'
 
 import { BookmarkDragDropProvider } from '~/components/BookmarkDragDropProvider'
 import { BookmarkGrid } from '~/components/BookmarkGrid'
@@ -37,6 +38,7 @@ import {
 import { metadataSyncManifestKey } from '~/lib/metadata-sync'
 import { flushUsagePersistence, useNavStore } from '~/lib/store'
 import { metaStorage, STORAGE_KEYS } from '~/lib/store-persistence'
+import { normalizeSettings } from '~/lib/store-settings-state'
 import { cn } from '~/lib/utils'
 import '~main.css'
 
@@ -70,10 +72,11 @@ export default function NewTab() {
   const keyboardShortcuts = useNavStore(s => s.settings.keyboardShortcuts)
 
   const activeCategoryId = useNavStore(state => state.activeCategoryId)
-  const pinnedGroupCount = useBookmarkGroupsStore(state => state.groups.filter(group => group.pinnedAt).length)
+  const groupsEnabled = useNavStore(state => state.settings.bookmarkGroupsEnabled)
   const showPinnedGroups = activeCategoryId === 'pinned'
 
   const [groupsOpen, setGroupsOpen] = useState(false)
+  const groupsActive = groupsEnabled && groupsOpen
   const [dialogOpen, setDialogOpen] = useState(false)
   const [commandOpen, setCommandOpen] = useState(
     () => window.location.hash === globalPaletteHomeHash,
@@ -188,6 +191,16 @@ export default function NewTab() {
       changes: Record<string, chrome.storage.StorageChange>,
       areaName: string,
     ) => {
+      if (areaName === 'sync' && changes[STORAGE_KEYS.settings]) {
+        try {
+          const raw = changes[STORAGE_KEYS.settings].newValue
+          const settings = normalizeSettings(typeof raw === 'string' ? JSON.parse(raw) : raw)
+          useNavStore.setState(state => state.settings.bookmarkGroupsEnabled === settings.bookmarkGroupsEnabled
+            ? state
+            : { settings: { ...state.settings, bookmarkGroupsEnabled: settings.bookmarkGroupsEnabled } })
+        }
+        catch { /* Retain the current setting if an incoming record is malformed. */ }
+      }
       if (areaName === 'sync' && Object.keys(changes).some(key => key.startsWith(bookmarkGroupsKeyPrefix)))
         void useBookmarkGroupsStore.getState().load()
       if (areaName === 'sync' && changes[metadataSyncManifestKey])
@@ -235,8 +248,10 @@ export default function NewTab() {
       const root = document.documentElement
       const dark = theme === 'dark' || (theme === 'system' && mq.matches)
       const strictKami = appearance.colorTheme === 'kami'
-      root.classList.toggle('dark', strictKami ? false : dark)
+      const engraving = appearance.colorTheme === 'engraving'
+      root.classList.toggle('dark', strictKami ? false : engraving || dark)
       root.classList.toggle('theme-kami', strictKami)
+      root.classList.toggle('theme-engraving', engraving)
 
       const radius = strictKami
         ? '0.25rem'
@@ -262,7 +277,7 @@ export default function NewTab() {
         )
       }
 
-      if (strictKami || appearance.accentColor === 'neutral')
+      if (strictKami || engraving || appearance.accentColor === 'neutral')
         return
 
       const colorVars = accentColorVars[appearance.accentColor]
@@ -369,7 +384,7 @@ export default function NewTab() {
     <BookmarkDragDropProvider>
       <div
         className={cn(
-          'min-h-dvh',
+          'newtab-shell min-h-dvh',
           backgroundStyleClass[appearance.backgroundStyle],
         )}
       >
@@ -381,13 +396,15 @@ export default function NewTab() {
         />
 
         <div
-          className={
+          data-nav-layout={appearance.navLayout}
+          className={cn(
+            'workspace-layout',
             appearance.navLayout === 'sidebar'
               ? appearance.navItems.categoryTree
                 ? 'lg:grid lg:grid-cols-[18rem_minmax(0,1fr)]'
                 : 'lg:grid lg:grid-cols-[14.5rem_minmax(0,1fr)]'
-              : 'flex flex-col'
-          }
+              : 'flex flex-col',
+          )}
         >
           <aside
             className={
@@ -396,7 +413,7 @@ export default function NewTab() {
                 : 'sticky top-[7.75rem] z-30 border-b border-border/60 bg-background/95 px-3 py-2 sm:px-5 lg:top-[4.5rem] lg:px-6'
             }
           >
-            <CategoryTabs onEditCategory={setEditingCategory} groupsActive={groupsOpen} onSelectGroups={() => setGroupsOpen(true)} onSelectCategory={() => setGroupsOpen(false)} />
+            <CategoryTabs onEditCategory={setEditingCategory} groupsActive={groupsActive} onSelectGroups={() => setGroupsOpen(true)} onSelectCategory={() => setGroupsOpen(false)} />
           </aside>
 
           <main className="relative min-w-0 px-3 py-5 sm:px-5 sm:py-6 lg:px-7 lg:py-7 xl:px-10">
@@ -410,30 +427,58 @@ export default function NewTab() {
               {groupsOpen
                 ? (
                     <Suspense fallback={<LazyDialogFallback label={translate(language, 'bookmarkGroups')} />}>
-                      <BookmarkGroupsView />
+                      <BookmarkGroupsView
+                        key="all-groups"
+                        renderCards={groupsEnabled
+                          ? undefined
+                          : () => (
+                              <BookmarkGrid
+                                loading={!bookmarksReady}
+                                onEdit={openEdit}
+                                onEditCategory={setEditingCategory}
+                                onAdd={openAdd}
+                              />
+                            )}
+                      />
                     </Suspense>
                   )
-                : (
-                    <>
-                      {showPinnedGroups
-                        ? (
-                            <Suspense fallback={<LazyDialogFallback label={translate(language, 'bookmarkGroups')} />}>
-                              <BookmarkGroupsView pinnedOnly />
-                            </Suspense>
-                          )
-                        : null}
+                : showPinnedGroups
+                  ? (
+                      <Suspense fallback={<LazyDialogFallback label={translate(language, 'bookmarkGroups')} />}>
+                        <BookmarkGroupsView
+                          key="pinned-groups"
+                          pinnedOnly
+                          renderCards={(cards, count) => (
+                            <BookmarkGrid
+                              loading={!bookmarksReady}
+                              additionalItems={cards}
+                              additionalItemCount={count}
+                              onEdit={openEdit}
+                              onEditCategory={setEditingCategory}
+                              onAdd={openAdd}
+                            />
+                          )}
+                        />
+                      </Suspense>
+                    )
+                  : (
                       <BookmarkGrid
                         loading={!bookmarksReady}
-                        hideEmptyState={showPinnedGroups && pinnedGroupCount > 0}
                         onEdit={openEdit}
                         onEditCategory={setEditingCategory}
                         onAdd={openAdd}
                       />
-                    </>
-                  )}
+                    )}
             </div>
           </main>
         </div>
+        {appearance.colorTheme === 'engraving'
+          ? (
+              <div className="engraving-landscape" aria-hidden="true">
+                <img src={engravingArtworkUrl} alt="" width={2048} height={683} decoding="async" />
+              </div>
+            )
+          : null}
 
         <Suspense
           fallback={

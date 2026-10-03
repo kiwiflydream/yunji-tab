@@ -202,6 +202,14 @@ async function loadCandidateFavicon(
   }
 }
 
+/** Share the cache and fetch limits without a site-favicon fallback for groups. */
+export async function loadCustomIcon(url: string): Promise<Blob> {
+  const icon = await loadAndCacheFavicon(url)
+  if (icon)
+    return icon
+  throw new Error('favicon.load_failed')
+}
+
 /** 获取并持久缓存书签图标，远程高清图标失败时回退到 Chrome favicon API。 */
 export async function loadFavicon(
   bookmarkUrl: string,

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { GridItemCounts } from '~/lib/bookmark-grid-data'
 import type {
   AppearanceSettings,
@@ -11,6 +12,7 @@ import { gridClassByMode } from '~/lib/appearance'
 import { useNavStore } from '~/lib/store'
 
 interface BookmarkGridItemsProps {
+  additionalItems?: ReactNode
   appearance: AppearanceSettings
   bookmarks: Bookmark[]
   categories: Category[]
@@ -28,6 +30,7 @@ interface BookmarkGridItemsProps {
 }
 
 export function BookmarkGridItems({
+  additionalItems,
   appearance,
   bookmarks,
   categories,
@@ -95,6 +98,7 @@ export function BookmarkGridItems({
           pinnedReorder={pinnedReorder}
         />
       ))}
+      {additionalItems}
     </div>
   )
 }

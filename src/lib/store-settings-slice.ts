@@ -32,6 +32,14 @@ export const createSettingsSlice: StateCreator<
   [],
   SettingsSlice
 > = (set, get) => ({
+  setBookmarkGroupsEnabled: async (bookmarkGroupsEnabled) => {
+    if (get().settings.bookmarkGroupsEnabled === bookmarkGroupsEnabled)
+      return
+    const settings = { ...get().settings, bookmarkGroupsEnabled }
+    set({ settings })
+    await persist(settingsStorage, STORAGE_KEYS.settings, settings)
+  },
+
   setLanguage: async (language) => {
     const settings = { ...get().settings, language }
     set({ settings })

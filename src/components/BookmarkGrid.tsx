@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { Bookmark, Category } from '~/lib/types'
 import { useDeferredValue, useMemo, useState } from 'react'
 import { BookmarkGridEmptyState } from '~/components/bookmark-grid/BookmarkGridEmptyState'
@@ -13,7 +14,8 @@ import { useI18n } from '~/lib/use-i18n'
 
 interface BookmarkGridProps {
   loading: boolean
-  hideEmptyState?: boolean
+  additionalItems?: ReactNode
+  additionalItemCount?: number
   onEdit: (bookmark: Bookmark) => void
   onEditCategory: (category: Category) => void
   onAdd: () => void
@@ -23,7 +25,8 @@ const RENDER_BATCH_SIZE = 50
 
 export function BookmarkGrid({
   loading,
-  hideEmptyState = false,
+  additionalItems,
+  additionalItemCount = 0,
   onEdit,
   onEditCategory,
   onAdd,
@@ -79,20 +82,17 @@ export function BookmarkGrid({
   if (loading)
     return <BookmarkGridLoadingState label={`${t('bookmarks')}…`} />
 
-  if (bookmarks.length === 0 && categories.length === 0) {
-    if (hideEmptyState)
-      return null
+  if (bookmarks.length === 0 && categories.length === 0 && additionalItemCount === 0) {
     return <BookmarkGridEmptyState emptyLibrary onAdd={onAdd} />
   }
 
   if (
     visibleCategories.length === 0
     && data.filteredBookmarks.length === 0
+    && additionalItemCount === 0
     && !bulk.selectionMode
     && activeCategoryId !== 'inbox'
   ) {
-    if (hideEmptyState && !rawSearchQuery.trim())
-      return null
     return (
       <BookmarkGridEmptyState
         searching={Boolean(rawSearchQuery.trim())}
@@ -110,6 +110,7 @@ export function BookmarkGrid({
         selectionMode={bulk.selectionMode}
         visibleBookmarkCount={visibleBookmarkIds.length}
         visibleCategoryCount={visibleCategories.length}
+        additionalItemCount={additionalItemCount}
         onStartSelection={bulk.startSelection}
       />
       {bulk.selectionMode
@@ -148,6 +149,7 @@ export function BookmarkGrid({
         selectedIds={bulk.selectedIds}
         selectionMode={bulk.selectionMode}
         viewMode={viewMode}
+        additionalItems={bulk.selectionMode ? null : additionalItems}
       />
       {renderedBookmarks.length < data.filteredBookmarks.length
         ? (

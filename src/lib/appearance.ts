@@ -33,6 +33,7 @@ const COLOR_THEMES: ColorTheme[] = [
   'dawn',
   'berry',
   'kami',
+  'engraving',
 ]
 const BACKGROUND_STYLES: BackgroundStyle[] = ['flat', 'subtle', 'panel']
 
@@ -94,6 +95,21 @@ export const cardStyleClass: Record<CardStyle, string> = {
   outline: 'border border-border/80 bg-card hover:border-foreground/20 hover:bg-accent/30 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200',
   plain: 'bg-card hover:bg-accent/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200',
 }
+
+// Shared by ordinary bookmarks and bookmark groups.
+export const cardContainerClass = 'group relative overflow-hidden [content-visibility:auto] transition-[background-color,border-color,box-shadow,transform] duration-200 focus-within:ring-2 focus-within:ring-ring/30'
+export const cardSizeClass = {
+  grid: 'min-h-[108px] [contain-intrinsic-size:108px]',
+  compact: 'min-h-[68px] [contain-intrinsic-size:68px]',
+}
+export const cardContentClass = {
+  grid: 'min-h-[108px] gap-4 px-4 py-4',
+  compact: 'min-h-[68px] gap-3 px-3.5 py-2.5',
+}
+export const cardTitleClass = 'text-[14.5px] font-medium leading-snug tracking-[-0.01em] text-foreground group-hover:text-primary transition-colors'
+export const cardActionsClass = 'absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-lg border border-border/50 bg-card/90 p-0.5 shadow-xs backdrop-blur-xs opacity-70 transition-all duration-150'
+export const cardActionsHoverClass = 'sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100'
+export const cardActionButtonClass = 'flex size-6 items-center justify-center rounded-md text-muted-foreground/80 transition-colors hover:bg-accent hover:text-foreground active:scale-[0.94] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50'
 
 export const backgroundStyleClass: Record<BackgroundStyle, string> = {
   flat: 'bg-background',
@@ -171,6 +187,26 @@ export const accentColorVars: Record<AccentColor, Record<string, string>> = {
   },
 }
 
+const engravingPalette: Record<string, string> = {
+  '--background': '216 75% 26%',
+  '--foreground': '43 75% 90%',
+  '--card': '216 68% 29%',
+  '--card-foreground': '43 75% 90%',
+  '--popover': '216 72% 23%',
+  '--popover-foreground': '43 75% 90%',
+  '--primary': '43 75% 88%',
+  '--primary-foreground': '216 75% 22%',
+  '--secondary': '216 60% 33%',
+  '--secondary-foreground': '43 75% 90%',
+  '--muted': '216 60% 31%',
+  '--muted-foreground': '43 38% 78%',
+  '--accent': '216 57% 36%',
+  '--accent-foreground': '43 75% 90%',
+  '--border': '214 38% 55%',
+  '--input': '214 40% 60%',
+  '--ring': '43 75% 80%',
+}
+
 export const colorThemeVars: Record<
   Exclude<ColorTheme, 'default'>,
   {
@@ -178,6 +214,7 @@ export const colorThemeVars: Record<
     dark: Record<string, string>
   }
 > = {
+  engraving: { light: engravingPalette, dark: engravingPalette },
   graphite: {
     light: {
       '--background': '210 20% 98%',

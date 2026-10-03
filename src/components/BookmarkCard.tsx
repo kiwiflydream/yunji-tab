@@ -11,8 +11,9 @@ import {
   Star,
   Trash2,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useMovePending } from '~/components/BookmarkDragDropContext'
+import { BookmarkIcon } from '~/components/BookmarkIcon'
 import { Badge } from '~/components/ui/badge'
 import { Checkbox } from '~/components/ui/checkbox'
 import {
@@ -23,9 +24,15 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 import {
+  cardActionButtonClass,
+  cardActionsClass,
+  cardActionsHoverClass,
+  cardContainerClass,
+  cardContentClass,
+  cardSizeClass,
   cardStyleClass,
+  cardTitleClass,
   descriptionLineClass,
-  iconSizeClass,
   radiusClass,
   titleLineClass,
 } from '~/lib/appearance'
@@ -35,8 +42,6 @@ import {
   readDragItemData,
   validateBookmarkDrop,
 } from '~/lib/drag-drop'
-import { loadFavicon } from '~/lib/favicon-cache'
-import { observeSharedIntersection } from '~/lib/shared-intersection-observer'
 import { useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
 import { cn } from '~/lib/utils'
@@ -143,13 +148,9 @@ export function BookmarkCard({
     = activeDragItem?.type === 'bookmark'
       ? getBookmarkDropPlacement(activeDragItem, reorderTarget)
       : null
-  const [iconSrc, setIconSrc] = useState('')
-  const [iconError, setIconError] = useState(false)
-  const [shouldLoadIcon, setShouldLoadIcon] = useState(false)
   const [opening, setOpening] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
-  const customIconUrl = /^https?:\/\//i.test(bookmark.icon ?? '')
   const fields = appearance.cardFields
   const showDescription = fields.description && Boolean(bookmark.description)
   const showTags
@@ -159,51 +160,8 @@ export function BookmarkCard({
       && Boolean(categoryPath)
       && Boolean(onOpenCategory)
       && !selectionMode
-  const iconClasses = iconSizeClass[appearance.iconSize]
   const visibleTags = bookmark.tags?.slice(0, fields.maxVisibleTags) ?? []
   const host = displayHost(bookmark.url)
-
-  useEffect(() => {
-    if (bookmark.icon && !customIconUrl)
-      return
-    const node = cardRef.current
-    if (!node) {
-      setShouldLoadIcon(true)
-      return
-    }
-
-    return observeSharedIntersection(node, () => {
-      setShouldLoadIcon(true)
-    })
-  }, [bookmark.icon, customIconUrl])
-
-  useEffect(() => {
-    if (!shouldLoadIcon || (bookmark.icon && !customIconUrl))
-      return
-
-    let active = true
-    let objectUrl = ''
-    setIconSrc('')
-    setIconError(false)
-
-    void loadFavicon(bookmark.url, customIconUrl ? bookmark.icon : undefined)
-      .then((icon) => {
-        if (!active)
-          return
-        objectUrl = URL.createObjectURL(icon)
-        setIconSrc(objectUrl)
-      })
-      .catch(() => {
-        if (active)
-          setIconError(true)
-      })
-
-    return () => {
-      active = false
-      if (objectUrl)
-        URL.revokeObjectURL(objectUrl)
-    }
-  }, [bookmark.icon, bookmark.url, customIconUrl, shouldLoadIcon])
 
   const handleDelete = async () => {
     setDeleting(true)
@@ -264,12 +222,10 @@ export function BookmarkCard({
     <article
       ref={setNodeRef}
       className={cn(
-        'group relative overflow-hidden [content-visibility:auto] transition-[background-color,border-color,box-shadow,transform] duration-200 focus-within:ring-2 focus-within:ring-ring/30',
+        cardContainerClass,
         cardStyleClass[appearance.cardStyle],
         radiusClass[appearance.radius],
-        compact
-          ? 'min-h-[68px] [contain-intrinsic-size:68px]'
-          : 'min-h-[108px] [contain-intrinsic-size:108px]',
+        compact ? cardSizeClass.compact : cardSizeClass.grid,
         isDragging && 'opacity-35',
         selected && 'ring-2 ring-ring',
         isReorderTarget
@@ -305,9 +261,7 @@ export function BookmarkCard({
         aria-busy={opening}
         className={cn(
           'flex items-center focus-visible:outline-none',
-          compact
-            ? 'min-h-[68px] gap-3 px-3.5 py-2.5'
-            : 'min-h-[108px] gap-4 px-4 py-4',
+          compact ? cardContentClass.compact : cardContentClass.grid,
           !selectionMode
           && !movePending
           && 'cursor-grab active:cursor-grabbing',
@@ -315,41 +269,12 @@ export function BookmarkCard({
           showCategoryPath && 'pb-9',
         )}
       >
-        {/* 图标：自定义 emoji 优先，其次 favicon，失败回退首字母 */}
-        <div
-          className={cn(
-            'flex shrink-0 items-center justify-center overflow-hidden bg-gradient-to-b from-secondary/85 to-secondary/40 text-foreground ring-1 ring-border/45 shadow-xs group-hover:ring-border/65 transition-all',
-            compact ? iconClasses.compact : iconClasses.grid,
-          )}
-        >
-          {bookmark.icon && !customIconUrl
-            ? (
-                <span>{bookmark.icon}</span>
-              )
-            : iconError
-              ? (
-                  <span className="text-xs font-semibold tracking-wider text-muted-foreground/90">
-                    {bookmark.name.slice(0, 1).toUpperCase()}
-                  </span>
-                )
-              : iconSrc
-                ? (
-                    <img
-                      src={iconSrc}
-                      alt=""
-                      className={`${compact ? iconClasses.imageCompact : iconClasses.imageGrid} object-contain`}
-                      onError={() => setIconError(true)}
-                    />
-                  )
-                : (
-                    <span className="size-7 animate-pulse rounded-lg bg-muted/60" />
-                  )}
-        </div>
+        <BookmarkIcon icon={bookmark.icon} url={bookmark.url} name={bookmark.name} appearance={appearance} compact={compact} />
 
         <div className="min-w-0 flex-1 pr-9">
           <div
             className={cn(
-              'text-[14.5px] font-medium leading-snug tracking-[-0.01em] text-foreground group-hover:text-primary transition-colors',
+              cardTitleClass,
               titleLineClass[fields.titleLines],
             )}
           >
@@ -407,9 +332,9 @@ export function BookmarkCard({
         ? (
             <div
               className={cn(
-                'absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-lg border border-border/50 bg-card/90 p-0.5 shadow-xs backdrop-blur-xs opacity-70 transition-all duration-150',
+                cardActionsClass,
                 fields.actions === 'hover'
-                && 'sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100',
+                && cardActionsHoverClass,
               )}
             >
               <button
@@ -420,7 +345,7 @@ export function BookmarkCard({
                 })}
                 title={bookmark.pinnedAt ? t('unpin') : t('pinBookmark')}
                 className={cn(
-                  'flex size-6 items-center justify-center rounded-md text-muted-foreground/80 transition-colors hover:bg-accent hover:text-foreground active:scale-[0.94] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25',
+                  cardActionButtonClass,
                   bookmark.pinnedAt && 'text-foreground font-semibold',
                 )}
               >
@@ -447,7 +372,7 @@ export function BookmarkCard({
                     type="button"
                     aria-label={t('moreActionsFor', { name: bookmark.name })}
                     title={deleteError || t('moreActions')}
-                    className="flex size-6 items-center justify-center rounded-md text-muted-foreground/80 transition-colors hover:bg-accent hover:text-foreground active:scale-[0.94] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25"
+                    className={cardActionButtonClass}
                   >
                     <MoreHorizontal className="h-3.5 w-3.5" />
                   </button>

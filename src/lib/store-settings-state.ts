@@ -37,6 +37,7 @@ export type AppearanceSettingsPatch = Partial<
 }
 
 export interface SettingsSlice {
+  setBookmarkGroupsEnabled: (enabled: boolean) => Promise<void>
   setLanguage: (language: Language) => Promise<void>
   addCustomSearchEngine: (engine: Omit<SearchEngine, 'id'>) => Promise<void>
   updateCustomSearchEngine: (
@@ -76,6 +77,7 @@ export interface SettingsSlice {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  bookmarkGroupsEnabled: true,
   language: getBrowserLanguage(),
   theme: 'system',
   defaultCategoryId: 'all',
@@ -112,6 +114,7 @@ export function normalizeSettings(settings?: Partial<Settings>): Settings {
     settings?.customSearchEngines,
   )
   return {
+    bookmarkGroupsEnabled: settings?.bookmarkGroupsEnabled !== false,
     language: isLanguage(settings?.language)
       ? settings.language
       : DEFAULT_SETTINGS.language,

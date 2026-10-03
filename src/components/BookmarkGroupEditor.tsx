@@ -18,6 +18,7 @@ export function BookmarkGroupEditor({ group, onClose }: { group?: BookmarkGroup,
   const [id] = useState(() => group?.id ?? crypto.randomUUID())
   const [title, setTitle] = useState(group?.title ?? '')
   const [description, setDescription] = useState(group?.description ?? '')
+  const [icon, setIcon] = useState(group?.icon ?? '')
   const [members, setMembers] = useState<BookmarkGroupMember[]>(group?.bookmarks ?? [])
   const [search, setSearch] = useState('')
   const query = useDeferredValue(search.trim().toLocaleLowerCase())
@@ -56,6 +57,7 @@ export function BookmarkGroupEditor({ group, onClose }: { group?: BookmarkGroup,
       await save(id, {
         ...(!group || title !== group.title ? { title } : {}),
         ...(!group || description !== group.description ? { description } : {}),
+        ...(!group || icon !== (group.icon ?? '') ? { icon } : {}),
         ...(!group || JSON.stringify(members) !== JSON.stringify(group.bookmarks)
           ? { bookmarks: members.map((member) => {
               const sourceId = sourceIds.current.get(member.url)
@@ -103,6 +105,10 @@ export function BookmarkGroupEditor({ group, onClose }: { group?: BookmarkGroup,
             <div className="space-y-1.5">
               <label htmlFor="bookmark-group-description" className="text-sm font-medium">{t('groupDescription')}</label>
               <textarea id="bookmark-group-description" value={description} onChange={event => setDescription(event.target.value)} rows={2} className="flex w-full resize-y rounded-lg border border-input bg-card px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25" />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="bookmark-group-icon" className="text-sm font-medium">{t('optionalIcon')}</label>
+              <Input id="bookmark-group-icon" value={icon} onChange={event => setIcon(event.target.value)} placeholder={t('iconPlaceholder')} />
             </div>
             <section className="space-y-2" aria-label={t('groupSelectedCount', { count: members.length })}>
               <h3 className="text-sm font-medium">{t('groupSelectedCount', { count: members.length })}</h3>

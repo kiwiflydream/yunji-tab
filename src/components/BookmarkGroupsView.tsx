@@ -1,51 +1,122 @@
-import type { BookmarkGroup, BookmarkGroupMember } from '~/lib/bookmark-groups'
-import { ArrowLeft, ArrowUpRight, Layers, Loader2, Pencil, Plus, Star, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import type { MouseEvent, PointerEvent, ReactNode } from 'react'
+import type { BookmarkGroupMenuAnchor } from '~/components/BookmarkGroupMenu'
+import type { BookmarkGroup } from '~/lib/bookmark-groups'
+import { Loader2, Plus } from 'lucide-react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import { BookmarkGroupCard } from '~/components/BookmarkGroupCard'
 import { BookmarkGroupEditor } from '~/components/BookmarkGroupEditor'
+import { BookmarkGroupMenu } from '~/components/BookmarkGroupMenu'
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '~/components/ui/alert-dialog'
 import { Button } from '~/components/ui/button'
-import { resolveGroupBookmark } from '~/lib/bookmark-groups'
+import { gridClassByMode } from '~/lib/appearance'
 import { useBookmarkGroupsStore } from '~/lib/bookmark-groups-store'
-import { openBookmarkUrl } from '~/lib/bookmark-urls'
-import { useBookmarks, useNavStore } from '~/lib/store'
+import { useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
 
-export function BookmarkGroupsView({ pinnedOnly = false }: { pinnedOnly?: boolean }) {
+interface BookmarkGroupsViewProps {
+  pinnedOnly?: boolean
+  renderCards?: (cards: ReactNode, count: number) => ReactNode
+}
+
+export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: BookmarkGroupsViewProps) {
   const { t } = useI18n()
+  const enabled = useNavStore(state => state.settings.bookmarkGroupsEnabled)
+  const appearance = useNavStore(state => state.settings.appearance)
+  const compact = useNavStore(state => state.settings.bookmarkViewMode === 'compact')
+  const searchQuery = useDeferredValue(useNavStore(state => state.bookmarkSearchQuery))
   const allGroups = useBookmarkGroupsStore(state => state.groups)
   const groups = useMemo(() => allGroups
-    .filter(group => !pinnedOnly || group.pinnedAt)
-    .toSorted((left, right) => (right.pinnedAt ?? 0) - (left.pinnedAt ?? 0) || left.title.localeCompare(right.title)), [allGroups, pinnedOnly])
+    .filter(group => enabled && (!pinnedOnly || group.pinnedAt))
+    .toSorted((left, right) => (right.pinnedAt ?? 0) - (left.pinnedAt ?? 0) || left.title.localeCompare(right.title)), [allGroups, enabled, pinnedOnly])
+  const cardGroups = useMemo(() => {
+    const query = renderCards ? searchQuery.trim().toLocaleLowerCase() : ''
+    return query
+      ? groups.filter(group => [group.title, group.description, ...group.bookmarks.map(member => member.title)].some(value => value?.toLocaleLowerCase().includes(query)))
+      : groups
+  }, [groups, renderCards, searchQuery])
   const save = useBookmarkGroupsStore(state => state.save)
   const loadError = useBookmarkGroupsStore(state => state.error)
   const remove = useBookmarkGroupsStore(state => state.remove)
-  const bookmarks = useBookmarks()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [menu, setMenu] = useState<BookmarkGroupMenuAnchor | null>(null)
+  const menuRef = useRef(menu)
+  menuRef.current = menu
+  const dismissedTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const clearTimers = () => {
+    if (openTimerRef.current !== null)
+      clearTimeout(openTimerRef.current)
+    if (closeTimerRef.current !== null)
+      clearTimeout(closeTimerRef.current)
+    openTimerRef.current = null
+    closeTimerRef.current = null
+  }
+  useEffect(() => clearTimers, [])
+  const closeMenu = () => {
+    dismissedTriggerRef.current = menu?.trigger ?? null
+    clearTimers()
+    setMenu(null)
+  }
+  const keepMenuOpen = () => {
+    clearTimers()
+  }
+  const leaveGroup = (groupId?: string) => {
+    if (groupId && dismissedTriggerRef.current?.closest('[data-bookmark-group-id]')?.getAttribute('data-bookmark-group-id') === groupId)
+      dismissedTriggerRef.current = null
+    clearTimers()
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null
+      setMenu(current => current?.hover && !document.getElementById(`bookmark-group-menu-${current.id}`)?.contains(document.activeElement) ? null : current)
+    }, 200)
+  }
   const [editor, setEditor] = useState<{ group?: BookmarkGroup } | null>(null)
   const [deleting, setDeleting] = useState<BookmarkGroup | null>(null)
   const [pinning, setPinning] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [opening, setOpening] = useState<string | null>(null)
   const [error, setError] = useState<'groupSaveFailed' | 'groupOpenFailed' | null>(null)
-  const selected = groups.find(group => group.id === selectedId)
-  const Heading = pinnedOnly ? 'h2' : 'h1'
-  const bookmarkMap = useMemo(() => new Map(bookmarks.map(bookmark => [bookmark.url, bookmark])), [bookmarks])
-  const openMember = async (member: BookmarkGroupMember) => {
-    const bookmark = resolveGroupBookmark(member, useNavStore.getState().bookmarks)
-    if (!bookmark)
-      return
-    setOpening(member.url)
+  const menuGroup = cardGroups.find(group => group.id === menu?.id)
+  // Drop an anchor whose group was removed, unpinned or filtered out by a live update.
+  if (menu && !menuGroup)
+    setMenu(null)
+
+  const openGroup = (group: BookmarkGroup, event: MouseEvent<HTMLButtonElement>) => {
+    clearTimers()
+    const trigger = event.currentTarget
+    if (menu?.id === group.id && !menu.hover)
+      dismissedTriggerRef.current = trigger
+    const keyboard = event.detail === 0
+    const bounds = trigger.getBoundingClientRect()
+    setMenu(current => current?.id === group.id && !current.hover
+      ? null
+      : {
+          id: group.id,
+          x: keyboard ? bounds.left : event.clientX,
+          y: keyboard ? bounds.bottom : event.clientY,
+          trigger,
+          keyboard,
+          hover: false,
+        })
     setError(null)
-    try {
-      await openBookmarkUrl(bookmark)
-      await useNavStore.getState().recordBookmarkOpen(bookmark.url)
+  }
+  const hoverGroup = (group: BookmarkGroup, event: PointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType !== 'mouse' || !window.matchMedia('(hover: hover) and (pointer: fine)').matches || editor || deleting)
+      return
+    if (dismissedTriggerRef.current === event.currentTarget) {
+      if (event.type === 'pointerenter' && event.relatedTarget instanceof Element && !event.relatedTarget.closest('.bookmark-group-menu'))
+        dismissedTriggerRef.current = null
+      else
+        return
     }
-    catch {
-      setError('groupOpenFailed')
-    }
-    finally {
-      setOpening(null)
-    }
+    clearTimers()
+    if (menu?.id === group.id)
+      return
+    const trigger = event.currentTarget
+    const { clientX: x, clientY: y } = event
+    openTimerRef.current = setTimeout(() => {
+      openTimerRef.current = null
+      if (trigger.isConnected && trigger.matches(':hover'))
+        setMenu({ id: group.id, x, y, trigger, keyboard: false, hover: true })
+    }, 200)
   }
   const togglePinned = async (group: BookmarkGroup) => {
     setPinning(group.id)
@@ -60,19 +131,6 @@ export function BookmarkGroupsView({ pinnedOnly = false }: { pinnedOnly?: boolea
       setPinning(null)
     }
   }
-  const pinButton = (group: BookmarkGroup) => (
-    <Button
-      variant="ghost"
-      size="icon"
-      disabled={pinning !== null}
-      aria-pressed={Boolean(group.pinnedAt)}
-      aria-label={t(group.pinnedAt ? 'unpinNamed' : 'pinNamed', { name: group.title })}
-      title={t(group.pinnedAt ? 'unpinNamed' : 'pinNamed', { name: group.title })}
-      onClick={() => void togglePinned(group)}
-    >
-      {pinning === group.id ? <Loader2 className="animate-spin" /> : <Star fill={group.pinnedAt ? 'currentColor' : 'none'} />}
-    </Button>
-  )
   const deleteGroup = async () => {
     if (!deleting)
       return
@@ -81,7 +139,7 @@ export function BookmarkGroupsView({ pinnedOnly = false }: { pinnedOnly?: boolea
     try {
       await remove(deleting.id)
       setDeleting(null)
-      setSelectedId(null)
+      setMenu(null)
     }
     catch {
       setError('groupSaveFailed')
@@ -90,37 +148,68 @@ export function BookmarkGroupsView({ pinnedOnly = false }: { pinnedOnly?: boolea
       setBusy(false)
     }
   }
-  if (pinnedOnly && !groups.length && !error && !editor && !deleting)
+  const cards = (
+    <>
+      {cardGroups.map(group => (
+        <BookmarkGroupCard
+          key={group.id}
+          group={group}
+          appearance={appearance}
+          compact={compact}
+          pinning={pinning}
+          expanded={menuGroup?.id === group.id}
+          onOpen={event => openGroup(group, event)}
+          onHover={event => hoverGroup(group, event)}
+          onLeave={() => leaveGroup(group.id)}
+          onActionsEnter={() => {
+            clearTimers()
+            setMenu(current => current?.hover ? null : current)
+          }}
+          onPin={() => {
+            closeMenu()
+            void togglePinned(group)
+          }}
+          onEdit={() => {
+            closeMenu()
+            setEditor({ group })
+          }}
+          onDelete={() => {
+            closeMenu()
+            setDeleting(group)
+            setError(null)
+          }}
+        />
+      ))}
+    </>
+  )
+  if (pinnedOnly && !renderCards && !groups.length && !error && !editor && !deleting)
     return null
 
   return (
-    <section className={pinnedOnly ? 'mb-6 space-y-5' : 'space-y-5'} aria-label={t('bookmarkGroups')}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          {selected
-            ? (
-                <Button variant="ghost" size="sm" className="mb-3 -ml-3" onClick={() => setSelectedId(null)}>
-                  <ArrowLeft />
-                  {t('backToGroups')}
-                </Button>
-              )
-            : null}
-          <Heading className="break-words text-xl font-semibold">{selected?.title ?? t('bookmarkGroups')}</Heading>
-          <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">{selected?.description || t('bookmarkGroupsHint')}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {selected ? pinButton(selected) : null}
-          {selected || !pinnedOnly
-            ? (
-                <Button onClick={() => setEditor(selected ? { group: selected } : {})}>
-                  {selected ? <Pencil /> : <Plus />}
-                  {t(selected ? 'editBookmarkGroup' : 'createBookmarkGroup')}
-                </Button>
-              )
-            : null}
-        </div>
-      </div>
-      {loadError
+    <section className="space-y-5" aria-label={renderCards ? undefined : t('bookmarkGroups')}>
+      {enabled && !renderCards
+        ? (
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h1 className="break-words text-xl font-semibold">{t('bookmarkGroups')}</h1>
+                <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">{t('bookmarkGroupsHint')}</p>
+              </div>
+              {!pinnedOnly
+                ? (
+                    <Button onClick={() => {
+                      closeMenu()
+                      setEditor({})
+                    }}
+                    >
+                      <Plus />
+                      {t('createBookmarkGroup')}
+                    </Button>
+                  )
+                : null}
+            </div>
+          )
+        : null}
+      {enabled && loadError
         ? (
             <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-red-700 dark:text-red-400">
               {t('groupLoadFailed')}
@@ -128,67 +217,16 @@ export function BookmarkGroupsView({ pinnedOnly = false }: { pinnedOnly?: boolea
             </div>
           )
         : null}
-      {error && !deleting ? <p role="alert" className="text-sm text-red-700 dark:text-red-400">{t(error)}</p> : null}
-      {selected
-        ? (
-            <ul className="divide-y divide-border/60 overflow-hidden rounded-xl border border-border/70 bg-card">
-              {selected.bookmarks.map((member) => {
-                const available = bookmarkMap.has(member.url)
-                return (
-                  <li key={member.url}>
-                    <button type="button" data-nav-item aria-label={t('openGroupBookmark', { name: member.title })} disabled={!available || opening !== null} onClick={() => void openMember(member)} className="flex w-full items-center gap-4 p-4 text-left transition-colors hover:bg-accent/50 active:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-50">
-                      <span className="min-w-0 flex-1">
-                        <span className="block break-words text-sm font-medium">{member.title}</span>
-                        <span className="mt-1 block break-all text-xs text-muted-foreground">{member.url}</span>
-                        {!available ? <span className="mt-1 block text-xs text-red-700 dark:text-red-400">{t('groupBookmarkMissing')}</span> : null}
-                      </span>
-                      {opening === member.url ? <Loader2 className="size-4 shrink-0 animate-spin" /> : <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" />}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          )
+      {enabled && error && !deleting ? <p role="alert" className="text-sm text-red-700 dark:text-red-400">{t(error)}</p> : null}
+      {renderCards
+        ? renderCards(cards, cardGroups.length)
         : (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {groups.map(group => (
-                <article key={group.id} className="group flex flex-col rounded-xl border border-border/70 bg-card">
-                  <button
-                    type="button"
-                    data-nav-item
-                    aria-label={t('viewNamedGroup', { name: group.title })}
-                    onClick={() => {
-                      setSelectedId(group.id)
-                      setError(null)
-                    }}
-                    className="flex flex-1 flex-col gap-3 rounded-xl p-4 text-left transition-colors hover:bg-accent/40 active:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <Layers className="size-5 text-muted-foreground" />
-                    <span className="break-words text-sm font-semibold">{group.title}</span>
-                    {group.description ? <span className="line-clamp-2 break-words text-sm leading-relaxed text-muted-foreground">{group.description}</span> : null}
-                    <span className="mt-auto text-xs text-muted-foreground">{t('bookmarkCount', { count: group.bookmarks.length })}</span>
-                  </button>
-                  <div className="flex justify-end gap-1 border-t border-border/40 px-2 py-1">
-                    {pinButton(group)}
-                    <Button variant="ghost" size="icon" aria-label={t('editNamedGroup', { name: group.title })} onClick={() => setEditor({ group })}><Pencil /></Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={t('deleteNamedGroup', { name: group.title })}
-                      onClick={() => {
-                        setDeleting(group)
-                        setError(null)
-                      }}
-                    >
-                      <Trash2 />
-                    </Button>
-                  </div>
-                </article>
-              ))}
+            <div className={gridClassByMode[appearance.gridDensity][compact ? 'compact' : 'grid']}>
+              {cards}
               {!groups.length && !loadError
                 ? (
                     <div className="col-span-full py-14 text-center">
-                      <Layers className="mx-auto mb-3 size-8 text-muted-foreground/60" />
+                      <span aria-hidden="true" className="mb-3 block text-3xl">🗂️</span>
                       <h2 className="text-sm font-medium">{t('noBookmarkGroups')}</h2>
                       <p className="mt-2 text-sm text-muted-foreground">{t('bookmarkGroupsHint')}</p>
                     </div>
@@ -196,6 +234,25 @@ export function BookmarkGroupsView({ pinnedOnly = false }: { pinnedOnly?: boolea
                 : null}
             </div>
           )}
+      {menu && menuGroup
+        ? (
+            <BookmarkGroupMenu
+              key={`${menu.id}-${menu.hover ? 'hover' : 'explicit'}`}
+              group={menuGroup}
+              anchor={menu}
+              appearance={appearance}
+              onPointerEnter={keepMenuOpen}
+              onPointerLeave={() => leaveGroup()}
+              onClose={() => {
+                if (menuRef.current !== menu)
+                  return
+                dismissedTriggerRef.current = menu.trigger
+                clearTimers()
+                setMenu(current => current === menu ? null : current)
+              }}
+            />
+          )
+        : null}
       {editor ? <BookmarkGroupEditor key={editor.group?.id ?? 'new'} group={editor.group} onClose={() => setEditor(null)} /> : null}
       <AlertDialog
         open={Boolean(deleting)}

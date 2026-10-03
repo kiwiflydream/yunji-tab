@@ -218,3 +218,112 @@ html.theme-kami .sm\:rounded-lg {
 html.theme-kami img {
   filter: grayscale(1) contrast(0.9);
 }
+
+/* Blue Engraving: a static two-ink print, scoped to the selected preset. */
+html.theme-engraving,
+html.theme-engraving body {
+  font-family:
+    Baskerville, "Palatino Linotype", "Book Antiqua", "Songti SC",
+    "Noto Serif CJK SC", "Noto Serif CJK JP", "Noto Serif CJK KR", Georgia, serif;
+}
+
+html.theme-engraving .newtab-shell {
+  display: flex;
+  flex-direction: column;
+  background-color: hsl(var(--background));
+  background-image: url("../assets/themes/engraving-grain.svg");
+}
+
+html.theme-engraving .workspace-layout {
+  flex: 1;
+  min-width: 0;
+}
+
+html.theme-engraving header {
+  background-color: hsl(var(--background) / 0.96);
+  backdrop-filter: none;
+}
+
+html.theme-engraving header h1 {
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+html.theme-engraving .workspace-layout > aside {
+  min-width: 0;
+  background-color: transparent;
+}
+
+html.theme-engraving article,
+html.theme-engraving .surface-panel,
+html.theme-engraving .glass-panel {
+  border-radius: var(--radius);
+  border-color: hsl(var(--border) / 0.7);
+  box-shadow: none !important;
+  backdrop-filter: none;
+}
+
+html.theme-engraving article {
+  background-color: hsl(var(--card) / 0.9);
+}
+
+html.theme-engraving article:hover {
+  background-color: hsl(var(--accent) / 0.7);
+}
+
+html.theme-engraving [role="dialog"],
+html.theme-engraving [role="alertdialog"],
+html.theme-engraving [role="menu"] {
+  box-shadow: 0 16px 48px hsl(216 75% 12% / 0.3);
+}
+
+.engraving-landscape {
+  pointer-events: none;
+  flex: none;
+  overflow: hidden;
+  height: clamp(180px, 28vh, 280px);
+}
+
+.engraving-landscape img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 70%;
+}
+
+@media (min-width: 1024px) {
+  html.theme-engraving .workspace-layout[data-nav-layout="sidebar"] > aside {
+    height: auto;
+    max-height: calc(100dvh - 4.5rem);
+    align-self: start;
+    overflow-y: auto;
+  }
+}
+
+/* Group link menus reuse the shared menu surface, with a brief pointer-only entrance. */
+html.theme-engraving .bookmark-group-menu {
+  background-color: hsl(var(--card));
+}
+
+.bookmark-group-menu[data-state] {
+  --tw-enter-opacity: 0;
+  --tw-enter-scale: 1;
+  --tw-enter-translate-x: 0;
+  --tw-enter-translate-y: 2px;
+  animation-duration: 120ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bookmark-group-menu[data-keyboard],
+.bookmark-group-menu[data-keyboard] * {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bookmark-group-menu,
+  .bookmark-group-menu * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

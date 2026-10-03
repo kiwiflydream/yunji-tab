@@ -3,7 +3,7 @@ import type { CategoryTreeNode } from '~/lib/category-tree'
 import type { Category } from '~/lib/types'
 import { useDraggable } from '@dnd-kit/core'
 
-import { ChevronRight, GripVertical, Layers, Pencil } from 'lucide-react'
+import { ChevronRight, GripVertical, Pencil } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useMovePending } from '~/components/BookmarkDragDropContext'
 import { Button } from '~/components/ui/button'
@@ -25,6 +25,7 @@ import { cn } from '~/lib/utils'
 const MAX_TREE_INDENT_DEPTH = 3
 
 interface CategoryTabProps {
+  accessibleName?: string
   category: Category
   active: boolean
   count: number
@@ -36,6 +37,7 @@ interface CategoryTabProps {
 }
 
 function CategoryTab({
+  accessibleName,
   category,
   active,
   count,
@@ -98,6 +100,7 @@ function CategoryTab({
       {leadingControl}
       <button
         type="button"
+        aria-label={accessibleName}
         onClick={() => onSelect(category.id)}
         aria-pressed={active}
         className={cn(
@@ -274,6 +277,7 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
   const activeId = useNavStore(s => s.activeCategoryId)
   const setActiveCategory = useNavStore(s => s.setActiveCategory)
   const groupCount = useBookmarkGroupsStore(state => state.groups.length)
+  const groupsEnabled = useNavStore(state => state.settings.bookmarkGroupsEnabled)
   const pinnedGroupCount = useBookmarkGroupsStore(state => state.groups.filter(group => group.pinnedAt).length)
   const setActive = (id: string) => {
     onSelectCategory?.()
@@ -349,7 +353,7 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
     if (id === 'inbox')
       return smartCounts.inbox
     if (id === 'pinned')
-      return smartCounts.pinned + pinnedGroupCount
+      return smartCounts.pinned + (groupsEnabled ? pinnedGroupCount : 0)
     if (id === 'untagged')
       return smartCounts.untagged
     if (id === 'undescribed')
@@ -419,6 +423,21 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
   const smartCategoriesCollapsible
     = navLayout === 'sidebar' && smartCategoryItems.length > 1
 
+  const groupEntry = groupsEnabled && onSelectGroups
+    ? (
+        <CategoryTab
+          category={{ id: 'bookmark-groups', name: t('bookmarkGroups'), emoji: '🗂️', parentId: 'all', modifiable: false }}
+          accessibleName={t('bookmarkGroups')}
+          active={Boolean(groupsActive)}
+          count={groupCount}
+          fullWidth={navLayout === 'sidebar'}
+          showCount={appearance.navItems.counts}
+          onSelect={onSelectGroups}
+          onEdit={onEditCategory}
+        />
+      )
+    : null
+
   return (
     <nav
       aria-label={t('bookmarkCategories')}
@@ -429,15 +448,6 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
           : 'lg:overflow-x-auto',
       )}
     >
-      {onSelectGroups
-        ? (
-            <Button variant="ghost" size="sm" aria-pressed={Boolean(groupsActive)} onClick={onSelectGroups} className={cn('shrink-0 justify-start gap-2', navLayout === 'sidebar' && 'lg:w-full', groupsActive && 'bg-accent text-accent-foreground')}>
-              <Layers />
-              {t('bookmarkGroups')}
-              {appearance.navItems.counts ? <span className="ml-auto text-xs tabular-nums opacity-60">{groupCount}</span> : null}
-            </Button>
-          )
-        : null}
       {smartCategoriesCollapsible
         ? (
             <>
@@ -475,10 +485,16 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
               {!smartCategoriesOpen && activeSmartCategory
                 ? renderCategory(activeSmartCategory)
                 : null}
+              {groupEntry}
               {visibleSavedCategories.map(renderCategory)}
             </>
           )
-        : utilityCategories.map(renderCategory)}
+        : (
+            <>
+              {utilityCategories.map(renderCategory)}
+              {groupEntry}
+            </>
+          )}
       {treeEnabled
         ? (
             <ul className="contents lg:flex lg:w-full lg:flex-col lg:gap-1">

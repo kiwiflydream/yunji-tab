@@ -126,6 +126,24 @@ describe('navigation store boundaries', () => {
     })
   })
 
+  it('preserves the group toggle when another setting changes during its pending save', async () => {
+    const pending: Array<() => void> = []
+    storageState.setHook = () => new Promise<void>((resolve) => {
+      pending.push(resolve)
+    })
+    const disable = useNavStore.getState().setBookmarkGroupsEnabled(false)
+    const language = useNavStore.getState().setLanguage('en')
+    expect(pending).toHaveLength(2)
+    pending[0]()
+    await disable
+    pending[1]()
+    await language
+
+    expect(useNavStore.getState().settings).toMatchObject({ bookmarkGroupsEnabled: false, language: 'en' })
+    expect(storageState.values.get('sync:yunji-tab:settings')).toMatchObject({ bookmarkGroupsEnabled: false, language: 'en' })
+    expect(storageState.writes.map(write => (write.value as { bookmarkGroupsEnabled: boolean }).bookmarkGroupsEnabled)).toEqual([false, false])
+  })
+
   it('updates and persists settings through the sync storage boundary', async () => {
     await useNavStore.getState().setTheme('dark')
 

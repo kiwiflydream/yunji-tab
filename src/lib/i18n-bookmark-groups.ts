@@ -2,6 +2,7 @@ import type { Language } from './types'
 
 const zhCN = {
   bookmarkGroups: '书签组',
+  bookmarkGroupsEnabledHint: '显示书签组入口和置顶组；关闭后保留已有书签组。',
   createBookmarkGroup: '创建书签组',
   editBookmarkGroup: '编辑书签组',
   groupTitle: '组标题',
@@ -39,6 +40,7 @@ export const bookmarkGroupMessages: Record<Language, GroupMessages> = {
   'zh-CN': zhCN,
   'zh-TW': {
     bookmarkGroups: '書籤組',
+    bookmarkGroupsEnabledHint: '顯示書籤組入口和置頂群組；關閉後保留已有書籤組。',
     createBookmarkGroup: '建立書籤組',
     editBookmarkGroup: '編輯書籤組',
     groupTitle: '群組標題',
@@ -71,6 +73,7 @@ export const bookmarkGroupMessages: Record<Language, GroupMessages> = {
   },
   'en': {
     bookmarkGroups: 'Bookmark groups',
+    bookmarkGroupsEnabledHint: 'Show the group entry and pinned groups. Turning this off keeps your saved groups.',
     createBookmarkGroup: 'Create bookmark group',
     editBookmarkGroup: 'Edit bookmark group',
     groupTitle: 'Group title',
@@ -103,6 +106,7 @@ export const bookmarkGroupMessages: Record<Language, GroupMessages> = {
   },
   'ja': {
     bookmarkGroups: 'ブックマークグループ',
+    bookmarkGroupsEnabledHint: 'グループ入口とピン留めグループを表示します。オフにしても保存済みグループは残ります。',
     createBookmarkGroup: 'グループを作成',
     editBookmarkGroup: 'グループを編集',
     groupTitle: 'グループ名',
@@ -135,6 +139,7 @@ export const bookmarkGroupMessages: Record<Language, GroupMessages> = {
   },
   'ko': {
     bookmarkGroups: '북마크 그룹',
+    bookmarkGroupsEnabledHint: '그룹 메뉴와 고정 그룹을 표시합니다. 꺼도 저장된 그룹은 유지됩니다.',
     createBookmarkGroup: '북마크 그룹 만들기',
     editBookmarkGroup: '북마크 그룹 편집',
     groupTitle: '그룹 제목',
@@ -167,6 +172,7 @@ export const bookmarkGroupMessages: Record<Language, GroupMessages> = {
   },
   'es': {
     bookmarkGroups: 'Grupos de favoritos',
+    bookmarkGroupsEnabledHint: 'Muestra el acceso a grupos y los grupos fijados. Al desactivarlo se conservan los grupos guardados.',
     createBookmarkGroup: 'Crear grupo de favoritos',
     editBookmarkGroup: 'Editar grupo de favoritos',
     groupTitle: 'Título del grupo',
@@ -199,6 +205,7 @@ export const bookmarkGroupMessages: Record<Language, GroupMessages> = {
   },
   'fr': {
     bookmarkGroups: 'Groupes de favoris',
+    bookmarkGroupsEnabledHint: 'Affiche l’accès aux groupes et les groupes épinglés. Les groupes enregistrés sont conservés après désactivation.',
     createBookmarkGroup: 'Créer un groupe de favoris',
     editBookmarkGroup: 'Modifier le groupe',
     groupTitle: 'Titre du groupe',

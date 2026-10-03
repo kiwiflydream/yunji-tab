@@ -14,6 +14,7 @@ interface BookmarkGridToolbarProps {
   selectionMode: boolean
   visibleBookmarkCount: number
   visibleCategoryCount: number
+  additionalItemCount?: number
   onStartSelection: () => void
 }
 
@@ -24,6 +25,7 @@ export function BookmarkGridToolbar({
   selectionMode,
   visibleBookmarkCount,
   visibleCategoryCount,
+  additionalItemCount = 0,
   onStartSelection,
 }: BookmarkGridToolbarProps) {
   const { categoryName, t } = useI18n()
@@ -46,7 +48,7 @@ export function BookmarkGridToolbar({
     : activeCategory
       ? categoryName(activeCategory)
       : t('allBookmarks')
-  const itemCount = visibleBookmarkCount + visibleCategoryCount
+  const itemCount = visibleBookmarkCount + visibleCategoryCount + (selectionMode ? 0 : additionalItemCount)
 
   return (
     <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

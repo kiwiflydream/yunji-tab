@@ -208,6 +208,7 @@ export function parseYunjiTabBackup(raw: string): YunjiTabBackup {
     schemaVersion: BACKUP_SCHEMA_VERSION,
     exportedAt: typeof value.exportedAt === 'string' ? value.exportedAt : '',
     settings: {
+      bookmarkGroupsEnabled: settings.bookmarkGroupsEnabled !== false,
       language: isLanguage(settings.language)
         ? settings.language
         : getBrowserLanguage(),

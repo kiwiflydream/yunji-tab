@@ -60,7 +60,7 @@ export type CardStyle = 'soft' | 'outline' | 'plain'
 export type AppearanceSize = 'sm' | 'md' | 'lg'
 export type AccentColor = 'neutral' | 'blue' | 'green' | 'orange' | 'rose'
 export type ColorTheme
-  = 'default' | 'graphite' | 'meadow' | 'dawn' | 'berry' | 'kami'
+  = 'default' | 'graphite' | 'meadow' | 'dawn' | 'berry' | 'kami' | 'engraving'
 export type ActionVisibility = 'hover' | 'always'
 export type BackgroundStyle = 'flat' | 'subtle' | 'panel'
 export type TitleLineCount = 1 | 2
@@ -155,6 +155,7 @@ export interface AutoOrganizeRule {
 
 // 用户设置
 export interface Settings {
+  bookmarkGroupsEnabled: boolean
   /** 界面语言 */
   language: Language
   theme: ThemeMode

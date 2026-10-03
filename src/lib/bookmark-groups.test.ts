@@ -29,6 +29,31 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('bookmark groups', () => {
+  it('preserves custom group icons through sync, migration, pinning and restore', async () => {
+    await useBookmarkGroupsStore.getState().save(group.id, { ...group, icon: ' 🐱 ' }, true)
+    await useBookmarkGroupsStore.getState().save(group.id, { pinnedAt: 123 })
+    await useBookmarkGroupsStore.getState().migrateUrl('https://example.test', 'https://new.test')
+    useBookmarkGroupsStore.setState({ groups: [] })
+    await useBookmarkGroupsStore.getState().load()
+    expect(useBookmarkGroupsStore.getState().groups[0]).toMatchObject({ icon: '🐱', pinnedAt: 123 })
+    await useBookmarkGroupsStore.getState().save(group.id, { icon: 'https://example.test/logo.png' })
+    expect(decodeBookmarkGroups(values)[0].icon).toBe('https://example.test/logo.png')
+    await useBookmarkGroupsStore.getState().save(group.id, { icon: '' })
+    expect(decodeBookmarkGroups(values)[0].icon).toBeUndefined()
+    await useBookmarkGroupsStore.getState().restore([{ ...group, icon: '🛠️' }], 'merge')
+    expect(decodeBookmarkGroups(values)[0].icon).toBeUndefined()
+    await useBookmarkGroupsStore.getState().restore([{ ...group, icon: '🛠️' }], 'replace')
+    expect(decodeBookmarkGroups(values)[0].icon).toBe('🛠️')
+  })
+
+  it('retains a newer group icon when an old editor only changes another field', async () => {
+    values = encodeBookmarkGroup({ ...group, icon: '🚀' }, 'remote-icon')
+    useBookmarkGroupsStore.setState({ groups: [group] })
+    await useBookmarkGroupsStore.getState().save(group.id, { description: 'Edited description' })
+    expect(decodeBookmarkGroups(values)[0]).toMatchObject({ icon: '🚀', description: 'Edited description' })
+    expect(parseBookmarkGroup({ ...group, icon: 42 })?.icon).toBeUndefined()
+  })
+
   it('validates groups and preserves member aliases without modifying the source bookmark', () => {
     const bookmark = { id: 'bm-1', name: 'Original', url: 'https://example.test', categoryId: 'all' }
     expect(parseBookmarkGroup({ ...group, title: ' Work ' })).toEqual(group)

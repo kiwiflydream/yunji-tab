@@ -46,6 +46,8 @@ export function SettingsGeneralTab() {
     state => state.settings.defaultCategoryId,
   )
   const singleHomeTab = useNavStore(state => state.settings.singleHomeTab)
+  const groupsEnabled = useNavStore(state => state.settings.bookmarkGroupsEnabled)
+  const setGroupsEnabled = useNavStore(state => state.setBookmarkGroupsEnabled)
   const appearance = useNavStore(state => state.settings.appearance)
   const setDefaultCategory = useNavStore(state => state.setDefaultCategory)
   const setSingleHomeTab = useNavStore(state => state.setSingleHomeTab)
@@ -196,6 +198,16 @@ export function SettingsGeneralTab() {
             checked={singleHomeTab}
             onCheckedChange={value => void updateSingleHomeTab(value)}
           />
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-muted/35 p-4">
+        <div className="flex items-center justify-between gap-4">
+          <label htmlFor="bookmark-groups-enabled" className="min-w-0 cursor-pointer">
+            <span className="block text-sm font-semibold">{t('bookmarkGroups')}</span>
+            <span className="mt-1 block text-sm leading-5 text-muted-foreground">{t('bookmarkGroupsEnabledHint')}</span>
+          </label>
+          <Switch id="bookmark-groups-enabled" aria-label={t('bookmarkGroups')} checked={groupsEnabled} onCheckedChange={value => void setGroupsEnabled(value)} />
         </div>
       </section>
 

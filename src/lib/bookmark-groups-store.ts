@@ -156,7 +156,7 @@ export const useBookmarkGroupsStore = create<BookmarkGroupsState>((set, get) => 
         if (existing && strategy === 'skip')
           continue
         const next = existing && strategy === 'merge'
-          ? parseBookmarkGroup({ ...group, ...existing, pinnedAt: existing.pinnedAt ?? 0, bookmarks: [...existing.bookmarks, ...group.bookmarks.filter(member => !existing.bookmarks.some(current => current.id === member.id))] })!
+          ? parseBookmarkGroup({ ...group, ...existing, icon: existing.icon ?? '', pinnedAt: existing.pinnedAt ?? 0, bookmarks: [...existing.bookmarks, ...group.bookmarks.filter(member => !existing.bookmarks.some(current => current.id === member.id))] })!
           : group
         Object.assign(changes, encodeBookmarkGroup(next, crypto.randomUUID()))
       }

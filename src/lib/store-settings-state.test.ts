@@ -6,6 +6,12 @@ import {
 } from './store-settings-state'
 
 describe('store settings state', () => {
+  it('keeps groups enabled for legacy settings and preserves an explicit disable', () => {
+    expect(normalizeSettings().bookmarkGroupsEnabled).toBe(true)
+    expect(normalizeSettings({ bookmarkGroupsEnabled: true }).bookmarkGroupsEnabled).toBe(true)
+    expect(normalizeSettings({ bookmarkGroupsEnabled: false }).bookmarkGroupsEnabled).toBe(false)
+  })
+
   it('normalizes invalid persisted values to safe defaults', () => {
     const settings = normalizeSettings({
       language: 'invalid' as never,

@@ -11,6 +11,7 @@ import {
 import { DEFAULT_KEYBOARD_SHORTCUTS } from './keyboard-shortcuts'
 
 const settings: Settings = {
+  bookmarkGroupsEnabled: false,
   language: 'zh-CN',
   theme: 'system',
   defaultCategoryId: 'cat-docs',
@@ -58,7 +59,7 @@ describe('yunji tab backup', () => {
     const backup = createYunjiTabBackup({
       settings,
       categories,
-      bookmarkGroups: [{ id: 'tools', title: '工具', description: '日常使用', pinnedAt: 123, bookmarks: [{ id: 'docs', url: 'https://example.com', title: '组内文档' }] }],
+      bookmarkGroups: [{ id: 'tools', title: '工具', description: '日常使用', icon: '🛠️', pinnedAt: 123, bookmarks: [{ id: 'docs', url: 'https://example.com', title: '组内文档' }] }],
       meta: {
         'https://example.com': {
           description: 'Example',
@@ -91,9 +92,12 @@ describe('yunji tab backup', () => {
     ])
     expect(parsed.defaultCategoryPath).toEqual(['工作', '文档'])
     expect(parsed.settings.globalCommandPaletteEnabled).toBe(true)
+    expect(parsed.settings.bookmarkGroupsEnabled).toBe(false)
     expect(parsed.bookmarkGroups).toEqual(backup.bookmarkGroups)
-    const legacy = { ...backup }
+    const legacy = { ...backup, settings: { ...backup.settings } }
     delete legacy.bookmarkGroups
+    delete (legacy.settings as Partial<Settings>).bookmarkGroupsEnabled
+    expect(parseYunjiTabBackup(JSON.stringify(legacy)).settings.bookmarkGroupsEnabled).toBe(true)
     expect(parseYunjiTabBackup(JSON.stringify(legacy)).bookmarkGroups).toEqual([])
   })
 

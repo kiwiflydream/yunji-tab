@@ -11,6 +11,7 @@ export interface BookmarkGroup {
   id: string
   title: string
   description: string
+  icon?: string
   pinnedAt?: number
   bookmarks: BookmarkGroupMember[]
 }
@@ -51,6 +52,7 @@ export function parseBookmarkGroup(value: unknown): BookmarkGroup | undefined {
     id: candidate.id,
     title: candidate.title.trim(),
     description: candidate.description.trim(),
+    ...(typeof candidate.icon === 'string' && candidate.icon.trim() ? { icon: candidate.icon.trim() } : {}),
     ...(Number.isSafeInteger(candidate.pinnedAt) && candidate.pinnedAt! > 0 ? { pinnedAt: candidate.pinnedAt } : {}),
     bookmarks,
   }
