@@ -228,7 +228,7 @@ html.theme-engraving body {
 }
 
 /* Texture lives behind content on each ink surface, so opaque cards do not hide it. */
-html.theme-engraving :is(.newtab-shell, header, article, .group.border-dashed, .surface-panel, .glass-panel, [role="dialog"], [role="alertdialog"], [role="menu"]) {
+html.theme-engraving :is(.newtab-shell, header, .workspace-layout > aside, article, .group.border-dashed, .surface-panel, .glass-panel, [role="dialog"], [role="alertdialog"], [role="menu"]) {
   background-image: url("../assets/themes/engraving-grain.svg");
   background-repeat: repeat;
   background-size: 640px 640px;
@@ -237,10 +237,13 @@ html.theme-engraving :is(.newtab-shell, header, article, .group.border-dashed, .
 html.theme-engraving .newtab-shell {
   display: flex;
   flex-direction: column;
+  isolation: isolate;
   background-color: hsl(var(--background));
 }
 
 html.theme-engraving .workspace-layout {
+  position: relative;
+  z-index: 1;
   flex: 1;
   min-width: 0;
 }
@@ -278,7 +281,7 @@ html.theme-engraving :is(article, .group.border-dashed) p {
 
 html.theme-engraving .workspace-layout > aside {
   min-width: 0;
-  background-color: transparent;
+  background-color: hsl(var(--background) / 0.96);
 }
 
 html.theme-engraving article,
@@ -291,11 +294,12 @@ html.theme-engraving .glass-panel {
 }
 
 html.theme-engraving article {
-  background-color: hsl(var(--card) / 0.9);
+  background-color: hsl(var(--card) / 0.94);
 }
 
-html.theme-engraving article:hover {
-  background-color: hsl(var(--accent) / 0.7);
+html.theme-engraving article:hover,
+html.theme-engraving .group.border-dashed:hover {
+  background-color: hsl(var(--accent) / 0.94);
 }
 
 html.theme-engraving [role="dialog"],
@@ -305,8 +309,11 @@ html.theme-engraving [role="menu"] {
 }
 
 .engraving-landscape {
+  /* The print stays in the viewport while the workspace scrolls above it. */
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 0;
   pointer-events: none;
-  flex: none;
   overflow: hidden;
   height: clamp(180px, 28vh, 280px);
 }
