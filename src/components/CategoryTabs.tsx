@@ -34,6 +34,7 @@ interface CategoryTabProps {
   fullWidth: boolean
   showCount: boolean
   leadingControl?: ReactNode
+  reserveLeadingSpace?: boolean
 }
 
 function CategoryTab({
@@ -46,6 +47,7 @@ function CategoryTab({
   fullWidth,
   showCount,
   leadingControl,
+  reserveLeadingSpace = false,
 }: CategoryTabProps) {
   const { categoryName, t } = useI18n()
   const movePending = useMovePending()
@@ -97,15 +99,17 @@ function CategoryTab({
         isOver && validation?.status === 'noop' && 'ring-2 ring-border',
       )}
     >
-      {leadingControl}
+      {leadingControl ?? (reserveLeadingSpace
+        ? <span aria-hidden="true" className="hidden size-7 shrink-0 lg:block" />
+        : null)}
       <button
         type="button"
         aria-label={accessibleName}
         onClick={() => onSelect(category.id)}
         aria-pressed={active}
         className={cn(
-          'flex h-full min-w-0 flex-1 items-center gap-2 rounded-lg pr-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
-          leadingControl ? 'pl-0' : 'pl-2.5',
+          'flex h-full min-w-0 flex-1 items-center gap-2 rounded-lg pl-2.5 pr-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+          (leadingControl || reserveLeadingSpace) && 'lg:pl-0',
         )}
       >
         <span className="w-5 shrink-0 truncate text-center text-base">
@@ -218,9 +222,7 @@ function CategoryTreeItems({
             <ChevronRight className={cn('size-3.5 transition-transform duration-200 ease-out', expanded && 'rotate-90')} />
           </button>
         )
-      : (
-          <span aria-hidden="true" className="hidden size-7 shrink-0 lg:block" />
-        )
+      : null
 
     return (
       <li key={category.id} className="contents lg:block">
@@ -231,6 +233,7 @@ function CategoryTreeItems({
           fullWidth
           showCount={showCount}
           leadingControl={leadingControl}
+          reserveLeadingSpace
           onSelect={onSelect}
           onEdit={onEdit}
         />
@@ -389,6 +392,8 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
     })
   }
 
+  const treeEnabled
+    = navLayout === 'sidebar' && appearance.navItems.categoryTree
   const renderCategory = (category: Category) => {
     const saved = savedSearches.find(
       item => `saved-search:${item.id}` === category.id,
@@ -404,6 +409,7 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
         count={count(category.id)}
         fullWidth={navLayout === 'sidebar'}
         showCount={appearance.navItems.counts}
+        reserveLeadingSpace={treeEnabled}
         onSelect={(id) => {
           if (saved) {
             setActive('all')
@@ -418,8 +424,6 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
     )
   }
 
-  const treeEnabled
-    = navLayout === 'sidebar' && appearance.navItems.categoryTree
   const smartCategoriesCollapsible
     = navLayout === 'sidebar' && smartCategoryItems.length > 1
 
@@ -432,6 +436,7 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
           count={groupCount}
           fullWidth={navLayout === 'sidebar'}
           showCount={appearance.navItems.counts}
+          reserveLeadingSpace={treeEnabled}
           onSelect={onSelectGroups}
           onEdit={onEditCategory}
         />
@@ -461,16 +466,21 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="shrink-0 justify-start gap-2 lg:w-full"
+                    className={cn(
+                      'shrink-0 justify-start gap-2 pl-2.5 pr-2 lg:w-full',
+                      treeEnabled && 'lg:pl-8',
+                    )}
                   >
-                    <ChevronRight
-                      data-icon="inline-start"
-                      className={cn(
-                        'transition-transform',
-                        smartCategoriesOpen && 'rotate-90',
-                      )}
-                    />
-                    {t('smartCategories')}
+                    <span aria-hidden="true" className="flex w-5 shrink-0 items-center justify-center">
+                      <ChevronRight
+                        data-icon="inline-start"
+                        className={cn(
+                          'transition-transform',
+                          smartCategoriesOpen && 'rotate-90',
+                        )}
+                      />
+                    </span>
+                    <span className="min-w-0 truncate">{t('smartCategories')}</span>
                     <span className="ml-auto text-xs tabular-nums opacity-60">
                       {smartCategoryItems.length}
                     </span>
