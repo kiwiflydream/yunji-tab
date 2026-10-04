@@ -301,8 +301,12 @@ export default function NewTab() {
           || target instanceof HTMLTextAreaElement
           || target?.isContentEditable
       const searchInput = document.getElementById('yunji-tab-search')
-      if (document.querySelector('[role="dialog"]'))
+      if (
+        event.defaultPrevented
+        || document.querySelector('[role="dialog"], [role="menu"], [role="listbox"]')
+      ) {
         return
+      }
 
       const canRun = (shortcut: typeof keyboardShortcuts.focusSearch) =>
         !editingText || canTriggerShortcutWhileEditing(shortcut)

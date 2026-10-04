@@ -67,7 +67,7 @@ pnpm exec playwright install chromium
 pnpm test:e2e
 ```
 
-`pnpm test:e2e` 会构建并加载真实扩展，运行核心流程、AI 分类、favicon、内存和无障碍测试。
+`pnpm test:e2e` 会构建并加载真实扩展，运行核心流程、书签组、键盘导航、主题、AI 分类、favicon、内存和无障碍测试。
 
 ## 使用说明
 
@@ -105,11 +105,13 @@ folder:文档
 | `Cmd/Ctrl + K`                            | 打开主页命令面板     |
 | `N`                                       | 新增书签             |
 | 方向键                                    | 在搜索结果中移动焦点 |
-| `Enter`                                   | 打开当前书签或目录   |
+| `Enter`                                   | 书签搜索框中打开首个结果；卡片上打开当前项 |
 | `Esc`                                     | 清空搜索             |
 | `Alt + Shift + B` / `Command + Shift + B` | 快速收藏当前页       |
 
 主页快捷键可以在「设置 → 快捷键」中修改。浏览器级快捷键需要在 `chrome://extensions/shortcuts` 或 `edge://extensions/shortcuts` 中分配。全局命令面板默认关闭，不会预占按键。
+
+搜索引擎菜单打开时，方向键用于选择引擎，`Esc` 关闭菜单并返回搜索框。焦点位于设置页标签上时，方向键切换标签，`Home` 和 `End` 分别切到首个和最后一个标签。
 
 ### 整体风格
 

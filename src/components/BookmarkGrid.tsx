@@ -78,12 +78,25 @@ export function BookmarkGrid({
       && (pinnedReorder
         || (sortMode === 'manual'
           && categories.some(category => category.id === activeCategoryId)))
+  // SearchBar waits for the deferred query committed with this grid before opening a result.
+  const searchState = <span hidden data-bookmark-search-query={searchQuery} />
 
-  if (loading)
-    return <BookmarkGridLoadingState label={`${t('bookmarks')}…`} />
+  if (loading) {
+    return (
+      <>
+        {searchState}
+        <BookmarkGridLoadingState label={`${t('bookmarks')}…`} />
+      </>
+    )
+  }
 
   if (bookmarks.length === 0 && categories.length === 0 && additionalItemCount === 0) {
-    return <BookmarkGridEmptyState emptyLibrary onAdd={onAdd} />
+    return (
+      <>
+        {searchState}
+        <BookmarkGridEmptyState emptyLibrary onAdd={onAdd} />
+      </>
+    )
   }
 
   if (
@@ -94,15 +107,19 @@ export function BookmarkGrid({
     && activeCategoryId !== 'inbox'
   ) {
     return (
-      <BookmarkGridEmptyState
-        searching={Boolean(rawSearchQuery.trim())}
-        isSmartView={data.isSmartView}
-      />
+      <>
+        {searchState}
+        <BookmarkGridEmptyState
+          searching={Boolean(rawSearchQuery.trim())}
+          isSmartView={data.isSmartView}
+        />
+      </>
     )
   }
 
   return (
     <>
+      {searchState}
       <BookmarkGridToolbar
         activeCategoryId={activeCategoryId}
         searchQuery={searchQuery}

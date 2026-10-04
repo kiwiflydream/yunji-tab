@@ -50,6 +50,7 @@ export function SearchBar({ onOpenCommand }: SearchBarProps) {
   const [engineId, setEngineId] = useState(BROWSER_DEFAULT_ENGINE_ID)
   const savedBookmarkQueryRef = useRef('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const pendingSubmitRef = useRef<MutationObserver | null>(null)
 
   const engines = getAvailableSearchEngines(settings.customSearchEngines)
   const engine = engines.find(item => item.id === engineId)
@@ -63,17 +64,54 @@ export function SearchBar({ onOpenCommand }: SearchBarProps) {
   // 进入主页自动聚焦搜索框
   useEffect(() => {
     inputRef.current?.focus()
+    return () => pendingSubmitRef.current?.disconnect()
   }, [])
+
+  const cancelPendingSubmit = () => {
+    pendingSubmitRef.current?.disconnect()
+    pendingSubmitRef.current = null
+  }
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
+    cancelPendingSubmit()
     if (mode === 'bookmarks') {
-      if (!query.trim())
+      const submittedQuery = useNavStore.getState().bookmarkSearchQuery
+      if (!submittedQuery.trim())
         return
-      const firstVisibleItem = Array.from(
-        document.querySelectorAll<HTMLElement>('[data-nav-item]'),
-      ).find(item => item.offsetParent !== null)
-      firstVisibleItem?.click()
+      const form = e.currentTarget
+      const searchState = document.querySelector<HTMLElement>('[data-bookmark-search-query]')
+      const openCurrentResult = () => {
+        if (
+          useNavStore.getState().bookmarkSearchQuery !== submittedQuery
+          || !form.isConnected
+          || !form.contains(document.activeElement)
+          || (searchState && !searchState.isConnected)
+        ) {
+          return true
+        }
+        // Deferred rendering may still show the previous query's directories.
+        if (searchState && searchState.dataset.bookmarkSearchQuery !== submittedQuery)
+          return false
+        cancelPendingSubmit()
+        const firstVisibleItem = Array.from(
+          document.querySelectorAll<HTMLElement>('[data-nav-item]'),
+        ).find(item => item.offsetParent !== null)
+        firstVisibleItem?.click()
+        return true
+      }
+      if (!openCurrentResult()) {
+        pendingSubmitRef.current = new MutationObserver(() => {
+          if (openCurrentResult())
+            cancelPendingSubmit()
+        })
+        pendingSubmitRef.current.observe(document.body, {
+          attributes: true,
+          attributeFilter: ['data-bookmark-search-query'],
+          childList: true,
+          subtree: true,
+        })
+      }
       return
     }
 
@@ -101,6 +139,7 @@ export function SearchBar({ onOpenCommand }: SearchBarProps) {
   const changeMode = (nextMode: SearchMode) => {
     if (nextMode === mode)
       return
+    cancelPendingSubmit()
     if (nextMode === 'web') {
       savedBookmarkQueryRef.current = query
       setWebQuery(query)
@@ -110,7 +149,7 @@ export function SearchBar({ onOpenCommand }: SearchBarProps) {
       setBookmarkSearchQuery(savedBookmarkQueryRef.current)
     }
     setMode(nextMode)
-    window.requestAnimationFrame(() => inputRef.current?.focus())
+    inputRef.current?.focus()
   }
 
   const clearQuery = () => {
@@ -121,7 +160,14 @@ export function SearchBar({ onOpenCommand }: SearchBarProps) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="relative w-full max-w-[42rem]">
+    <form
+      onSubmit={onSubmit}
+      onBlur={(event) => {
+        if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget))
+          cancelPendingSubmit()
+      }}
+      className="relative w-full max-w-[42rem]"
+    >
       <label htmlFor="yunji-tab-search" className="sr-only">
         {t('searchOrEnterUrl')}
       </label>
@@ -220,6 +266,7 @@ export function SearchBar({ onOpenCommand }: SearchBarProps) {
           ref={inputRef}
           value={activeQuery}
           onChange={(event) => {
+            cancelPendingSubmit()
             if (mode === 'bookmarks')
               setBookmarkSearchQuery(event.target.value)
             else setWebQuery(event.target.value)

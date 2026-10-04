@@ -9,6 +9,7 @@ Key features:
 • Browse nested bookmark folders from a clean, responsive dashboard
 • Search bookmarks and folders by name, domain, path, tag, or Pinyin initials
 • Add, edit, move, reorder, pin, tag, and manage bookmarks in bulk
+• Create groups from saved bookmarks, customize member titles, and reveal their links by hovering or clicking
 • Save the current page from the toolbar, context menu, or a browser shortcut
 • Find duplicate, unavailable, and redirected links
 • Undo deletions immediately or restore them later from the 30-day trash
@@ -39,6 +40,7 @@ Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, and
 • 在简洁的响应式看板中浏览多级书签文件夹
 • 按名称、域名、路径、标签或拼音首字母搜索书签和目录
 • 新增、编辑、移动、排序、置顶、添加标签和批量管理书签
+• 从已有书签创建书签组，自定义组内标题，悬浮或点击展开链接列表
 • 通过工具栏、右键菜单或浏览器快捷键收藏当前页面
 • 检查重复、失效和重定向链接
 • 删除后立即撤销，也可以在 30 天内从垃圾桶恢复
@@ -69,6 +71,7 @@ Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, and
 • 在簡潔的響應式看板中瀏覽多層書籤資料夾
 • 依名稱、網域、路徑、標籤或拼音首字母搜尋書籤與資料夾
 • 新增、編輯、移動、排序、置頂、加上標籤及批次管理書籤
+• 從既有書籤建立書籤群組，自訂群組內標題，懸停或點擊展開連結清單
 • 透過工具列、右鍵選單或瀏覽器快速鍵收藏目前頁面
 • 檢查重複、失效及重新導向的連結
 • 刪除後立即復原，也可在 30 天內從垃圾桶還原
@@ -99,6 +102,7 @@ Funciones principales:
 • Explora carpetas de marcadores anidadas desde un panel limpio y adaptable
 • Busca marcadores y carpetas por nombre, dominio, ruta o etiqueta
 • Añade, edita, mueve, ordena, fija, etiqueta y gestiona marcadores por lotes
+• Crea grupos con marcadores guardados, personaliza sus títulos dentro del grupo y muestra sus enlaces al pasar el cursor o hacer clic
 • Guarda la página actual desde la barra de herramientas, el menú contextual o un atajo
 • Localiza enlaces duplicados, inaccesibles o redirigidos
 • Deshaz eliminaciones al instante o restaura elementos desde la papelera durante 30 días
@@ -129,6 +133,7 @@ Fonctions principales :
 • Parcourez les dossiers de favoris imbriqués dans un tableau de bord clair et adaptatif
 • Recherchez des favoris et des dossiers par nom, domaine, chemin ou étiquette
 • Ajoutez, modifiez, déplacez, réordonnez, épinglez et gérez les favoris par lots
+• Créez des groupes de favoris enregistrés, personnalisez leurs noms dans le groupe et affichez leurs liens au survol ou au clic
 • Enregistrez la page actuelle depuis la barre d'outils, le menu contextuel ou un raccourci
 • Repérez les liens en double, indisponibles ou redirigés
 • Annulez immédiatement une suppression ou restaurez un élément depuis la corbeille pendant 30 jours
@@ -159,6 +164,7 @@ Yunji Tabはブラウザ標準のブックマークを直接利用します。�
 • すっきりしたレスポンシブ対応のダッシュボードで、入れ子になったフォルダーを表示
 • 名前、ドメイン、パス、タグからブックマークやフォルダーを検索
 • ブックマークの追加、編集、移動、並べ替え、ピン留め、タグ付け、一括管理
+• 保存済みブックマークをグループにまとめ、グループ内の表示名を設定して、ホバーまたはクリックでリンク一覧を表示
 • ツールバー、コンテキストメニュー、ブラウザのショートカットから現在のページを保存
 • 重複、アクセス不能、リダイレクトされたリンクを確認
 • 削除をすぐに取り消すか、30 日以内にごみ箱から復元
@@ -189,6 +195,7 @@ Yunji Tab은 브라우저 기본 북마크를 직접 사용합니다. 데이터�
 • 깔끔한 반응형 대시보드에서 중첩된 북마크 폴더 탐색
 • 이름, 도메인, 경로 또는 태그로 북마크와 폴더 검색
 • 북마크 추가, 편집, 이동, 순서 변경, 고정, 태그 지정 및 일괄 관리
+• 저장된 북마크로 그룹을 만들고 그룹 내 표시 이름을 지정하며, 마우스를 올리거나 클릭해 링크 목록 표시
 • 도구 모음, 컨텍스트 메뉴 또는 브라우저 단축키로 현재 페이지 저장
 • 중복되거나 열 수 없거나 리디렉션된 링크 확인
 • 삭제 작업을 즉시 취소하거나 30일 이내에 휴지통에서 복원

@@ -64,7 +64,7 @@ export function SettingsTabNavigation({
     if (!tab)
       return
     onValueChange(tab.id)
-    window.requestAnimationFrame(() => tabButtonsRef.current[index]?.focus())
+    tabButtonsRef.current[index]?.focus()
   }
 
   const handleKeyDown = (
