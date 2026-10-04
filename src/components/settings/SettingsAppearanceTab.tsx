@@ -433,7 +433,7 @@ export function SettingsAppearanceTab() {
         <CollapsibleContent className="mt-3 grid gap-4">
           <section className="rounded-xl border border-border bg-muted/35 p-4">
             <h3 className="text-sm font-semibold">{t('appearanceLayoutAndSurface')}</h3>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="mt-3 grid items-start gap-3 sm:grid-cols-2">
               <label className="grid gap-1.5 text-sm">
                 <span className="font-medium">{t('appearanceContentWidth')}</span>
                 <select
