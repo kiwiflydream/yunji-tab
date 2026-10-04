@@ -227,11 +227,17 @@ html.theme-engraving body {
     "Noto Serif CJK SC", "Noto Serif CJK JP", "Noto Serif CJK KR", Georgia, serif;
 }
 
+/* Texture lives behind content on each ink surface, so opaque cards do not hide it. */
+html.theme-engraving :is(.newtab-shell, header, article, .group.border-dashed, .surface-panel, .glass-panel, [role="dialog"], [role="alertdialog"], [role="menu"]) {
+  background-image: url("../assets/themes/engraving-grain.svg");
+  background-repeat: repeat;
+  background-size: 640px 640px;
+}
+
 html.theme-engraving .newtab-shell {
   display: flex;
   flex-direction: column;
   background-color: hsl(var(--background));
-  background-image: url("../assets/themes/engraving-grain.svg");
 }
 
 html.theme-engraving .workspace-layout {
@@ -246,8 +252,28 @@ html.theme-engraving header {
 
 html.theme-engraving header h1 {
   font-size: 1.15rem;
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: normal;
+}
+
+/* Warm ink hierarchy, rather than fading the whole card and its controls. */
+html.theme-engraving main :is(h1, h2) {
+  font-weight: 400;
+  letter-spacing: 0.015em;
+}
+
+html.theme-engraving .bookmark-card-title {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+}
+
+html.theme-engraving :is(article, .group.border-dashed) p {
+  color: hsl(var(--foreground) / 0.84);
+  font-size: 0.875rem;
+  font-style: italic;
+  line-height: 1.5;
 }
 
 html.theme-engraving .workspace-layout > aside {

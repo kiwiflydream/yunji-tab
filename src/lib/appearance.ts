@@ -106,7 +106,7 @@ export const cardContentClass = {
   grid: 'min-h-[108px] gap-4 px-4 py-4',
   compact: 'min-h-[68px] gap-3 px-3.5 py-2.5',
 }
-export const cardTitleClass = 'text-[14.5px] font-medium leading-snug tracking-[-0.01em] text-foreground group-hover:text-primary transition-colors'
+export const cardTitleClass = 'bookmark-card-title text-[14.5px] font-medium leading-snug tracking-[-0.01em] text-foreground group-hover:text-primary transition-colors'
 export const cardActionsClass = 'absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-lg border border-border/50 bg-card/90 p-0.5 shadow-xs backdrop-blur-xs opacity-70 transition-all duration-150'
 export const cardActionsHoverClass = 'sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100'
 export const cardActionButtonClass = 'flex size-6 items-center justify-center rounded-md text-muted-foreground/80 transition-colors hover:bg-accent hover:text-foreground active:scale-[0.94] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50'

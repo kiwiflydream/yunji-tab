@@ -118,7 +118,7 @@ export function CategoryCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <span className="truncate text-[14.5px] font-medium leading-snug tracking-[-0.01em] group-hover:text-primary transition-colors">
+            <span className="bookmark-card-title truncate text-[14.5px] font-medium leading-snug tracking-[-0.01em] group-hover:text-primary transition-colors">
               {category.name}
             </span>
             <ChevronRight className="size-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />

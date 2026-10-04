@@ -2,7 +2,7 @@
 
 `engraving-cat-astronaut.png` is an AI-generated original lunar scene created with the built-in imagegen tool. The initial generation used a text prompt only, with no source screenshot or external artwork as an image reference. A second imagegen pass resized and repositioned the generated cat to keep its full body visible in a shallow footer. The previous horseback landscape is no longer packaged.
 
-The scene contains a cat astronaut, lunar craters and a trail of paw prints. Its transparent sky blends into the page. `engraving-grain.svg` is a static procedural print texture. Both assets are packaged locally and have no text or interactive meaning.
+The scene contains a cat astronaut, lunar craters and a trail of paw prints. Its transparent sky blends into the page. `engraving-grain.svg` is an original static procedural print texture: deterministically generated curved paper fibers and irregular ink flecks (seed `20261004`), with uneven spatial density, fine grain and a subtle ink-pressure wash. It repeats behind content on the blue page, header, cards and dialog surfaces. Both assets are packaged locally and have no text or interactive meaning.
 
 Final prompt, including the targeted composition adjustment:
 
