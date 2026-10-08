@@ -119,6 +119,7 @@ export function BookmarkCard({
     label: bookmark.name,
     index: reorderIndex ?? bookmark.index ?? 0,
     pinned: Boolean(bookmark.pinnedAt),
+    pinnedReorder,
   }
   const { active } = useDndContext()
   const activeDragItem = readDragItemData(active?.data.current)
@@ -145,7 +146,7 @@ export function BookmarkCard({
       ? validateBookmarkDrop(activeDragItem, reorderTarget)
       : null
   const reorderPlacement
-    = activeDragItem?.type === 'bookmark'
+    = activeDragItem && activeDragItem.type !== 'category'
       ? getBookmarkDropPlacement(activeDragItem, reorderTarget)
       : null
   const [opening, setOpening] = useState(false)

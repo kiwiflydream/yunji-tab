@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { AdditionalGridItem } from '~/components/bookmark-grid/BookmarkGridItems'
 import type { Bookmark, Category } from '~/lib/types'
 import { useDeferredValue, useMemo, useState } from 'react'
 import { BookmarkGridEmptyState } from '~/components/bookmark-grid/BookmarkGridEmptyState'
@@ -14,7 +14,7 @@ import { useI18n } from '~/lib/use-i18n'
 
 interface BookmarkGridProps {
   loading: boolean
-  additionalItems?: ReactNode
+  additionalItems?: AdditionalGridItem[]
   additionalItemCount?: number
   onEdit: (bookmark: Bookmark) => void
   onEditCategory: (category: Category) => void
@@ -166,7 +166,7 @@ export function BookmarkGrid({
         selectedIds={bulk.selectedIds}
         selectionMode={bulk.selectionMode}
         viewMode={viewMode}
-        additionalItems={bulk.selectionMode ? null : additionalItems}
+        additionalItems={bulk.selectionMode ? undefined : additionalItems}
       />
       {renderedBookmarks.length < data.filteredBookmarks.length
         ? (

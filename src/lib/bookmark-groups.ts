@@ -13,6 +13,8 @@ export interface BookmarkGroup {
   description: string
   icon?: string
   pinnedAt?: number
+  sortOrder?: number
+  pinnedOrder?: number
   bookmarks: BookmarkGroupMember[]
 }
 
@@ -54,6 +56,8 @@ export function parseBookmarkGroup(value: unknown): BookmarkGroup | undefined {
     description: candidate.description.trim(),
     ...(typeof candidate.icon === 'string' && candidate.icon.trim() ? { icon: candidate.icon.trim() } : {}),
     ...(Number.isSafeInteger(candidate.pinnedAt) && candidate.pinnedAt! > 0 ? { pinnedAt: candidate.pinnedAt } : {}),
+    ...(typeof candidate.sortOrder === 'number' && Number.isFinite(candidate.sortOrder) ? { sortOrder: candidate.sortOrder } : {}),
+    ...(typeof candidate.pinnedOrder === 'number' && Number.isFinite(candidate.pinnedOrder) ? { pinnedOrder: candidate.pinnedOrder } : {}),
     bookmarks,
   }
 }
@@ -114,7 +118,18 @@ export function decodeBookmarkGroups(
     if (complete)
       groups.push(complete)
   }
-  return groups.sort((a, b) => a.title.localeCompare(b.title))
+  return sortBookmarkGroups(groups)
+}
+
+export function sortBookmarkGroups(groups: BookmarkGroup[]): BookmarkGroup[] {
+  const defaults = groups.toSorted((left, right) => (right.pinnedAt ?? 0) - (left.pinnedAt ?? 0) || left.title.localeCompare(right.title) || left.id.localeCompare(right.id))
+  const defaultRanks = new Map(defaults.map((group, index) => [group.id, index]))
+  const lastRank = Math.max(defaults.length - 1, ...defaults.map(group => group.sortOrder ?? 0))
+  const hasManualOrder = defaults.some(group => group.sortOrder !== undefined)
+  return defaults.toSorted((left, right) => {
+    const rank = (group: BookmarkGroup) => group.sortOrder ?? (hasManualOrder ? lastRank + 1 + defaultRanks.get(group.id)! : defaultRanks.get(group.id)!)
+    return rank(left) - rank(right) || left.id.localeCompare(right.id)
+  })
 }
 
 export function resolveGroupBookmark(member: BookmarkGroupMember, bookmarks: Bookmark[]): Bookmark | undefined {

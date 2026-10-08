@@ -1,6 +1,6 @@
 import type { BookmarkGroup, BookmarkGroupMember } from './bookmark-groups'
 import { create } from 'zustand'
-import { assertBookmarkGroupCapacity, bookmarkGroupsKeyPrefix, decodeBookmarkGroups, encodeBookmarkGroup, groupManifestKey, mergeGroupMembers, parseBookmarkGroup } from './bookmark-groups'
+import { assertBookmarkGroupCapacity, bookmarkGroupsKeyPrefix, decodeBookmarkGroups, encodeBookmarkGroup, groupManifestKey, mergeGroupMembers, parseBookmarkGroup, sortBookmarkGroups } from './bookmark-groups'
 import { normalizeBookmarkUrl } from './bookmark-urls'
 
 let queue: Promise<unknown> = Promise.resolve()
@@ -93,12 +93,25 @@ interface BookmarkGroupsState {
   reconcileSources: () => Promise<void>
   restore: (groups: BookmarkGroup[], strategy?: 'merge' | 'replace' | 'skip') => Promise<void>
   remove: (id: string) => Promise<void>
+  reorder: (id: string, targetId: string) => Promise<void>
   migrateUrl: (oldUrl: string, newUrl: string) => Promise<void>
 }
 
 export const useBookmarkGroupsStore = create<BookmarkGroupsState>((set, get) => ({
   groups: [],
   error: false,
+  reorder: async (id, targetId) => {
+    await updateBookmarkGroups((latest) => {
+      const groups = sortBookmarkGroups(latest)
+      const source = groups.findIndex(group => group.id === id)
+      const target = groups.findIndex(group => group.id === targetId)
+      if (source < 0 || target < 0 || source === target)
+        return latest
+      const [moved] = groups.splice(source, 1)
+      groups.splice(target, 0, moved)
+      return groups.map((group, index) => group.sortOrder === index ? group : { ...group, sortOrder: index })
+    })
+  },
   load: async () => {
     const revision = ++refreshRevision
     try {
@@ -133,6 +146,8 @@ export const useBookmarkGroupsStore = create<BookmarkGroupsState>((set, get) => 
       const group = parseBookmarkGroup({ ...existing, ...patch, ...(bookmarks ? { bookmarks } : {}), id })
       if (!group)
         throw new Error('invalid group')
+      if (Object.hasOwn(patch, 'pinnedAt'))
+        delete group.pinnedOrder
       const encoded = encodeBookmarkGroup(group, crypto.randomUUID())
       await writeGroupChanges(values, encoded)
       // Publish state only after a durable write; failed writes leave the editor open.
@@ -156,7 +171,7 @@ export const useBookmarkGroupsStore = create<BookmarkGroupsState>((set, get) => 
         if (existing && strategy === 'skip')
           continue
         const next = existing && strategy === 'merge'
-          ? parseBookmarkGroup({ ...group, ...existing, icon: existing.icon ?? '', pinnedAt: existing.pinnedAt ?? 0, bookmarks: [...existing.bookmarks, ...group.bookmarks.filter(member => !existing.bookmarks.some(current => current.id === member.id))] })!
+          ? parseBookmarkGroup({ ...group, ...existing, icon: existing.icon ?? '', pinnedAt: existing.pinnedAt ?? 0, sortOrder: existing.sortOrder, pinnedOrder: existing.pinnedOrder, bookmarks: [...existing.bookmarks, ...group.bookmarks.filter(member => !existing.bookmarks.some(current => current.id === member.id))] })!
           : group
         Object.assign(changes, encodeBookmarkGroup(next, crypto.randomUUID()))
       }
@@ -274,3 +289,24 @@ export const useBookmarkGroupsStore = create<BookmarkGroupsState>((set, get) => 
     })
   },
 }))
+
+// Read under the shared lock and write only changed groups in one sync operation.
+export async function updateBookmarkGroups(update: (latest: BookmarkGroup[]) => BookmarkGroup[] | Promise<BookmarkGroup[]>): Promise<void> {
+  await withGroupLock(async () => {
+    const values = await chrome.storage.sync.get(null)
+    const latest = decodeBookmarkGroups(values)
+    const updated = await update(latest)
+    const changes: Record<string, unknown> = {}
+    for (const group of updated) {
+      const previous = latest.find(item => item.id === group.id)
+      if (previous && JSON.stringify(previous) !== JSON.stringify(group))
+        Object.assign(changes, encodeBookmarkGroup(group, crypto.randomUUID()))
+    }
+    if (Object.keys(changes).length)
+      await writeGroupChanges(values, changes)
+    refreshRevision += 1
+    const groups = decodeBookmarkGroups({ ...values, ...changes }, await cachedGroupFallback(useBookmarkGroupsStore.getState().groups))
+    useBookmarkGroupsStore.setState({ groups, error: false })
+    await cacheGroups(groups)
+  })
+}

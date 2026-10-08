@@ -38,7 +38,7 @@ import {
   releaseBookmarkDeletionArchive,
   suppressBookmarkDeletionArchive,
 } from './bookmark-deletion-safety'
-import { useBookmarkGroupsStore } from './bookmark-groups-store'
+import { updateBookmarkGroups, useBookmarkGroupsStore } from './bookmark-groups-store'
 import { assertBookmarksApi, bookmarkApi } from './bookmark-repository'
 import {
   bookmarkTreeContainsNode,
@@ -47,6 +47,7 @@ import {
 } from './bookmark-tree'
 import { normalizeAlternateBookmarkUrls } from './bookmark-urls'
 import { mergeBookmarkUsageMaps } from './bookmark-usage'
+import { bookmarkCardKey, getPinnedCards, groupCardKey, reorderPinnedCards } from './card-order'
 import { findCategoryByPath } from './category-path'
 import { createCoalescedAsyncRunner } from './coalesced-async'
 import { DEFAULT_CATEGORY_EMOJI, isVirtualCategoryId } from './default-data'
@@ -284,7 +285,7 @@ function applyMeta(
 ): Bookmark[] {
   return bookmarks.map((b) => {
     const m = meta[b.url] ?? {}
-    const fields = ['description', 'icon', 'alternateUrls', 'pinnedAt', 'tags', 'inboxAt'] as const
+    const fields = ['description', 'icon', 'alternateUrls', 'pinnedAt', 'pinnedOrder', 'tags', 'inboxAt'] as const
     if (fields.every(field => JSON.stringify(b[field]) === JSON.stringify(m[field])))
       return b
     return {
@@ -293,6 +294,7 @@ function applyMeta(
       icon: m.icon,
       alternateUrls: m.alternateUrls,
       pinnedAt: m.pinnedAt,
+      pinnedOrder: m.pinnedOrder,
       tags: m.tags,
       inboxAt: m.inboxAt,
     }
@@ -464,6 +466,7 @@ export interface NavState extends SettingsSlice {
   setBookmarkMeta: (url: string, patch: Partial<BookmarkMeta> | ((latest: BookmarkMeta) => Partial<BookmarkMeta>), bookmarkId?: string) => Promise<void>
   refreshSupplementaryMetadata: () => Promise<void>
   setBookmarkPinned: (url: string, pinned: boolean) => Promise<void>
+  reorderPinnedCard: (sourceKey: string, targetKey: string) => Promise<void>
   setBookmarkTags: (url: string, tags: string[]) => Promise<void>
   markBookmarksOrganized: (ids: string[]) => Promise<void>
   setActiveCategory: (id: string) => void
@@ -1391,7 +1394,10 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
       }
       if (patch.pinnedAt !== undefined) {
         next.pinnedAt = patch.pinnedAt > 0 ? patch.pinnedAt : undefined
+        delete next.pinnedOrder
       }
+      if (Object.hasOwn(patch, 'pinnedOrder'))
+        next.pinnedOrder = Number.isFinite(patch.pinnedOrder) ? patch.pinnedOrder : undefined
       if (patch.tags !== undefined) {
         next.tags = [...new Set(patch.tags.flatMap((tag) => {
           const normalized = tag.trim()
@@ -1426,7 +1432,7 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
   },
 
   setBookmarkPinned: async (url, pinned) => {
-    await get().setBookmarkMeta(url, { pinnedAt: pinned ? Date.now() : 0 })
+    await get().setBookmarkMeta(url, { pinnedAt: pinned ? Date.now() : 0, pinnedOrder: undefined })
   },
 
   setBookmarkTags: async (url, tags) => {
@@ -1662,6 +1668,56 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
     })
     await get().loadBookmarks()
     await get().recordActivity('move', bookmark.name)
+  },
+
+  reorderPinnedCard: async (sourceKey, targetKey) => {
+    let committedMeta: Record<string, BookmarkMeta> | undefined
+    const previousOrders = new Map<string, number | undefined>()
+    const newOrders = new Map<string, number>()
+    try {
+      // URL migrations also acquire metadata before groups; keep one lock order.
+      await withBookmarkMetadataLock(async () => {
+        await updateBookmarkGroups(async (groups) => {
+          const latest = await metaStorage.get<Record<string, BookmarkMeta>>(STORAGE_KEYS.meta) ?? get().meta
+          const bookmarks = applyMeta(get().bookmarks, latest)
+          const ranks = reorderPinnedCards(getPinnedCards(bookmarks, groups), sourceKey, targetKey)
+          const meta = { ...latest }
+          let changed = false
+          for (const bookmark of bookmarks) {
+            const rank = ranks.get(bookmarkCardKey(bookmark.url))
+            if (rank !== undefined && meta[bookmark.url]?.pinnedOrder !== rank) {
+              previousOrders.set(bookmark.url, meta[bookmark.url]?.pinnedOrder)
+              newOrders.set(bookmark.url, rank)
+              meta[bookmark.url] = { ...meta[bookmark.url], pinnedOrder: rank }
+              changed = true
+            }
+          }
+          if (changed)
+            await persist(metaStorage, STORAGE_KEYS.meta, meta)
+          committedMeta = changed ? meta : latest
+          return groups.map((group) => {
+            const rank = ranks.get(groupCardKey(group.id))
+            return rank === undefined ? group : { ...group, pinnedOrder: rank }
+          })
+        })
+      })
+    }
+    catch (cause) {
+      if (committedMeta && previousOrders.size) {
+        const restored = await updateBookmarkMetadata((latest) => {
+          const meta = { ...latest }
+          for (const [url, previous] of previousOrders) {
+            if (meta[url]?.pinnedOrder === newOrders.get(url))
+              meta[url] = { ...meta[url], pinnedOrder: previous }
+          }
+          return meta
+        }, () => get().meta)
+        set({ meta: restored, bookmarks: applyMeta(get().bookmarks, restored) })
+      }
+      throw cause
+    }
+    if (committedMeta)
+      await get().refreshSupplementaryMetadata()
   },
 
   reorderPinnedBookmark: async (id, targetId) => {

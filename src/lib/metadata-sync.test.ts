@@ -14,6 +14,18 @@ afterEach(() => {
 })
 
 describe('metadata sync payload', () => {
+  it('syncs mixed pinned order with the pin scope', () => {
+    const payload = createMetadataSyncPayload({
+      meta: { 'https://example.com': { pinnedAt: 30, pinnedOrder: -50.5 } },
+      categoryMeta: {},
+      categories: [],
+      updatedAt: 10,
+      deviceId: 'a',
+    })
+    expect(materializeMetadataDocument(payload.document).bookmarkMeta['https://example.com'])
+      .toEqual({ pinnedAt: 30, pinnedOrder: -50.5 })
+    expect(materializeMetadataDocument(payload.document, { pinnedAt: false }).bookmarkMeta).toEqual({})
+  })
   it('maps category metadata by stable path', () => {
     const payload = createMetadataSyncPayload({
       meta: {},

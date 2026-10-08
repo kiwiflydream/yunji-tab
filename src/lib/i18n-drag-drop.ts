@@ -1,6 +1,10 @@
 import type { Language } from './types'
 
 const zhCN = {
+  dragGroup: '拖动书签组 {name}',
+  dragToReorder: '拖动排序',
+  dragGroupPinnedOnly: '书签组只能在书签组页或置顶页中排序',
+  dragGroupCannotMoveToFolder: '书签组不能移动到书签目录中',
   dragFolderCannotReorderBookmarks: '目录不能插入书签顺序',
   dragSwitchToNativeOrder: '请先切换到“原生顺序”后再拖动排序',
   dragBookmarkPositionUnchanged: '书签位置未改变',
@@ -32,6 +36,10 @@ export type DragDropMessageKey = keyof typeof zhCN
 type DragDropMessages = Record<DragDropMessageKey, string>
 
 const zhTW: DragDropMessages = {
+  dragGroup: '拖曳書籤群組 {name}',
+  dragToReorder: '拖曳排序',
+  dragGroupPinnedOnly: '書籤群組只能在群組頁或置頂頁排序',
+  dragGroupCannotMoveToFolder: '書籤群組不能移至書籤資料夾',
   dragFolderCannotReorderBookmarks: '資料夾不能插入書籤順序',
   dragSwitchToNativeOrder: '請先切換到「瀏覽器順序」再拖曳排序',
   dragBookmarkPositionUnchanged: '書籤位置未變更',
@@ -60,6 +68,10 @@ const zhTW: DragDropMessages = {
 }
 
 const en: DragDropMessages = {
+  dragGroup: 'Drag bookmark group {name}',
+  dragToReorder: 'Drag to reorder',
+  dragGroupPinnedOnly: 'Reorder groups on the Groups or Pinned page',
+  dragGroupCannotMoveToFolder: 'Bookmark groups cannot be moved into bookmark folders',
   dragFolderCannotReorderBookmarks: 'A folder cannot be inserted into the bookmark order',
   dragSwitchToNativeOrder: 'Switch to Browser order before dragging to reorder',
   dragBookmarkPositionUnchanged: 'Bookmark position did not change',
@@ -88,6 +100,10 @@ const en: DragDropMessages = {
 }
 
 const ja: DragDropMessages = {
+  dragGroup: 'ブックマークグループ {name} をドラッグ',
+  dragToReorder: 'ドラッグして並べ替え',
+  dragGroupPinnedOnly: 'グループはグループページまたは固定ページで並べ替えできます',
+  dragGroupCannotMoveToFolder: 'ブックマークグループをフォルダーへ移動することはできません',
   dragFolderCannotReorderBookmarks: 'フォルダーをブックマークの順序に挿入することはできません',
   dragSwitchToNativeOrder: '並べ替える前に「ブラウザー順」に切り替えてください',
   dragBookmarkPositionUnchanged: 'ブックマークの位置は変わりませんでした',
@@ -116,6 +132,10 @@ const ja: DragDropMessages = {
 }
 
 const ko: DragDropMessages = {
+  dragGroup: '북마크 그룹 {name} 드래그',
+  dragToReorder: '드래그하여 정렬',
+  dragGroupPinnedOnly: '그룹 또는 고정 페이지에서 그룹을 정렬하세요',
+  dragGroupCannotMoveToFolder: '북마크 그룹을 북마크 폴더로 이동할 수 없습니다',
   dragFolderCannotReorderBookmarks: '폴더를 북마크 순서에 넣을 수 없습니다',
   dragSwitchToNativeOrder: '드래그해 정렬하기 전에 브라우저 순서로 전환하세요',
   dragBookmarkPositionUnchanged: '북마크 위치가 바뀌지 않았습니다',
@@ -144,6 +164,10 @@ const ko: DragDropMessages = {
 }
 
 const es: DragDropMessages = {
+  dragGroup: 'Arrastrar grupo de favoritos {name}',
+  dragToReorder: 'Arrastrar para reordenar',
+  dragGroupPinnedOnly: 'Reordena grupos en la página Grupos o Fijados',
+  dragGroupCannotMoveToFolder: 'Los grupos no se pueden mover a carpetas de favoritos',
   dragFolderCannotReorderBookmarks: 'No se puede insertar una carpeta en el orden de los marcadores',
   dragSwitchToNativeOrder: 'Cambia a Orden del navegador antes de arrastrar para ordenar',
   dragBookmarkPositionUnchanged: 'La posición del marcador no cambió',
@@ -172,6 +196,10 @@ const es: DragDropMessages = {
 }
 
 const fr: DragDropMessages = {
+  dragGroup: 'Déplacer le groupe de favoris {name}',
+  dragToReorder: 'Faire glisser pour réordonner',
+  dragGroupPinnedOnly: 'Réordonnez les groupes dans la page Groupes ou Épinglés',
+  dragGroupCannotMoveToFolder: 'Les groupes ne peuvent pas être déplacés dans les dossiers de favoris',
   dragFolderCannotReorderBookmarks: 'Un dossier ne peut pas être inséré dans l’ordre des favoris',
   dragSwitchToNativeOrder: 'Passez à l’ordre du navigateur avant de faire glisser pour réorganiser',
   dragBookmarkPositionUnchanged: 'La position du favori n’a pas changé',

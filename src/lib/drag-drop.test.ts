@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest'
 import {
   getBookmarkDropPlacement,
   readBookmarkDropData,
+  readCardDropData,
   readDragItemData,
   validateBookmarkDrop,
+  validateCategoryDrop,
 } from './drag-drop'
 
 const dragged: BookmarkDragData = {
@@ -30,6 +32,18 @@ const target: BookmarkDropData = {
 }
 
 describe('bookmark drag and drop', () => {
+  it('accepts group sorting and mixed pinned sorting while rejecting folder moves', () => {
+    const group = { type: 'group' as const, groupId: 'tools', label: 'Tools', index: 1, pinned: true, reorderEnabled: true, pinnedReorder: true }
+    const groupTarget = { ...group, type: 'group-drop' as const, groupId: 'docs', index: 2 }
+    expect(readDragItemData(group)).toEqual(group)
+    expect(readCardDropData(groupTarget)).toEqual(groupTarget)
+    expect(validateBookmarkDrop(group, { ...target, pinned: true, pinnedReorder: true }).status).toBe('valid')
+    expect(validateBookmarkDrop({ ...dragged, pinned: true, pinnedReorder: true }, groupTarget).status).toBe('valid')
+    expect(validateBookmarkDrop(group, target).status).toBe('invalid')
+    expect(validateCategoryDrop(group, 'all', []).messageKey).toBe('dragGroupCannotMoveToFolder')
+    expect(validateBookmarkDrop({ ...group, pinned: false, pinnedReorder: false }, { ...groupTarget, pinnedReorder: false }).status).toBe('valid')
+    expect(validateBookmarkDrop({ ...group, reorderEnabled: false }, groupTarget).status).toBe('invalid')
+  })
   it('reads sortable bookmark drag and drop data', () => {
     expect(readDragItemData(dragged)).toEqual(dragged)
     expect(readBookmarkDropData(target)).toEqual(target)

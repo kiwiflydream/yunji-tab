@@ -11,6 +11,7 @@ export interface Bookmark {
   alternateUrls?: string[]
   /** 本地置顶时间；浏览器原生书签不包含此字段 */
   pinnedAt?: number
+  pinnedOrder?: number
   /** 本地标签；不改变浏览器原生目录结构 */
   tags?: string[]
   /** Added through a quick-capture flow and not organized yet. */
@@ -39,6 +40,7 @@ export interface BookmarkMeta {
   icon?: string
   alternateUrls?: string[]
   pinnedAt?: number
+  pinnedOrder?: number
   tags?: string[]
   inboxAt?: number
 }

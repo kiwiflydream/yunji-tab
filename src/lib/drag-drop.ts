@@ -35,9 +35,30 @@ export interface BookmarkDropData {
   label: string
   index: number
   pinned: boolean
+  pinnedReorder?: boolean
 }
 
-export type DragItemData = BookmarkDragData | CategoryDragData
+export interface GroupDragData {
+  type: 'group'
+  groupId: string
+  label: string
+  index: number
+  pinned: boolean
+  reorderEnabled: boolean
+  pinnedReorder: boolean
+}
+
+export interface GroupDropData {
+  type: 'group-drop'
+  groupId: string
+  label: string
+  index: number
+  pinned: boolean
+  pinnedReorder: boolean
+}
+
+export type DragItemData = BookmarkDragData | CategoryDragData | GroupDragData
+export type CardDropData = BookmarkDropData | GroupDropData
 
 export interface DropValidation {
   status: 'valid' | 'invalid' | 'noop'
@@ -53,6 +74,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function readDragItemData(value: unknown): DragItemData | null {
   if (!isRecord(value) || typeof value.type !== 'string')
     return null
+
+  if (value.type === 'group' && typeof value.groupId === 'string'
+    && typeof value.label === 'string' && typeof value.index === 'number'
+    && typeof value.pinned === 'boolean' && typeof value.reorderEnabled === 'boolean'
+    && typeof value.pinnedReorder === 'boolean') {
+    return value as unknown as GroupDragData
+  }
 
   if (
     value.type === 'bookmark'
@@ -113,18 +141,30 @@ export function readBookmarkDropData(value: unknown): BookmarkDropData | null {
 
 export type BookmarkDropPlacement = 'before' | 'after'
 
+export function readCardDropData(value: unknown): CardDropData | null {
+  const bookmark = readBookmarkDropData(value)
+  if (bookmark)
+    return bookmark
+  if (isRecord(value) && value.type === 'group-drop' && typeof value.groupId === 'string'
+    && typeof value.label === 'string' && typeof value.index === 'number'
+    && typeof value.pinned === 'boolean' && typeof value.pinnedReorder === 'boolean') {
+    return value as unknown as GroupDropData
+  }
+  return null
+}
+
 export function getBookmarkDropPlacement(
-  item: BookmarkDragData,
-  target: BookmarkDropData,
+  item: BookmarkDragData | GroupDragData,
+  target: CardDropData,
 ): BookmarkDropPlacement {
   return item.index < target.index ? 'after' : 'before'
 }
 
 export function validateBookmarkDrop(
   item: DragItemData,
-  target: BookmarkDropData,
+  target: CardDropData,
 ): DropValidation {
-  if (item.type !== 'bookmark') {
+  if (item.type === 'category') {
     return { status: 'invalid', messageKey: 'dragFolderCannotReorderBookmarks' }
   }
   if (!item.reorderEnabled) {
@@ -134,18 +174,24 @@ export function validateBookmarkDrop(
     }
   }
   if (
-    item.bookmarkId === target.bookmarkId
-    || (item.pinnedReorder && item.url === target.url)
+    (item.type === 'group' && target.type === 'group-drop' && item.groupId === target.groupId)
+    || (item.type === 'bookmark' && target.type === 'bookmark-drop'
+      && (item.bookmarkId === target.bookmarkId || (item.pinnedReorder && item.url === target.url)))
   ) {
     return { status: 'noop', messageKey: 'dragBookmarkPositionUnchanged' }
   }
-  if (!item.pinnedReorder && item.categoryId !== target.categoryId) {
+  if ((item.type === 'group' || target.type === 'group-drop')
+    && !(item.type === 'group' && target.type === 'group-drop' && !item.pinnedReorder && !target.pinnedReorder)
+    && !(item.pinnedReorder && target.pinnedReorder && item.pinned && target.pinned)) {
+    return { status: 'invalid', messageKey: 'dragGroupPinnedOnly' }
+  }
+  if (item.type === 'bookmark' && target.type === 'bookmark-drop' && !item.pinnedReorder && item.categoryId !== target.categoryId) {
     return {
       status: 'invalid',
       messageKey: 'dragSameFolderOnly',
     }
   }
-  if (item.pinned !== target.pinned) {
+  if (item.type === 'bookmark' && target.type === 'bookmark-drop' && item.pinned !== target.pinned) {
     return {
       status: 'invalid',
       messageKey: 'dragPinnedGroupsCannotCross',
@@ -184,6 +230,8 @@ export function validateCategoryDrop(
   targetId: string,
   categories: Category[],
 ): DropValidation {
+  if (item.type === 'group')
+    return { status: 'invalid', messageKey: 'dragGroupCannotMoveToFolder' }
   if (targetId === 'all') {
     return { status: 'invalid', messageKey: 'dragAllIsNotFolder' }
   }

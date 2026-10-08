@@ -29,6 +29,45 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('bookmark groups', () => {
+  it('saves manual group order through reload, edits, migration and restore', async () => {
+    const groups = ['A', 'B', 'C'].map(title => ({ ...group, id: `order-${title}`, title }))
+    for (const item of groups)
+      await useBookmarkGroupsStore.getState().save(item.id, item, true)
+    await useBookmarkGroupsStore.getState().reorder('order-A', 'order-C')
+    expect(decodeBookmarkGroups(values).map(item => item.title)).toEqual(['B', 'C', 'A'])
+    await useBookmarkGroupsStore.getState().save('order-A', { description: 'Latest description' })
+    await useBookmarkGroupsStore.getState().migrateUrl('https://example.test', 'https://new.test')
+    useBookmarkGroupsStore.setState({ groups: [] })
+    await useBookmarkGroupsStore.getState().load()
+    const backup = structuredClone(useBookmarkGroupsStore.getState().groups)
+    expect(backup.map(item => item.title)).toEqual(['B', 'C', 'A'])
+    values = {}
+    await useBookmarkGroupsStore.getState().restore(backup, 'replace')
+    expect(decodeBookmarkGroups(values).map(item => item.title)).toEqual(['B', 'C', 'A'])
+    expect(decodeBookmarkGroups(values)[2].description).toBe('Latest description')
+  })
+
+  it('preserves concurrent edits and keeps the old order when a reorder write fails', async () => {
+    const second = { ...group, id: 'group-two', title: 'Z', description: 'Remote description' }
+    values = { ...encodeBookmarkGroup(group, 'one'), ...encodeBookmarkGroup(second, 'two') }
+    useBookmarkGroupsStore.setState({ groups: [group, { ...second, description: 'Stale' }] })
+    sync.set.mockRejectedValueOnce(new Error('order write failed'))
+    await expect(useBookmarkGroupsStore.getState().reorder(group.id, second.id)).rejects.toThrow('order write failed')
+    expect(useBookmarkGroupsStore.getState().groups.map(item => item.id)).toEqual([group.id, second.id])
+    await useBookmarkGroupsStore.getState().reorder(group.id, second.id)
+    expect(decodeBookmarkGroups(values).map(item => item.id)).toEqual([second.id, group.id])
+    expect(decodeBookmarkGroups(values)[0].description).toBe('Remote description')
+    await useBookmarkGroupsStore.getState().save('new-group', { ...group, title: 'A new group' }, true)
+    expect(decodeBookmarkGroups(values).map(item => item.id)).toEqual([second.id, group.id, 'new-group'])
+  })
+
+  it('validates order fields and resets the pinned order on a new pin', async () => {
+    expect(parseBookmarkGroup({ ...group, sortOrder: Infinity, pinnedOrder: '1' })).toEqual(group)
+    values = encodeBookmarkGroup({ ...group, pinnedAt: 10, pinnedOrder: -100, sortOrder: 2 }, 'rank')
+    await useBookmarkGroupsStore.getState().save(group.id, { pinnedAt: 20 })
+    expect(decodeBookmarkGroups(values)[0]).toMatchObject({ pinnedAt: 20, sortOrder: 2 })
+    expect(decodeBookmarkGroups(values)[0].pinnedOrder).toBeUndefined()
+  })
   it('preserves custom group icons through sync, migration, pinning and restore', async () => {
     await useBookmarkGroupsStore.getState().save(group.id, { ...group, icon: ' 🐱 ' }, true)
     await useBookmarkGroupsStore.getState().save(group.id, { pinnedAt: 123 })

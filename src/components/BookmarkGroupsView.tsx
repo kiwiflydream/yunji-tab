@@ -1,6 +1,8 @@
-import type { MouseEvent, PointerEvent, ReactNode } from 'react'
+import type { MouseEvent, PointerEvent } from 'react'
+import type { AdditionalGridItem } from '~/components/bookmark-grid/BookmarkGridItems'
 import type { BookmarkGroupMenuAnchor } from '~/components/BookmarkGroupMenu'
 import type { BookmarkGroup } from '~/lib/bookmark-groups'
+import { useDndContext } from '@dnd-kit/core'
 import { Loader2, Plus } from 'lucide-react'
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { BookmarkGroupCard } from '~/components/BookmarkGroupCard'
@@ -9,13 +11,15 @@ import { BookmarkGroupMenu } from '~/components/BookmarkGroupMenu'
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '~/components/ui/alert-dialog'
 import { Button } from '~/components/ui/button'
 import { gridClassByMode } from '~/lib/appearance'
+import { sortBookmarkGroups } from '~/lib/bookmark-groups'
 import { useBookmarkGroupsStore } from '~/lib/bookmark-groups-store'
+import { comparePinnedCards, getPinnedCards, groupCardKey } from '~/lib/card-order'
 import { useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
 
 interface BookmarkGroupsViewProps {
   pinnedOnly?: boolean
-  renderCards?: (cards: ReactNode, count: number) => ReactNode
+  renderCards?: (cards: AdditionalGridItem[], count: number) => import('react').ReactNode
 }
 
 export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: BookmarkGroupsViewProps) {
@@ -25,9 +29,17 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
   const compact = useNavStore(state => state.settings.bookmarkViewMode === 'compact')
   const searchQuery = useDeferredValue(useNavStore(state => state.bookmarkSearchQuery))
   const allGroups = useBookmarkGroupsStore(state => state.groups)
-  const groups = useMemo(() => allGroups
-    .filter(group => enabled && (!pinnedOnly || group.pinnedAt))
-    .toSorted((left, right) => (right.pinnedAt ?? 0) - (left.pinnedAt ?? 0) || left.title.localeCompare(right.title)), [allGroups, enabled, pinnedOnly])
+  const bookmarks = useNavStore(state => state.bookmarks)
+  const dragging = Boolean(useDndContext().active)
+  const draggingRef = useRef(dragging)
+  draggingRef.current = dragging
+  const pinnedIndices = useMemo(() => new Map(getPinnedCards(bookmarks, allGroups).map((card, index) => [card.key, index])), [bookmarks, allGroups])
+  const groups = useMemo(() => {
+    const filtered = allGroups.filter(group => enabled && (!pinnedOnly || group.pinnedAt))
+    return pinnedOnly
+      ? filtered.toSorted((left, right) => comparePinnedCards({ ...left, key: groupCardKey(left.id), pinnedAt: left.pinnedAt! }, { ...right, key: groupCardKey(right.id), pinnedAt: right.pinnedAt! }))
+      : sortBookmarkGroups(filtered)
+  }, [allGroups, enabled, pinnedOnly])
   const cardGroups = useMemo(() => {
     const query = renderCards ? searchQuery.trim().toLocaleLowerCase() : ''
     return query
@@ -76,7 +88,7 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
   const [error, setError] = useState<'groupSaveFailed' | 'groupOpenFailed' | null>(null)
   const menuGroup = cardGroups.find(group => group.id === menu?.id)
   // Drop an anchor whose group was removed, unpinned or filtered out by a live update.
-  if (menu && !menuGroup)
+  if (menu && (!menuGroup || dragging))
     setMenu(null)
 
   const openGroup = (group: BookmarkGroup, event: MouseEvent<HTMLButtonElement>) => {
@@ -99,7 +111,7 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
     setError(null)
   }
   const hoverGroup = (group: BookmarkGroup, event: PointerEvent<HTMLButtonElement>) => {
-    if (event.pointerType !== 'mouse' || !window.matchMedia('(hover: hover) and (pointer: fine)').matches || editor || deleting)
+    if (dragging || event.pointerType !== 'mouse' || !window.matchMedia('(hover: hover) and (pointer: fine)').matches || editor || deleting)
       return
     if (dismissedTriggerRef.current === event.currentTarget) {
       if (event.type === 'pointerenter' && event.relatedTarget instanceof Element && !event.relatedTarget.closest('.bookmark-group-menu'))
@@ -114,7 +126,7 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
     const { clientX: x, clientY: y } = event
     openTimerRef.current = setTimeout(() => {
       openTimerRef.current = null
-      if (trigger.isConnected && trigger.matches(':hover'))
+      if (!draggingRef.current && trigger.isConnected && trigger.matches(':hover'))
         setMenu({ id: group.id, x, y, trigger, keyboard: false, hover: true })
     }, 200)
   }
@@ -148,40 +160,44 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
       setBusy(false)
     }
   }
-  const cards = (
-    <>
-      {cardGroups.map(group => (
-        <BookmarkGroupCard
-          key={group.id}
-          group={group}
-          appearance={appearance}
-          compact={compact}
-          pinning={pinning}
-          expanded={menuGroup?.id === group.id}
-          onOpen={event => openGroup(group, event)}
-          onHover={event => hoverGroup(group, event)}
-          onLeave={() => leaveGroup(group.id)}
-          onActionsEnter={() => {
-            clearTimers()
-            setMenu(current => current?.hover ? null : current)
-          }}
-          onPin={() => {
-            closeMenu()
-            void togglePinned(group)
-          }}
-          onEdit={() => {
-            closeMenu()
-            setEditor({ group })
-          }}
-          onDelete={() => {
-            closeMenu()
-            setDeleting(group)
-            setError(null)
-          }}
-        />
-      ))}
-    </>
-  )
+  const cards: AdditionalGridItem[] = cardGroups.map((group, index) => ({
+    key: groupCardKey(group.id),
+    pinnedAt: group.pinnedAt ?? 0,
+    pinnedOrder: group.pinnedOrder,
+    node: (
+      <BookmarkGroupCard
+        key={group.id}
+        group={group}
+        appearance={appearance}
+        compact={compact}
+        pinning={pinning}
+        expanded={menuGroup?.id === group.id}
+        reorderIndex={pinnedOnly ? pinnedIndices.get(groupCardKey(group.id)) ?? index : index}
+        reorderEnabled={!editor && !deleting && (!renderCards || !searchQuery.trim())}
+        pinnedReorder={pinnedOnly}
+        onOpen={event => openGroup(group, event)}
+        onHover={event => hoverGroup(group, event)}
+        onLeave={() => leaveGroup(group.id)}
+        onActionsEnter={() => {
+          clearTimers()
+          setMenu(current => current?.hover ? null : current)
+        }}
+        onPin={() => {
+          closeMenu()
+          void togglePinned(group)
+        }}
+        onEdit={() => {
+          closeMenu()
+          setEditor({ group })
+        }}
+        onDelete={() => {
+          closeMenu()
+          setDeleting(group)
+          setError(null)
+        }}
+      />
+    ),
+  }))
   if (pinnedOnly && !renderCards && !groups.length && !error && !editor && !deleting)
     return null
 
@@ -222,7 +238,7 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
         ? renderCards(cards, cardGroups.length)
         : (
             <div className={gridClassByMode[appearance.gridDensity][compact ? 'compact' : 'grid']}>
-              {cards}
+              {cards.map(card => card.node)}
               {!groups.length && !loadError
                 ? (
                     <div className="col-span-full py-14 text-center">

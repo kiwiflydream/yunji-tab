@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { decodeBookmarkGroups, encodeBookmarkGroup } from './bookmark-groups'
+import { useBookmarkGroupsStore } from './bookmark-groups-store'
+import { getPinnedCards } from './card-order'
 import * as metadataSync from './metadata-sync'
 import { applyMaterializedBookmarkMetadata } from './metadata-sync'
 import * as siteMetadata from './site-metadata'
@@ -50,6 +53,7 @@ beforeEach(() => {
   storageState.setError = null
   storageState.setHook = null
   useNavStore.setState(initialState, true)
+  useBookmarkGroupsStore.setState({ groups: [], error: false })
   vi.stubGlobal('chrome', { bookmarks: {} })
 })
 
@@ -60,6 +64,99 @@ afterEach(() => {
 })
 
 describe('navigation store boundaries', () => {
+  it('lets a metadata-locked URL migration finish while a pinned reorder is waiting', async () => {
+    vi.useFakeTimers()
+    const group = { id: 'tools', title: 'Tools', description: '', pinnedAt: 20, bookmarks: [{ url: 'https://one.example/', title: 'One' }] }
+    const values = encodeBookmarkGroup(group, 'initial')
+    vi.stubGlobal('chrome', { storage: { sync: {
+      get: vi.fn(async () => structuredClone(values)),
+      set: vi.fn(async changes => Object.assign(values, changes)),
+      remove: vi.fn(async () => {}),
+    } }, bookmarks: {} })
+    useNavStore.setState({ syncMetadataNow: vi.fn().mockResolvedValue(undefined), bookmarks: [] })
+    const entered = deferred<void>()
+    const release = deferred<void>()
+    const migration = withBookmarkMetadataLock(async () => {
+      entered.resolve()
+      await release.promise
+      await useBookmarkGroupsStore.getState().migrateUrl('https://one.example/', 'https://new.example/')
+    })
+    await entered.promise
+    const reorder = useNavStore.getState().reorderPinnedCard('group:tools', 'bookmark:https://one.example/')
+    // Let the reorder reach whichever lock it acquires first.
+    await vi.advanceTimersByTimeAsync(0)
+    release.resolve()
+    const outcome = Promise.race([
+      Promise.all([migration, reorder]).then(() => 'completed'),
+      new Promise<string>(resolve => setTimeout(resolve, 100, 'deadlocked')),
+    ])
+    await vi.advanceTimersByTimeAsync(100)
+    expect(await outcome).toBe('completed')
+    expect(decodeBookmarkGroups(values)[0].bookmarks[0].url).toBe('https://new.example/')
+  })
+  it('rolls back only order fields if a dense mixed reorder cannot save group ranks', async () => {
+    vi.useFakeTimers()
+    const group = { id: 'tools', title: 'Tools', description: '', pinnedAt: 20, pinnedOrder: -100, bookmarks: [{ url: 'https://one.example/', title: 'One' }] }
+    const values = encodeBookmarkGroup(group, 'initial')
+    vi.stubGlobal('chrome', { storage: { sync: {
+      get: vi.fn(async () => structuredClone(values)),
+      set: vi.fn(async () => {
+        storageState.values.set('local:yunji-tab:meta', {
+          ...storageState.values.get('local:yunji-tab:meta') as object,
+          'https://one.example/': { pinnedAt: 30, pinnedOrder: -100, tags: ['concurrent edit'] },
+        })
+        throw new Error('sync write rejected')
+      }),
+    } }, bookmarks: {} })
+    const meta = {
+      'https://one.example/': { pinnedAt: 30, pinnedOrder: -100 },
+      'https://two.example/': { pinnedAt: 10, pinnedOrder: -100 },
+    }
+    storageState.values.set('local:yunji-tab:meta', meta)
+    useNavStore.setState({ meta, syncMetadataNow: vi.fn().mockResolvedValue(undefined), bookmarks: [
+      { id: 'one', name: 'One', url: 'https://one.example/', categoryId: 'cat-1', pinnedAt: 30, pinnedOrder: -100 },
+      { id: 'two', name: 'Two', url: 'https://two.example/', categoryId: 'cat-2', pinnedAt: 10, pinnedOrder: -100 },
+    ] })
+    await expect(useNavStore.getState().reorderPinnedCard('bookmark:https://one.example/', 'bookmark:https://two.example/'))
+      .rejects
+      .toThrow('sync write rejected')
+    expect(useNavStore.getState().meta['https://one.example/']).toEqual({ pinnedAt: 30, pinnedOrder: -100, tags: ['concurrent edit'] })
+    expect(useNavStore.getState().meta['https://two.example/'].pinnedOrder).toBe(-100)
+    expect(decodeBookmarkGroups(values)[0].pinnedOrder).toBe(-100)
+    await vi.advanceTimersByTimeAsync(metadataAutoSyncDelayMs)
+  })
+  it('reorders mixed pinned cards with fresh metadata while retaining concurrent group edits', async () => {
+    vi.useFakeTimers()
+    const group = { id: 'tools', title: 'Tools', description: 'Remote edit', pinnedAt: 20, bookmarks: [{ url: 'https://one.example/', title: 'One' }] }
+    const values = encodeBookmarkGroup(group, 'initial')
+    const sync = {
+      get: vi.fn(async () => structuredClone(values)),
+      set: vi.fn(async (changes) => {
+        Object.assign(values, changes)
+      }),
+      remove: vi.fn(async () => {}),
+    }
+    vi.stubGlobal('chrome', { storage: { sync }, bookmarks: {} })
+    useBookmarkGroupsStore.setState({ groups: [{ ...group, description: 'Stale' }] })
+    useNavStore.setState({ syncMetadataNow: vi.fn().mockResolvedValue(undefined), bookmarks: [
+      { id: 'one', name: 'One', url: 'https://one.example/', categoryId: 'cat-1', pinnedAt: 30 },
+      { id: 'two', name: 'Two', url: 'https://two.example/', categoryId: 'cat-2', pinnedAt: 10 },
+    ] })
+    storageState.values.set('local:yunji-tab:meta', {
+      'https://one.example/': { pinnedAt: 30, tags: ['latest'] },
+      'https://two.example/': { pinnedAt: 10 },
+    })
+    await useNavStore.getState().reorderPinnedCard('group:tools', 'bookmark:https://one.example/')
+    expect(getPinnedCards(useNavStore.getState().bookmarks, decodeBookmarkGroups(values)).map(item => item.key))
+      .toEqual(['group:tools', 'bookmark:https://one.example/', 'bookmark:https://two.example/'])
+    expect(decodeBookmarkGroups(values)[0]).toMatchObject({ pinnedAt: 20, description: 'Remote edit' })
+    await useNavStore.getState().reorderPinnedCard('bookmark:https://two.example/', 'group:tools')
+    expect(getPinnedCards(useNavStore.getState().bookmarks, decodeBookmarkGroups(values)).map(item => item.key))
+      .toEqual(['bookmark:https://two.example/', 'group:tools', 'bookmark:https://one.example/'])
+    expect(useNavStore.getState().meta['https://one.example/'].tags).toEqual(['latest'])
+    expect(useNavStore.getState().bookmarks.map(item => item.categoryId)).toEqual(['cat-1', 'cat-2'])
+    await vi.advanceTimersByTimeAsync(metadataAutoSyncDelayMs)
+  })
   it('preserves metadata saved by another page when editing a stale bookmark', async () => {
     vi.useFakeTimers()
     storageState.values.set('local:yunji-tab:meta', {

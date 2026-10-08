@@ -165,6 +165,9 @@ export function parseYunjiTabBackup(raw: string): YunjiTabBackup {
         typeof candidate.pinnedAt === 'number' && candidate.pinnedAt > 0
           ? candidate.pinnedAt
           : undefined,
+      pinnedOrder: typeof candidate.pinnedOrder === 'number' && Number.isFinite(candidate.pinnedOrder)
+        ? candidate.pinnedOrder
+        : undefined,
       tags: Array.isArray(candidate.tags)
         ? candidate.tags.filter((tag): tag is string => typeof tag === 'string')
         : undefined,

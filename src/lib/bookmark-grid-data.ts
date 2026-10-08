@@ -9,6 +9,7 @@ import {
   bookmarkSearchEntryScore,
   categorySearchScore,
 } from './bookmark-search'
+import { pinnedCardRank } from './card-order'
 
 export type BookmarkUsageMap = Record<string, BookmarkUsage>
 
@@ -35,7 +36,9 @@ export function sortBookmarks(
   usage: BookmarkUsageMap,
 ): Bookmark[] {
   return bookmarks.toSorted((left, right) => {
-    const pinned = (right.pinnedAt ?? 0) - (left.pinnedAt ?? 0)
+    const pinned = left.pinnedAt && right.pinnedAt
+      ? pinnedCardRank({ ...left, pinnedAt: left.pinnedAt }) - pinnedCardRank({ ...right, pinnedAt: right.pinnedAt })
+      : Number(Boolean(right.pinnedAt)) - Number(Boolean(left.pinnedAt))
     if (pinned)
       return pinned
     if (mode === 'name')

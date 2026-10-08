@@ -59,11 +59,12 @@ describe('yunji tab backup', () => {
     const backup = createYunjiTabBackup({
       settings,
       categories,
-      bookmarkGroups: [{ id: 'tools', title: '工具', description: '日常使用', icon: '🛠️', pinnedAt: 123, bookmarks: [{ id: 'docs', url: 'https://example.com', title: '组内文档' }] }],
+      bookmarkGroups: [{ id: 'tools', title: '工具', description: '日常使用', icon: '🛠️', pinnedAt: 123, sortOrder: 2, pinnedOrder: -50, bookmarks: [{ id: 'docs', url: 'https://example.com', title: '组内文档' }] }],
       meta: {
         'https://example.com': {
           description: 'Example',
           pinnedAt: 123,
+          pinnedOrder: -100.5,
           tags: ['AI', '文档'],
           inboxAt: 789,
         },
@@ -82,6 +83,7 @@ describe('yunji tab backup', () => {
     const parsed = parseYunjiTabBackup(JSON.stringify(backup))
 
     expect(parsed.bookmarkMeta['https://example.com']?.pinnedAt).toBe(123)
+    expect(parsed.bookmarkMeta['https://example.com']?.pinnedOrder).toBe(-100.5)
     expect(parsed.bookmarkMeta['https://example.com']?.tags).toEqual([
       'AI',
       '文档',

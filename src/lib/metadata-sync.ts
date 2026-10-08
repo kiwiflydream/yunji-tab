@@ -19,6 +19,7 @@ const META_FIELDS = [
   'icon',
   'alternateUrls',
   'pinnedAt',
+  'pinnedOrder',
   'tags',
   'inboxAt',
 ] as const satisfies ReadonlyArray<keyof BookmarkMeta>
@@ -102,7 +103,7 @@ export function normalizeMetadataSyncScope(scope?: Partial<MetadataSyncScope>): 
 
 function enabledMetaFields(scope?: Partial<MetadataSyncScope>): MetaField[] {
   const normalized = normalizeMetadataSyncScope(scope)
-  return META_FIELDS.filter(field => normalized[field])
+  return META_FIELDS.filter(field => normalized[field === 'pinnedOrder' ? 'pinnedAt' : field])
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

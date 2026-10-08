@@ -19,9 +19,11 @@ import { CheckCircle2, FolderInput, GripVertical, XCircle } from 'lucide-react'
 
 import { useEffect, useState } from 'react'
 import { MovePendingContext } from '~/components/BookmarkDragDropContext'
+import { useBookmarkGroupsStore } from '~/lib/bookmark-groups-store'
+import { bookmarkCardKey, groupCardKey } from '~/lib/card-order'
 import {
 
-  readBookmarkDropData,
+  readCardDropData,
   readCategoryDropData,
   readDragItemData,
   validateBookmarkDrop,
@@ -55,7 +57,8 @@ export function BookmarkDragDropProvider({
   const updateBookmark = useNavStore(state => state.updateBookmark)
   const updateCategory = useNavStore(state => state.updateCategory)
   const reorderBookmark = useNavStore(state => state.reorderBookmark)
-  const reorderPinnedBookmark = useNavStore(state => state.reorderPinnedBookmark)
+  const reorderPinnedCard = useNavStore(state => state.reorderPinnedCard)
+  const reorderGroup = useBookmarkGroupsStore(state => state.reorder)
   const [activeItem, setActiveItem] = useState<DragItemData | null>(null)
   const [moving, setMoving] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -85,7 +88,7 @@ export function BookmarkDragDropProvider({
 
   const handleDragEnd = async ({ active, over }: DragEndEvent) => {
     const item = readDragItemData(active.data.current)
-    const bookmarkTarget = readBookmarkDropData(over?.data.current)
+    const bookmarkTarget = readCardDropData(over?.data.current)
     const categoryTarget = readCategoryDropData(over?.data.current)
     setActiveItem(null)
 
@@ -103,12 +106,20 @@ export function BookmarkDragDropProvider({
 
       setMoving(true)
       try {
-        if (item.type !== 'bookmark')
+        if (item.type === 'category')
           return
-        await (item.pinnedReorder ? reorderPinnedBookmark : reorderBookmark)(
-          item.bookmarkId,
-          bookmarkTarget.bookmarkId,
-        )
+        if (item.pinnedReorder) {
+          await reorderPinnedCard(
+            item.type === 'group' ? groupCardKey(item.groupId) : bookmarkCardKey(item.url),
+            bookmarkTarget.type === 'group-drop' ? groupCardKey(bookmarkTarget.groupId) : bookmarkCardKey(bookmarkTarget.url),
+          )
+        }
+        else if (item.type === 'group' && bookmarkTarget.type === 'group-drop') {
+          await reorderGroup(item.groupId, bookmarkTarget.groupId)
+        }
+        else if (item.type === 'bookmark' && bookmarkTarget.type === 'bookmark-drop') {
+          await reorderBookmark(item.bookmarkId, bookmarkTarget.bookmarkId)
+        }
         setNotice({
           kind: 'success',
           key: validation.completedMessageKey ?? validation.messageKey,
@@ -147,7 +158,7 @@ export function BookmarkDragDropProvider({
           categoryId: categoryTarget.categoryId,
         })
       }
-      else {
+      else if (item.type === 'category') {
         await updateCategory(item.categoryId, {
           parentId: categoryTarget.categoryId,
         })
@@ -188,7 +199,7 @@ export function BookmarkDragDropProvider({
             },
             onDragOver({ active, over }) {
               const item = readDragItemData(active.data.current)
-              const bookmarkTarget = readBookmarkDropData(over?.data.current)
+              const bookmarkTarget = readCardDropData(over?.data.current)
               if (item && bookmarkTarget) {
                 const result = validateBookmarkDrop(item, bookmarkTarget)
                 return t(result.messageKey, result.params)
@@ -205,7 +216,7 @@ export function BookmarkDragDropProvider({
             },
             onDragEnd({ active, over }) {
               const item = readDragItemData(active.data.current)
-              const bookmarkTarget = readBookmarkDropData(over?.data.current)
+              const bookmarkTarget = readCardDropData(over?.data.current)
               if (item && bookmarkTarget) {
                 const result = validateBookmarkDrop(item, bookmarkTarget)
                 return t(result.messageKey, result.params)
@@ -235,7 +246,7 @@ export function BookmarkDragDropProvider({
           {activeItem
             ? (
                 <div className="flex max-w-xs items-center gap-3 rounded-md border border-border bg-background px-4 py-3 text-sm font-medium shadow-xl">
-                  {activeItem.type === 'bookmark' && activeItem.reorderEnabled
+                  {activeItem.type !== 'category' && activeItem.reorderEnabled
                     ? (
                         <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
                       )
