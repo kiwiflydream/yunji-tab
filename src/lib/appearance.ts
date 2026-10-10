@@ -34,6 +34,7 @@ const COLOR_THEMES: ColorTheme[] = [
   'berry',
   'kami',
   'engraving',
+  'electric',
 ]
 const BACKGROUND_STYLES: BackgroundStyle[] = ['flat', 'subtle', 'panel']
 
@@ -207,6 +208,26 @@ const engravingPalette: Record<string, string> = {
   '--ring': '43 75% 80%',
 }
 
+const electricPalette: Record<string, string> = {
+  '--background': '0 0% 95%',
+  '--foreground': '240 100% 45.5%',
+  '--card': '0 0% 95%',
+  '--card-foreground': '240 100% 45.5%',
+  '--popover': '0 0% 98%',
+  '--popover-foreground': '240 100% 45.5%',
+  '--primary': '240 100% 45.5%',
+  '--primary-foreground': '0 0% 100%',
+  '--secondary': '246 18% 94%',
+  '--secondary-foreground': '240 100% 45.5%',
+  '--muted': '246 14% 94%',
+  '--muted-foreground': '246 33% 54%',
+  '--accent': '246 42% 94%',
+  '--accent-foreground': '240 100% 45.5%',
+  '--border': '246 12% 89%',
+  '--input': '246 16% 84%',
+  '--ring': '240 100% 45.5%',
+}
+
 export const colorThemeVars: Record<
   Exclude<ColorTheme, 'default'>,
   {
@@ -215,6 +236,7 @@ export const colorThemeVars: Record<
   }
 > = {
   engraving: { light: engravingPalette, dark: engravingPalette },
+  electric: { light: electricPalette, dark: electricPalette },
   graphite: {
     light: {
       '--background': '210 20% 98%',

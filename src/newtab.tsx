@@ -250,9 +250,11 @@ export default function NewTab() {
       const dark = theme === 'dark' || (theme === 'system' && mq.matches)
       const strictKami = appearance.colorTheme === 'kami'
       const engraving = appearance.colorTheme === 'engraving'
-      root.classList.toggle('dark', strictKami ? false : engraving || dark)
+      const electric = appearance.colorTheme === 'electric'
+      root.classList.toggle('dark', strictKami || electric ? false : engraving || dark)
       root.classList.toggle('theme-kami', strictKami)
       root.classList.toggle('theme-engraving', engraving)
+      root.classList.toggle('theme-electric', electric)
 
       const radius = strictKami
         ? '0.25rem'
@@ -278,7 +280,7 @@ export default function NewTab() {
         )
       }
 
-      if (strictKami || engraving || appearance.accentColor === 'neutral')
+      if (strictKami || engraving || electric || appearance.accentColor === 'neutral')
         return
 
       const colorVars = accentColorVars[appearance.accentColor]

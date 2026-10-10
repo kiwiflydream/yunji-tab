@@ -168,6 +168,59 @@
   background-color: hsl(var(--muted-foreground) / 0.4);
 }
 
+/* Electric Blue: quiet surfaces and fine rules let the blue typography lead. */
+html.theme-electric,
+html.theme-electric body {
+  font-family:
+    ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono",
+    "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+html.theme-electric .newtab-shell {
+  background-color: hsl(var(--background));
+  background-image: none;
+}
+
+html.theme-electric :is(header, .workspace-layout > aside, .surface-panel, .glass-panel) {
+  background-color: hsl(var(--background));
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+html.theme-electric :is(article, .group.border-dashed) {
+  border-width: 0 0 1px;
+  border-style: solid;
+  border-color: hsl(var(--border));
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+html.theme-electric :is(article, .group.border-dashed):hover {
+  background-color: hsl(var(--accent) / 0.4);
+  border-color: hsl(var(--primary) / 0.4);
+  transform: none;
+}
+
+html.theme-electric :is(h1, h2, h3, .bookmark-card-title, .font-medium, .font-semibold) {
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+html.theme-electric :is([role="dialog"], [role="alertdialog"], [role="menu"], .bookmark-group-menu) {
+  border-radius: var(--radius);
+  box-shadow: 0 6px 24px hsl(var(--foreground) / 0.06);
+}
+
+html.theme-electric .bg-foreground\/35 {
+  background-color: hsl(var(--muted-foreground) / 0.2);
+}
+
+html.theme-electric ::selection {
+  background: hsl(var(--primary) / 0.15);
+}
+
 /* 严格 Kami 模式：纸张、墨色和排版作为一个整体，不受外观偏好拆分覆盖。 */
 html.theme-kami,
 html.theme-kami body {

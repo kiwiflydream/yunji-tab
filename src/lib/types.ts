@@ -62,7 +62,7 @@ export type CardStyle = 'soft' | 'outline' | 'plain'
 export type AppearanceSize = 'sm' | 'md' | 'lg'
 export type AccentColor = 'neutral' | 'blue' | 'green' | 'orange' | 'rose'
 export type ColorTheme
-  = 'default' | 'graphite' | 'meadow' | 'dawn' | 'berry' | 'kami' | 'engraving'
+  = 'default' | 'graphite' | 'meadow' | 'dawn' | 'berry' | 'kami' | 'engraving' | 'electric'
 export type ActionVisibility = 'hover' | 'always'
 export type BackgroundStyle = 'flat' | 'subtle' | 'panel'
 export type TitleLineCount = 1 | 2

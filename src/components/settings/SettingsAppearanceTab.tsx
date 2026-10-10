@@ -93,7 +93,7 @@ type StylePresetSettings = Omit<
   AppearanceSettings,
   'navLayout' | 'navItems' | 'catDecorations'
 >
-type StylePreset = 'minimal' | 'balanced' | 'compact' | 'soft' | 'kami' | 'engraving'
+type StylePreset = 'minimal' | 'balanced' | 'compact' | 'soft' | 'kami' | 'engraving' | 'electric'
 
 interface StylePresetDefinition {
   labelKey: MessageKey
@@ -256,6 +256,22 @@ const STYLE_PRESETS: Record<StylePreset, StylePresetDefinition> = {
       cardStyle: 'outline',
       radius: 'sm',
       colorTheme: 'engraving',
+      cardFields: {
+        ...DEFAULT_APPEARANCE_SETTINGS.cardFields,
+        titleLines: 2,
+      },
+    },
+  },
+  electric: {
+    labelKey: 'appearanceStyleElectric',
+    descriptionKey: 'appearanceStyleElectricDescription',
+    badgeKey: 'appearanceStyleElectricBadge',
+    settings: {
+      ...toStylePresetSettings(DEFAULT_APPEARANCE_SETTINGS),
+      cardStyle: 'plain',
+      iconSize: 'sm',
+      radius: 'sm',
+      colorTheme: 'electric',
       cardFields: {
         ...DEFAULT_APPEARANCE_SETTINGS.cardFields,
         titleLines: 2,
@@ -491,6 +507,9 @@ export function SettingsAppearanceTab() {
                   {appearance.colorTheme === 'engraving'
                     ? <option value="engraving" disabled>{t('appearanceEngravingColorOption')}</option>
                     : null}
+                  {appearance.colorTheme === 'electric'
+                    ? <option value="electric" disabled>{t('appearanceElectricColorOption')}</option>
+                    : null}
                   {APPEARANCE_OPTIONS.colorTheme.map(option => (
                     <option key={option.value} value={option.value}>
                       {optionLabel(t, option)}
@@ -507,12 +526,15 @@ export function SettingsAppearanceTab() {
                 {appearance.colorTheme === 'engraving'
                   ? <span className="text-xs text-muted-foreground">{t('appearanceEngravingColorHint')}</span>
                   : null}
+                {appearance.colorTheme === 'electric'
+                  ? <span className="text-xs text-muted-foreground">{t('appearanceElectricColorHint')}</span>
+                  : null}
               </label>
               <label className="grid gap-1.5 text-sm">
                 <span className="font-medium">{t('appearanceAccentColor')}</span>
                 <select
                   value={appearance.accentColor}
-                  disabled={appearance.colorTheme === 'engraving'}
+                  disabled={appearance.colorTheme === 'engraving' || appearance.colorTheme === 'electric'}
                   onChange={event =>
                     void setAppearance({
                       accentColor: event.target
@@ -531,7 +553,7 @@ export function SettingsAppearanceTab() {
                 <span className="font-medium">{t('appearanceBackground')}</span>
                 <select
                   value={appearance.backgroundStyle}
-                  disabled={appearance.colorTheme === 'engraving'}
+                  disabled={appearance.colorTheme === 'engraving' || appearance.colorTheme === 'electric'}
                   onChange={event =>
                     void setAppearance({
                       backgroundStyle: event.target
