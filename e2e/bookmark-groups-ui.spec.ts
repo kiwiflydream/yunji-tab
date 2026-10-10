@@ -47,6 +47,117 @@ async function openSettings(page: Page) {
   await page.getByRole('tab', { name: '常规', exact: true }).click()
 }
 
+test('loads the default pinned page without a group dialog skeleton', async ({ extensionWorker, newTabPage }) => {
+  await extensionWorker.evaluate(async () => {
+    const key = 'yunji-tab:settings'
+    const settings = JSON.parse(String((await chrome.storage.sync.get(key))[key]))
+    await chrome.storage.sync.set({ [key]: JSON.stringify({ ...settings, defaultCategoryId: 'pinned' }) })
+  })
+  await newTabPage.addInitScript(() => {
+    const state = window as unknown as { loadingSurfaces: { label: string | null, position: string }[] }
+    state.loadingSurfaces = []
+    new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (!(node instanceof Element))
+            continue
+          const statuses = [...node.querySelectorAll('[role="status"]')]
+          if (node.matches('[role="status"]'))
+            statuses.push(node)
+          for (const status of statuses)
+            state.loadingSurfaces.push({ label: status.getAttribute('aria-label'), position: getComputedStyle(status).position })
+        }
+      }
+    }).observe(document, { childList: true, subtree: true })
+  })
+  await newTabPage.reload()
+  await expect(newTabPage.getByRole('button', { name: `查看书签组 ${title}`, exact: true })).toBeVisible()
+  const surfaces = await newTabPage.evaluate(() => (window as unknown as { loadingSurfaces: { label: string | null, position: string }[] }).loadingSurfaces)
+  // Prove the observer ran on the real loading path before checking for unwanted overlays.
+  expect(surfaces.some(surface => surface.label?.startsWith('书签'))).toBe(true)
+  expect(surfaces.filter(surface => surface.label === '书签组' && surface.position === 'fixed')).toEqual([])
+})
+
+for (const view of ['groups', 'pinned']) {
+  test(`keeps ${view} card actions clickable after the member hover menu opens near them`, async ({ newTabPage }) => {
+    const nav = newTabPage.getByRole('navigation', { name: '书签分类' })
+    if (view === 'pinned') {
+      await nav.getByRole('button', { name: /^智能分类/ }).click()
+      await nav.getByRole('button', { name: /置顶/ }).click()
+    }
+    else {
+      await nav.getByRole('button', { name: '书签组', exact: true }).click()
+    }
+    const card = newTabPage.locator('article[data-bookmark-group-id="ui-tools"]')
+    const more = card.getByRole('button', { name: `更多操作 ${title}`, exact: true })
+    const actions = card.locator('div.absolute.right-2.top-2')
+    await card.evaluate(element => Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => undefined))))
+    const bounds = (await card.boundingBox())!
+    const actionBounds = (await actions.boundingBox())!
+    await newTabPage.mouse.move(actionBounds.x - 12, bounds.y + 3)
+    const menu = newTabPage.getByRole('menu', { name: `查看书签组 ${title}`, exact: true })
+    await expect(menu).toBeVisible()
+    const moreBounds = (await more.boundingBox())!
+    const point = { x: moreBounds.x + moreBounds.width / 2, y: moreBounds.y + moreBounds.height / 2 }
+    expect(await more.evaluate((element, point) => element.contains(document.elementFromPoint(point.x, point.y)), point)).toBe(true)
+    await newTabPage.screenshot({ path: `/tmp/yunji-${view}-actions-clear.png` })
+    // Use an actual pointer click; locator.click() would retry around an obstruction.
+    await newTabPage.mouse.click(point.x, point.y)
+    await expect(newTabPage.getByRole('menuitem', { name: `编辑书签组 ${title}`, exact: true })).toBeVisible()
+    await newTabPage.getByRole('menuitem', { name: `编辑书签组 ${title}`, exact: true }).click()
+    await expect(newTabPage.getByRole('dialog').getByLabel('组标题', { exact: true })).toHaveValue(title)
+  })
+}
+
+test('keeps pin clickable when a long member menu flips above a compact card', async ({ extensionWorker, newTabPage }) => {
+  await seedMenuMembers(extensionWorker)
+  await extensionWorker.evaluate(async () => {
+    const key = 'yunji-tab:settings'
+    const settings = JSON.parse(String((await chrome.storage.sync.get(key))[key]))
+    await chrome.storage.sync.set({ [key]: JSON.stringify({ ...settings, bookmarkViewMode: 'compact' }) })
+  })
+  await newTabPage.reload()
+  await newTabPage.setViewportSize({ width: 1280, height: 300 })
+  await newTabPage.getByRole('navigation', { name: '书签分类' }).getByRole('button', { name: '书签组', exact: true }).click()
+  const card = newTabPage.locator('[data-bookmark-group-id="ui-tools"]')
+  const pin = card.getByRole('button', { name: `取消置顶 ${title}`, exact: true })
+  const bounds = (await card.boundingBox())!
+  const actionBounds = (await card.locator('[data-bookmark-group-actions]').boundingBox())!
+  await newTabPage.mouse.move(actionBounds.x - 12, bounds.y + bounds.height - 5)
+  const menu = newTabPage.getByRole('menu', { name: `查看书签组 ${title}`, exact: true })
+  await expect(menu).toHaveAttribute('data-side', 'top')
+  const pinBounds = (await pin.boundingBox())!
+  const point = { x: pinBounds.x + pinBounds.width / 2, y: pinBounds.y + pinBounds.height / 2 }
+  expect(await pin.evaluate((element, point) => element.contains(document.elementFromPoint(point.x, point.y)), point)).toBe(true)
+  await newTabPage.screenshot({ path: '/tmp/yunji-compact-actions-menu-top.png' })
+  await newTabPage.mouse.click(point.x, point.y)
+  await expect(card.getByRole('button', { name: `置顶 ${title}`, exact: true })).toHaveAttribute('aria-pressed', 'false')
+})
+
+test('opens the hover menu within 100ms even while the mouse moves inside the card', async ({ newTabPage }) => {
+  await newTabPage.getByRole('navigation', { name: '书签分类' }).getByRole('button', { name: '书签组', exact: true }).click()
+  const trigger = newTabPage.getByRole('button', { name: `查看书签组 ${title}`, exact: true })
+  const bounds = (await trigger.boundingBox())!
+  const menu = newTabPage.getByRole('menu', { name: `查看书签组 ${title}`, exact: true })
+  await newTabPage.clock.install()
+  await newTabPage.clock.pauseAt(new Date())
+  try {
+    await newTabPage.mouse.move(bounds.x + 60, bounds.y + 50)
+    for (let step = 1; step <= 3; step++) {
+      await newTabPage.clock.runFor(25)
+      await newTabPage.mouse.move(bounds.x + 60 + step * 2, bounds.y + 50)
+    }
+    await newTabPage.clock.runFor(24)
+    await expect(menu).toHaveCount(0)
+    await newTabPage.clock.runFor(1)
+    await expect(menu).toBeVisible({ timeout: 1500 })
+    await expect.poll(async () => (await menu.boundingBox())!.x).toBeCloseTo(bounds.x + 66 + 8, 0)
+  }
+  finally {
+    await newTabPage.clock.resume()
+  }
+})
+
 test('shares compact card preferences and exposes hover actions through keyboard focus', async ({ extensionWorker, newTabPage }) => {
   await newTabPage.getByRole('navigation', { name: '书签分类' }).getByRole('button', { name: '书签组', exact: true }).click()
   const card = newTabPage.locator('article[data-bookmark-group-id="ui-tools"]')
@@ -339,7 +450,9 @@ test('opens names beside the click, toggles and switches menus without leaving t
   await expect(trigger).toHaveAttribute('aria-expanded', 'true')
   await expect(newTabPage.getByRole('button', { name: '创建书签组', exact: true })).toBeVisible()
   await expect.poll(async () => Math.abs((await menu.boundingBox())!.x - point.x - 8)).toBeLessThan(2)
-  await expect.poll(async () => Math.abs((await menu.boundingBox())!.y - point.y - 9)).toBeLessThan(2)
+  const actionBounds = (await newTabPage.locator('[data-bookmark-group-id="ui-tools"] [data-bookmark-group-actions]').boundingBox())!
+  const expectedMenuY = Math.max(point.y, actionBounds.y + actionBounds.height) + 9
+  await expect.poll(async () => Math.abs((await menu.boundingBox())!.y - expectedMenuY)).toBeLessThan(2)
   const menuBounds = (await menu.boundingBox())!
   await newTabPage.mouse.move(menuBounds.x + 30, menuBounds.y + 24)
   await expect(menu.getByRole('menuitem').first()).toHaveAttribute('data-highlighted', '')
@@ -478,20 +591,21 @@ test('opens on mouse dwell without taking focus and bridges the card/menu gap', 
   const more = card.getByRole('button', { name: `更多操作 ${title}`, exact: true })
   const search = newTabPage.getByRole('textbox', { name: /^搜索书签/ })
   await search.focus()
+  await expect(trigger).toBeVisible()
+  const bounds = (await trigger.boundingBox())!
   await newTabPage.clock.install()
   await newTabPage.clock.pauseAt(new Date())
-  const bounds = (await trigger.boundingBox())!
   const point = { x: bounds.x + 85, y: bounds.y + 34 }
 
   // Briefly passing through a card must not open anything.
   await newTabPage.mouse.move(point.x, point.y)
-  await newTabPage.clock.runFor(100)
+  await newTabPage.clock.runFor(50)
   await header.hover()
   await newTabPage.clock.runFor(300)
   await expect(menu).toHaveCount(0)
 
   await newTabPage.mouse.move(point.x, point.y)
-  await newTabPage.clock.runFor(199)
+  await newTabPage.clock.runFor(99)
   await expect(menu).toHaveCount(0)
   await newTabPage.clock.runFor(150)
   await expect(menu).toBeVisible()
@@ -519,7 +633,7 @@ test('opens on mouse dwell without taking focus and bridges the card/menu gap', 
 
   // Actions cancel a pending hover and never open the member list.
   await newTabPage.mouse.move(point.x, point.y)
-  await newTabPage.clock.runFor(100)
+  await newTabPage.clock.runFor(50)
   await more.hover()
   await newTabPage.clock.runFor(400)
   await expect(menu).toHaveCount(0)

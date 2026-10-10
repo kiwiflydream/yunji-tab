@@ -84,7 +84,7 @@ export function BookmarkGroupCard({ group, appearance, compact, pinning, expande
           <p className="mt-0.5 text-xs text-muted-foreground">{t('bookmarkCount', { count: group.bookmarks.length })}</p>
         </div>
       </button>
-      <div onPointerEnter={onActionsEnter} className={cn(cardActionsClass, fields.actions === 'hover' && cardActionsHoverClass)}>
+      <div data-bookmark-group-actions onPointerEnter={onActionsEnter} className={cn(cardActionsClass, fields.actions === 'hover' && cardActionsHoverClass)}>
         <button
           type="button"
           disabled={pinning !== null}

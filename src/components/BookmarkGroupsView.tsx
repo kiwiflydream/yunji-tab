@@ -22,6 +22,8 @@ interface BookmarkGroupsViewProps {
   renderCards?: (cards: AdditionalGridItem[], count: number) => import('react').ReactNode
 }
 
+const HOVER_OPEN_DELAY = 100
+
 export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: BookmarkGroupsViewProps) {
   const { t } = useI18n()
   const enabled = useNavStore(state => state.settings.bookmarkGroupsEnabled)
@@ -54,6 +56,7 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
   menuRef.current = menu
   const dismissedTriggerRef = useRef<HTMLButtonElement | null>(null)
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingHoverRef = useRef<BookmarkGroupMenuAnchor | null>(null)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const clearTimers = () => {
     if (openTimerRef.current !== null)
@@ -61,6 +64,7 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
     if (closeTimerRef.current !== null)
       clearTimeout(closeTimerRef.current)
     openTimerRef.current = null
+    pendingHoverRef.current = null
     closeTimerRef.current = null
   }
   useEffect(() => clearTimers, [])
@@ -119,16 +123,25 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
       else
         return
     }
+    // Track the latest pointer position without restarting the dwell on every move.
+    if (openTimerRef.current !== null && pendingHoverRef.current?.trigger === event.currentTarget) {
+      pendingHoverRef.current.x = event.clientX
+      pendingHoverRef.current.y = event.clientY
+      return
+    }
     clearTimers()
     if (menu?.id === group.id)
       return
     const trigger = event.currentTarget
     const { clientX: x, clientY: y } = event
+    pendingHoverRef.current = { id: group.id, x, y, trigger, keyboard: false, hover: true }
     openTimerRef.current = setTimeout(() => {
       openTimerRef.current = null
-      if (!draggingRef.current && trigger.isConnected && trigger.matches(':hover'))
-        setMenu({ id: group.id, x, y, trigger, keyboard: false, hover: true })
-    }, 200)
+      const pending = pendingHoverRef.current
+      pendingHoverRef.current = null
+      if (pending && !draggingRef.current && trigger.isConnected && trigger.matches(':hover'))
+        setMenu(pending)
+    }, HOVER_OPEN_DELAY)
   }
   const togglePinned = async (group: BookmarkGroup) => {
     setPinning(group.id)

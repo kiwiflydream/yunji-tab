@@ -39,6 +39,12 @@ export function BookmarkGroupMenu({ group, anchor, appearance, onPointerEnter, o
   const [error, setError] = useState(false)
   const bookmarks = useBookmarks()
   const availableUrls = useMemo(() => new Set(bookmarks.map(bookmark => bookmark.url)), [bookmarks])
+  const anchorBounds = useMemo(() => {
+    const actions = anchor.trigger.closest('[data-bookmark-group-id]')?.querySelector('[data-bookmark-group-actions]')?.getBoundingClientRect()
+    const top = Math.min(anchor.y, actions?.top ?? anchor.y)
+    const bottom = Math.max(anchor.y, actions?.bottom ?? anchor.y)
+    return { top, height: bottom - top + 1 }
+  }, [anchor])
 
   useEffect(() => {
     const dismiss = (event: Event) => {
@@ -75,9 +81,9 @@ export function BookmarkGroupMenu({ group, anchor, appearance, onPointerEnter, o
 
   return (
     <Popover.Root open modal={false} onOpenChange={open => !open && onClose()}>
-      {/* A point anchor keeps the list near the pointer without moving the card layout. */}
+      {/* Include the action row in the anchor so neither side of the list can cover its buttons. */}
       <Popover.Anchor asChild>
-        <span aria-hidden="true" tabIndex={-1} className="pointer-events-none fixed size-px" style={{ left: anchor.x, top: anchor.y, margin: 0 }} />
+        <span aria-hidden="true" tabIndex={-1} className="pointer-events-none fixed w-px" style={{ left: anchor.x, ...anchorBounds, margin: 0 }} />
       </Popover.Anchor>
       <Popover.Portal>
         <Popover.Content

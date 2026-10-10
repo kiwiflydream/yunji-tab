@@ -3,6 +3,7 @@ import type { Bookmark, BookmarkUsage, Category } from '~/lib/types'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import engravingArtworkUrl from 'url:~assets/themes/engraving-cat-astronaut.png'
 
+import { BookmarkGridLoadingState } from '~/components/bookmark-grid/BookmarkGridLoadingState'
 import { BookmarkDragDropProvider } from '~/components/BookmarkDragDropProvider'
 import { BookmarkGrid } from '~/components/BookmarkGrid'
 import { CatDoodles } from '~/components/CatDoodles'
@@ -430,7 +431,7 @@ export default function NewTab() {
             >
               {groupsOpen
                 ? (
-                    <Suspense fallback={<LazyDialogFallback label={translate(language, 'bookmarkGroups')} />}>
+                    <Suspense fallback={<BookmarkGridLoadingState label={`${translate(language, 'bookmarks')}…`} />}>
                       <BookmarkGroupsView
                         key="all-groups"
                         renderCards={groupsEnabled
@@ -448,7 +449,7 @@ export default function NewTab() {
                   )
                 : showPinnedGroups
                   ? (
-                      <Suspense fallback={<LazyDialogFallback label={translate(language, 'bookmarkGroups')} />}>
+                      <Suspense fallback={<BookmarkGridLoadingState label={`${translate(language, 'bookmarks')}…`} />}>
                         <BookmarkGroupsView
                           key="pinned-groups"
                           pinnedOnly
