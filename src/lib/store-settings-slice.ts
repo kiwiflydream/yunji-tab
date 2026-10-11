@@ -24,7 +24,7 @@ import {
   settingsStorage,
   STORAGE_KEYS,
 } from './store-persistence'
-import { resolveAvailableCategoryId } from './store-settings-state'
+import { DEFAULT_SETTINGS, resolveAvailableCategoryId } from './store-settings-state'
 
 export const createSettingsSlice: StateCreator<
   NavState,
@@ -32,6 +32,39 @@ export const createSettingsSlice: StateCreator<
   [],
   SettingsSlice
 > = (set, get) => ({
+  resetGeneralSettings: async () => {
+    const current = get().settings
+    const settings = {
+      ...current,
+      language: DEFAULT_SETTINGS.language,
+      defaultCategoryId: DEFAULT_SETTINGS.defaultCategoryId,
+      singleHomeTab: DEFAULT_SETTINGS.singleHomeTab,
+      bookmarkGroupsEnabled: DEFAULT_SETTINGS.bookmarkGroupsEnabled,
+      appearance: {
+        ...current.appearance,
+        navLayout: DEFAULT_SETTINGS.appearance.navLayout,
+        navItems: { ...DEFAULT_SETTINGS.appearance.navItems, icons: current.appearance.navItems.icons },
+      },
+    }
+    set({ settings })
+    await persist(settingsStorage, STORAGE_KEYS.settings, settings)
+  },
+
+  resetAppearanceSettings: async () => {
+    const current = get().settings
+    const settings = {
+      ...current,
+      theme: DEFAULT_SETTINGS.theme,
+      appearance: {
+        ...structuredClone(DEFAULT_SETTINGS.appearance),
+        navLayout: current.appearance.navLayout,
+        navItems: { ...current.appearance.navItems, icons: DEFAULT_SETTINGS.appearance.navItems.icons },
+      },
+    }
+    set({ settings })
+    await persist(settingsStorage, STORAGE_KEYS.settings, settings)
+  },
+
   setBookmarkGroupsEnabled: async (bookmarkGroupsEnabled) => {
     if (get().settings.bookmarkGroupsEnabled === bookmarkGroupsEnabled)
       return

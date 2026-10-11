@@ -494,6 +494,64 @@ test('opens names beside the click, toggles and switches menus without leaving t
   await expect(trigger).toBeVisible()
 })
 
+for (const variant of [
+  { name: 'default group', colorTheme: 'default', pinned: false, width: 1280 },
+  { name: 'engraving pinned', colorTheme: 'engraving', pinned: true, width: 1280 },
+  { name: 'engraving narrow group', colorTheme: 'engraving', pinned: false, width: 375 },
+]) {
+  test(`opens members across the full menu surface in ${variant.name}`, async ({ extensionContext, extensionWorker, newTabPage }) => {
+    await extensionContext.route(`${sourceUrl}/menu/*`, route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Opened group bookmark</title>' }))
+    await seedMenuMembers(extensionWorker)
+    await extensionWorker.evaluate(async (colorTheme) => {
+      const key = 'yunji-tab:bookmark-group:ui-tools:menu:0'
+      const values = await chrome.storage.sync.get([key, 'yunji-tab:settings'])
+      const group = JSON.parse(String(values[key]))
+      const settings = JSON.parse(String(values['yunji-tab:settings']))
+      group.bookmarks = group.bookmarks.slice(0, 3)
+      settings.appearance = { ...settings.appearance, colorTheme }
+      await chrome.storage.sync.set({ [key]: JSON.stringify(group), 'yunji-tab:settings': JSON.stringify(settings) })
+    }, variant.colorTheme)
+    await newTabPage.reload()
+    await newTabPage.setViewportSize({ width: variant.width, height: 900 })
+    const nav = newTabPage.getByRole('navigation', { name: '书签分类' })
+    if (variant.pinned)
+      await nav.getByRole('button', { name: /^智能分类/ }).click()
+    await nav.getByRole('button', { name: variant.pinned ? /置顶/ : '书签组', exact: !variant.pinned }).click()
+    const trigger = newTabPage.getByRole('button', { name: `查看书签组 ${title}`, exact: true })
+    const menu = newTabPage.getByRole('menu', { name: `查看书签组 ${title}`, exact: true })
+    const errors: string[] = []
+    newTabPage.on('pageerror', error => errors.push(error.message))
+
+    // Include a known-working center click before probing the old outer padding.
+    for (const edge of ['center', 'left', 'right', 'top', 'bottom'] as const) {
+      await test.step(edge, async () => {
+        await trigger.click({ position: { x: 85, y: 34 } })
+        await expect(menu).toBeVisible()
+        await menu.evaluate(element => Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished)))
+        const index = edge === 'bottom' ? 2 : 0
+        const item = menu.getByRole('menuitem').nth(index)
+        const bounds = (await menu.boundingBox())!
+        const row = (await item.boundingBox())!
+        const point = {
+          x: edge === 'left' ? bounds.x + 2 : edge === 'right' ? bounds.x + bounds.width - 2 : bounds.x + bounds.width / 2,
+          y: edge === 'top' ? bounds.y + 2 : edge === 'bottom' ? bounds.y + bounds.height - 2 : row.y + row.height / 2,
+        }
+        await newTabPage.mouse.move(point.x, point.y)
+        if (edge === 'left')
+          await newTabPage.screenshot({ path: `/tmp/yunji-group-menu-edge-${variant.width}-${variant.colorTheme}.png` })
+        const [opened] = await Promise.all([
+          extensionContext.waitForEvent('page', { timeout: 3000 }),
+          newTabPage.mouse.click(point.x, point.y),
+        ])
+        await expect.poll(() => opened.url()).toBe(menuUrls[index])
+        await expect(menu).toHaveCount(0)
+        await opened.close()
+      })
+    }
+    expect(errors).toEqual([])
+  })
+}
+
 test('keeps long menus inside narrow screens, scrolls internally and follows engraving and reduced motion', async ({ extensionContext, extensionWorker, newTabPage }) => {
   await seedMenuMembers(extensionWorker)
   await extensionWorker.evaluate(async (missingUrl) => {

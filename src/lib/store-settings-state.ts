@@ -37,6 +37,8 @@ export type AppearanceSettingsPatch = Partial<
 }
 
 export interface SettingsSlice {
+  resetGeneralSettings: () => Promise<void>
+  resetAppearanceSettings: () => Promise<void>
   setBookmarkGroupsEnabled: (enabled: boolean) => Promise<void>
   setLanguage: (language: Language) => Promise<void>
   addCustomSearchEngine: (engine: Omit<SearchEngine, 'id'>) => Promise<void>

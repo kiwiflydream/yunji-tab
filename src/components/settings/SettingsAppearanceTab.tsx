@@ -1,7 +1,8 @@
 import type { MessageKey, TranslationParams } from '~/lib/i18n'
 import type { AppearanceSettings, ThemeMode } from '~/lib/types'
-import { ChevronDown, ExternalLink, Monitor, Moon, RotateCcw, Sun } from 'lucide-react'
+import { ChevronDown, ExternalLink, Monitor, Moon, Sun } from 'lucide-react'
 import { useState } from 'react'
+import { SettingsResetControl } from '~/components/settings/SettingsResetControl'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import {
@@ -287,6 +288,7 @@ export function SettingsAppearanceTab() {
   const appearance = useNavStore(state => state.settings.appearance)
   const setTheme = useNavStore(state => state.setTheme)
   const setAppearance = useNavStore(state => state.setAppearance)
+  const resetAppearanceSettings = useNavStore(state => state.resetAppearanceSettings)
   const [appearanceAdvancedOpen, setAppearanceAdvancedOpen] = useState(false)
   const currentStyleSettings = toStylePresetSettings(appearance)
   const appearancePreset
@@ -305,6 +307,7 @@ export function SettingsAppearanceTab() {
 
   return (
     <>
+      <SettingsResetControl description={t('settingsResetAppearanceDescription')} onReset={resetAppearanceSettings} />
       <section className="rounded-xl border border-border bg-muted/35 p-4">
         <h3 className="text-sm font-semibold">{t('appearanceLightDarkMode')}</h3>
         <p className="mt-1 text-sm leading-5 text-muted-foreground">
@@ -342,19 +345,6 @@ export function SettingsAppearanceTab() {
               {t('appearanceOverallStyleDescription')}
             </p>
           </div>
-          {appearancePreset !== 'balanced'
-            ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => applyPreset('balanced')}
-                >
-                  <RotateCcw data-icon="inline-start" />
-                  {t('appearanceResetDefault')}
-                </Button>
-              )
-            : null}
         </div>
         <ToggleGroup
           type="single"

@@ -101,7 +101,7 @@ export function BookmarkGroupMenu({ group, anchor, appearance, onPointerEnter, o
           collisionPadding={8}
           sticky="always"
           data-keyboard={anchor.keyboard ? 'true' : undefined}
-          className={cn('bookmark-group-menu z-50 w-60 max-w-[calc(100vw-16px)] overflow-y-auto overflow-x-hidden overscroll-contain border border-border/70 bg-popover p-1.5 text-sm text-popover-foreground shadow-xl outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 origin-[--radix-popover-content-transform-origin]', radiusClass[appearance.radius])}
+          className={cn('bookmark-group-menu z-50 w-60 max-w-[calc(100vw-16px)] overflow-y-auto overflow-x-hidden overscroll-contain border border-border/70 bg-popover p-0 text-sm text-popover-foreground shadow-xl outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 origin-[--radix-popover-content-transform-origin]', radiusClass[appearance.radius])}
           style={{ maxHeight: 'min(276px, var(--radix-popover-content-available-height))' }}
           onPointerEnter={onPointerEnter}
           onPointerLeave={onPointerLeave}
@@ -189,7 +189,7 @@ export function BookmarkGroupMenu({ group, anchor, appearance, onPointerEnter, o
                 disabled={!available || opening !== null}
                 aria-label={t('openGroupBookmark', { name: member.title })}
                 title={available ? member.title : t('groupBookmarkMissing')}
-                className="flex min-h-11 w-full cursor-pointer select-none items-center rounded-sm px-3 py-2.5 text-left leading-5 outline-none transition-[color,background-color,transform] active:scale-[0.99] data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 touch-manipulation"
+                className="flex min-h-11 w-full cursor-pointer select-none items-center px-4 py-2.5 text-left leading-5 outline-none transition-colors data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 touch-manipulation"
               >
                 <span className="line-clamp-2 break-words">{member.title}</span>
               </button>

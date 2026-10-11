@@ -13,6 +13,7 @@ import {
   useNavStore,
 } from './store'
 import { metaStorage, withBookmarkMetadataLock } from './store-persistence'
+import { DEFAULT_SETTINGS, normalizeSettings } from './store-settings-state'
 
 const storageState = vi.hoisted(() => ({
   writes: [] as Array<{ area: string, key: string, value: unknown }>,
@@ -64,6 +65,46 @@ afterEach(() => {
 })
 
 describe('navigation store boundaries', () => {
+  it('resets general preferences in one write while retaining appearance and user data', async () => {
+    const settings = normalizeSettings({
+      language: 'ja',
+      defaultCategoryId: 'pinned',
+      singleHomeTab: true,
+      bookmarkGroupsEnabled: false,
+      theme: 'dark',
+      onboardingDismissed: true,
+      bookmarkViewMode: 'compact',
+      savedSearches: [{ id: 'saved', name: 'Work', query: 'tag:work' }],
+      autoOrganizeRules: [{ id: 'rule', name: 'Work', enabled: true, field: 'domain', operator: 'contains', value: 'example.com', addTags: ['work'], clearInbox: true }],
+      appearance: { ...DEFAULT_SETTINGS.appearance, colorTheme: 'electric', navLayout: 'top', navItems: { icons: false, counts: false, smartCategories: false, savedSearches: true, categoryTree: false }, cardFields: { ...DEFAULT_SETTINGS.appearance.cardFields, websiteIcon: false } },
+    })
+    useNavStore.setState({ settings })
+    await useNavStore.getState().resetGeneralSettings()
+    const actual = useNavStore.getState().settings
+    expect(actual).toEqual({ ...settings, language: DEFAULT_SETTINGS.language, defaultCategoryId: 'all', singleHomeTab: false, bookmarkGroupsEnabled: true, appearance: { ...settings.appearance, navLayout: 'sidebar', navItems: { icons: false, counts: true, smartCategories: true, savedSearches: false, categoryTree: true } } })
+    expect(storageState.writes).toEqual([{ area: 'sync', key: 'yunji-tab:settings', value: actual }])
+  })
+
+  it('resets appearance and icon preferences without changing general settings or user data', async () => {
+    const settings = normalizeSettings({
+      language: 'ja',
+      defaultCategoryId: 'pinned',
+      singleHomeTab: true,
+      bookmarkGroupsEnabled: false,
+      theme: 'dark',
+      onboardingDismissed: true,
+      bookmarkViewMode: 'compact',
+      savedSearches: [{ id: 'saved', name: 'Work', query: 'tag:work' }],
+      appearance: { ...DEFAULT_SETTINGS.appearance, colorTheme: 'engraving', catDecorations: true, navLayout: 'top', navItems: { icons: false, counts: false, smartCategories: false, savedSearches: true, categoryTree: false }, cardFields: { ...DEFAULT_SETTINGS.appearance.cardFields, websiteIcon: false, description: false, tags: false } },
+    })
+    useNavStore.setState({ settings })
+    await useNavStore.getState().resetAppearanceSettings()
+    const actual = useNavStore.getState().settings
+    expect(actual).toEqual({ ...settings, theme: 'system', appearance: { ...DEFAULT_SETTINGS.appearance, navLayout: 'top', navItems: { ...settings.appearance.navItems, icons: true } } })
+    expect(actual.appearance.cardFields).not.toBe(DEFAULT_SETTINGS.appearance.cardFields)
+    expect(storageState.writes).toEqual([{ area: 'sync', key: 'yunji-tab:settings', value: actual }])
+  })
+
   it('lets a metadata-locked URL migration finish while a pinned reorder is waiting', async () => {
     vi.useFakeTimers()
     const group = { id: 'tools', title: 'Tools', description: '', pinnedAt: 20, bookmarks: [{ url: 'https://one.example/', title: 'One' }] }

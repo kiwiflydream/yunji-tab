@@ -1,6 +1,7 @@
 import { ChevronDown, PanelLeft, PanelTop } from 'lucide-react'
 import { useState } from 'react'
 import { AutoOrganizeSettings } from '~/components/AutoOrganizeSettings'
+import { SettingsResetControl } from '~/components/settings/SettingsResetControl'
 import { Button } from '~/components/ui/button'
 import {
   Collapsible,
@@ -53,6 +54,7 @@ export function SettingsGeneralTab() {
   const setSingleHomeTab = useNavStore(state => state.setSingleHomeTab)
   const setAppearance = useNavStore(state => state.setAppearance)
   const setLanguage = useNavStore(state => state.setLanguage)
+  const resetGeneralSettings = useNavStore(state => state.resetGeneralSettings)
   const [autoRulesOpen, setAutoRulesOpen] = useState(false)
 
   const defaultCategoryValue
@@ -72,6 +74,7 @@ export function SettingsGeneralTab() {
 
   return (
     <>
+      <SettingsResetControl description={t('settingsResetGeneralDescription')} onReset={resetGeneralSettings} />
       <section className="rounded-xl border border-border bg-muted/35 p-4">
         <label htmlFor="default-category" className="text-sm font-semibold">
           {t('defaultFolder')}
