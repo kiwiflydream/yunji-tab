@@ -65,13 +65,11 @@ pnpm typecheck
 
 国际化测试校验插值参数一致性；AST 检查防止中文界面文案直接写入组件和业务代码。这些检查不能代替译文审阅和界面验证，修改较长文案后还需检查窄屏下的换行、按钮与弹窗布局。
 
-## 持续集成
+## 实现说明
 
 生产构建通过根目录 `.parcelrc` 使用 Parcel 默认 bundler 抽取公共依赖，保留 Plasmo 的其他打包插件。配置路径依赖当前 pnpm 默认的 `node_modules/.pnpm/node_modules` 布局；升级 Plasmo、Parcel 或修改 node-linker 后，应重新验证各扩展入口与共享资源。文件路径形式的 `extends` 会触发 Plasmo 的配置提示，但仍继承其完整配置。
 
-`.github/workflows/ci.yml` 在推送到 `main` 和所有拉取请求上运行：Node.js 22、pnpm 10.34.4，先执行 `pnpm install --frozen-lockfile`，再跑 `pnpm typecheck`、`pnpm lint`、`pnpm test` 和 `pnpm build`。构建产物 `build/chrome-mv3-prod/` 会作为 artifact 上传。
-
-构建通过后，CI 再安装 Playwright Chromium，下载已通过检查的构建产物并运行关键端到端用例：键盘导航、内存、启动顺序、设置重置、并发存储、原生标题更新、书签组分页和 WebDAV 备份。其余端到端用例仍在本地按需运行。
+发布前在本地完成「验证改动」中的检查，再运行 `pnpm package` 生成安装包并上传到 GitHub Release。
 
 WebDAV 连接配置与自动检查状态使用独立的 local 存储，不放入同步设置或快照。启动成功后异步检查自动备份，不阻塞首屏，也不在初始化失败时上传。所有页面通过同一个 Web Lock 协调保存、清除、目录查询、读取和上传；获取锁后再读取配置与检查间隔。指纹忽略两层 `exportedAt` 并稳定对象键顺序，保留原生树和数组顺序。每次备份只 PUT 一个带 UTC 毫秒时间戳与 UUID 的 JSON，使用 `If-None-Match: *` 避免覆盖；成功后才更新检查点，失败保留上次成功时间与指纹并限制自动重试。手动备份绕过间隔及内容去重。目标或凭据变化时清除检查点。
 

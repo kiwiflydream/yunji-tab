@@ -65,13 +65,11 @@ pnpm typecheck
 
 Internationalization tests verify consistent interpolation parameters. An AST check prevents Chinese interface copy from being written directly into components and business logic. These checks do not replace translation review or interface verification. After changing longer copy, check wrapping, buttons, and dialogs on narrow screens.
 
-## Continuous integration
+## Implementation notes
 
 Production builds use the root `.parcelrc` to extract common dependencies with Parcel's default bundler while retaining the other Plasmo build plugins. Its configuration paths depend on pnpm's current default `node_modules/.pnpm/node_modules` layout. After upgrading Plasmo or Parcel, or changing `node-linker`, verify all extension entry points and shared resources again. Using a file path for `extends` triggers a Plasmo configuration notice but still inherits its full configuration.
 
-`.github/workflows/ci.yml` runs on pushes to `main` and all pull requests. It uses Node.js 22 and pnpm 10.34.4, runs `pnpm install --frozen-lockfile`, then `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build`. The build output, `build/chrome-mv3-prod/`, is uploaded as an artifact.
-
-After the build passes, CI installs Playwright Chromium, downloads the verified build artifact, and runs key end-to-end cases: keyboard navigation, memory, startup order, settings resets, concurrent storage, native title updates, group pagination, and WebDAV backups. Run the remaining end-to-end cases locally as needed.
+Before a release, complete the checks under "Verify changes" locally, then run `pnpm package` to create the installation package and upload it to GitHub Release.
 
 WebDAV connection configuration and automatic check status use separate local storage, outside synced settings and snapshots. Automatic backup checks run asynchronously after successful startup, without blocking the first render or uploading when initialization fails. All pages share one Web Lock for saving, clearing, folder queries, reads, and uploads. Configuration and intervals are read again after acquiring the lock. Fingerprints ignore both `exportedAt` fields and stabilize object key order while retaining native tree and array order. Each backup makes one PUT of a JSON file with a UTC millisecond timestamp and UUID, using `If-None-Match: *` to prevent overwrites. Checkpoints update only on success. Failures keep the last successful time and fingerprint and limit automatic retries. Manual backups bypass the interval and content deduplication. Changing the destination or credentials clears the checkpoint.
 
