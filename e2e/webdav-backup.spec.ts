@@ -335,3 +335,126 @@ test('lists remote and legacy backups safely, refreshes server changes, and hand
     }, { keys: [configKey, statusKey, historyKey], previous })
   }
 })
+
+test('supports optional backup encryption and restores old files with a temporary passphrase', async ({ extensionWorker, newTabPage, extensionId }) => {
+  const previous = await extensionWorker.evaluate(async keys => chrome.storage.local.get(keys), [configKey, statusKey, historyKey])
+  const versions = new Map<string, string>()
+  const firstPassphrase = 'e2e-original-backup-key'
+  const nextPassphrase = 'e2e-new-backup-key'
+  const errors: string[] = []
+  newTabPage.on('pageerror', error => errors.push(error.message))
+  newTabPage.on('console', (message) => {
+    if (message.type() === 'error')
+      errors.push(message.text())
+  })
+  let originalId: string | undefined
+  let restoredId: string | undefined
+  await newTabPage.route(`${directory}**`, async (route) => {
+    if (route.request().method() === 'PROPFIND') {
+      await route.fulfill({ status: 207, contentType: 'application/xml', body: listingXml(versions) })
+    }
+    else if (route.request().method() === 'PUT') {
+      versions.set(route.request().url(), route.request().postData()!)
+      await route.fulfill({ status: 201, body: '' })
+    }
+    else {
+      expect(versions.has(route.request().url())).toBe(true)
+      await route.fulfill({ status: 200, contentType: 'application/json', body: versions.get(route.request().url())! })
+    }
+  })
+  const readSavedPassphrase = () => extensionWorker.evaluate(async key => JSON.parse(String((await chrome.storage.local.get(key))[key])).encryptionPassphrase, configKey)
+  try {
+    await openDataSettings(newTabPage)
+    expect(newTabPage.url()).toBe(`chrome-extension://${extensionId}/newtab.html`)
+    expect(await newTabPage.title()).toBeTruthy()
+    const form = newTabPage.locator('div').filter({ has: newTabPage.getByRole('heading', { name: 'WebDAV 备份', exact: true }) }).last()
+    const passphrase = newTabPage.getByLabel('备份加密口令（可选）', { exact: true })
+    await expect(passphrase).toHaveValue('')
+    await newTabPage.getByLabel('WebDAV 目录地址').fill(directory)
+    await newTabPage.getByLabel('账号', { exact: true }).fill('kiwi')
+    await newTabPage.getByLabel('应用密码', { exact: true }).fill(password)
+    await passphrase.fill(firstPassphrase)
+    await form.getByRole('button', { name: '保存', exact: true }).click()
+    await expect(form.getByRole('status').filter({ hasText: '连接配置已保存' })).toBeVisible()
+    expect(await readSavedPassphrase()).toBe(firstPassphrase)
+    expect(JSON.stringify(await extensionWorker.evaluate(() => chrome.storage.sync.get(null)))).not.toContain(firstPassphrase)
+    await passphrase.scrollIntoViewIfNeeded()
+    await newTabPage.screenshot({ path: '/tmp/yunji-webdav-encryption-desktop.png' })
+    await newTabPage.setViewportSize({ width: 375, height: 900 })
+    await passphrase.scrollIntoViewIfNeeded()
+    await expect.poll(() => newTabPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await newTabPage.screenshot({ path: '/tmp/yunji-webdav-encryption-mobile.png' })
+    await newTabPage.setViewportSize({ width: 1280, height: 720 })
+
+    originalId = await extensionWorker.evaluate(async () => (await chrome.bookmarks.create({ parentId: '1', title: 'WebDAV Encrypted Secret', url: 'https://webdav-encrypted.example/' })).id)
+    await newTabPage.getByRole('button', { name: '立即备份', exact: true }).click()
+    await expect(form.getByRole('status').filter({ hasText: '备份已上传' })).toBeVisible()
+    expect(versions.size).toBe(1)
+    const [firstUrl, encrypted] = Array.from(versions)[0]
+    const firstFilename = new URL(firstUrl).pathname.split('/').at(-1)!
+    expect(JSON.parse(encrypted)).toMatchObject({ kind: 'yunji-tab-encrypted-full-snapshot', payload: { encrypted: true, algorithm: 'AES-GCM' } })
+    for (const secret of ['WebDAV Encrypted Secret', 'https://webdav-encrypted.example/', firstPassphrase, password])
+      expect(encrypted).not.toContain(secret)
+    const nativeBefore = await extensionWorker.evaluate(() => chrome.bookmarks.getTree())
+    await newTabPage.getByRole('button', { name: '恢复最新备份', exact: true }).click()
+    await expect(newTabPage.getByText('导入预览', { exact: true })).toBeVisible()
+    expect(await extensionWorker.evaluate(() => chrome.bookmarks.getTree())).toEqual(nativeBefore)
+    await newTabPage.getByRole('button', { name: '取消', exact: true }).click()
+
+    await passphrase.fill(nextPassphrase)
+    await form.getByRole('button', { name: '保存', exact: true }).click()
+    await expect(form.getByRole('status').filter({ hasText: '连接配置已保存' })).toBeVisible()
+    const history = newTabPage.getByRole('region', { name: '同步记录', exact: true })
+    await history.getByRole('button', { name: `恢复 ${firstFilename}`, exact: true }).click()
+    const restorePassphrase = newTabPage.getByLabel('此备份的解密口令', { exact: true })
+    await expect(restorePassphrase).toBeVisible()
+    await expect(newTabPage.getByRole('alert')).toContainText('口令不正确')
+    await restorePassphrase.fill('wrong temporary key')
+    await newTabPage.getByRole('button', { name: '解密并预览', exact: true }).click()
+    await expect(newTabPage.getByRole('alert')).toContainText('口令不正确')
+    await expect(newTabPage.getByText('导入预览', { exact: true })).toHaveCount(0)
+    expect(await extensionWorker.evaluate(() => chrome.bookmarks.getTree())).toEqual(nativeBefore)
+    await restorePassphrase.fill(firstPassphrase)
+    await newTabPage.screenshot({ path: '/tmp/yunji-webdav-decrypt-preview.png' })
+    await newTabPage.getByRole('button', { name: '解密并预览', exact: true }).click()
+    await expect(newTabPage.getByText('导入预览', { exact: true })).toBeVisible()
+    await expect(restorePassphrase).toHaveCount(0)
+    expect(await readSavedPassphrase()).toBe(nextPassphrase)
+    expect(await extensionWorker.evaluate(() => chrome.bookmarks.getTree())).toEqual(nativeBefore)
+    await newTabPage.getByRole('button', { name: '确认导入', exact: true }).click()
+    await expect(newTabPage.getByText(/已恢复.*Yunji Tab Restore/)).toBeVisible()
+    restoredId = await extensionWorker.evaluate(async () => (await chrome.bookmarks.getChildren('1')).find(node => node.title.startsWith('Yunji Tab Restore '))!.id)
+    expect(await extensionWorker.evaluate(async () => (await chrome.bookmarks.search({ url: 'https://webdav-encrypted.example/' })).length)).toBe(2)
+    expect(await readSavedPassphrase()).toBe(nextPassphrase)
+
+    // An empty optional field creates plaintext again; encrypted history stays readable.
+    await passphrase.fill('')
+    await form.getByRole('button', { name: '保存', exact: true }).click()
+    await expect(form.getByRole('status').filter({ hasText: '连接配置已保存' })).toBeVisible()
+    await history.getByRole('button', { name: `恢复 ${firstFilename}`, exact: true }).click()
+    await expect(newTabPage.getByRole('alert')).toContainText('此备份已加密')
+    await expect(restorePassphrase).toBeVisible()
+    await newTabPage.getByRole('button', { name: '取消', exact: true }).click()
+    await newTabPage.getByRole('button', { name: '立即备份', exact: true }).click()
+    await expect(form.getByRole('status').filter({ hasText: '备份已上传' })).toBeVisible()
+    expect(versions.size).toBe(2)
+    const plaintext = Array.from(versions.values()).at(-1)!
+    expect(JSON.parse(plaintext).kind).toBe('yunji-tab-full-bookmark-snapshot')
+    expect(plaintext).toContain('WebDAV Encrypted Secret')
+    expect(plaintext).not.toContain(firstPassphrase)
+    expect(plaintext).not.toContain(nextPassphrase)
+    await newTabPage.getByRole('button', { name: '清除连接配置', exact: true }).click()
+    await expect(passphrase).toHaveValue('')
+    expect(errors).toEqual([])
+  }
+  finally {
+    await extensionWorker.evaluate(async ({ keys, previous, originalId, restoredId }) => {
+      if (restoredId)
+        await chrome.bookmarks.removeTree(restoredId)
+      if (originalId)
+        await chrome.bookmarks.remove(originalId)
+      await chrome.storage.local.remove(keys)
+      await chrome.storage.local.set(previous)
+    }, { keys: [configKey, statusKey, historyKey], previous, originalId, restoredId })
+  }
+})

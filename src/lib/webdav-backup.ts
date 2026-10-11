@@ -1,5 +1,6 @@
 import { Storage } from '@plasmohq/storage'
 import { parseFullBookmarkSnapshot } from './backup'
+import { decryptMetadataText, encryptMetadataText, isEncryptedMetadataEnvelope } from './metadata-crypto'
 
 export const WEBDAV_CONFIG_KEY = 'yunji-tab:webdav-config'
 export const WEBDAV_STATUS_KEY = 'yunji-tab:webdav-status'
@@ -8,6 +9,7 @@ export const WEBDAV_FILENAME = 'yunji-tab-full-snapshot.json'
 export const WEBDAV_DEFAULT_URL = 'https://dav.jianguoyun.com/dav/'
 const storage = new Storage({ area: 'local' })
 const lockName = 'yunji-tab:webdav-backup'
+const encryptedSnapshotKind = 'yunji-tab-encrypted-full-snapshot'
 const uuidPattern = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 const filenamePattern = new RegExp(`^yunji-tab-backup-(\\d{8}T\\d{9}Z)-${uuidPattern}\\.json$`)
 const legacyFilenamePattern = new RegExp(`^yunji-tab-snapshot-${uuidPattern}\\.json$`)
@@ -18,6 +20,7 @@ export interface WebdavConfig {
   username: string
   password: string
   intervalHours: number
+  encryptionPassphrase?: string
 }
 
 export interface WebdavStatus {
@@ -37,7 +40,7 @@ export interface WebdavBackupFile {
   username: string
 }
 
-export type WebdavErrorCode = 'address' | 'insecure' | 'credentials' | 'permission' | 'auth' | 'missing' | 'network' | 'server' | 'invalid' | 'changed'
+export type WebdavErrorCode = 'address' | 'insecure' | 'credentials' | 'permission' | 'auth' | 'missing' | 'network' | 'server' | 'invalid' | 'changed' | 'passphrase' | 'decrypt'
 
 class WebdavError extends Error {
   constructor(public code: WebdavErrorCode) {
@@ -59,6 +62,7 @@ export async function loadWebdavConfig(): Promise<WebdavConfig> {
     url: typeof stored?.url === 'string' ? stored.url : WEBDAV_DEFAULT_URL,
     username: typeof stored?.username === 'string' ? stored.username : '',
     password: typeof stored?.password === 'string' ? stored.password : '',
+    encryptionPassphrase: typeof stored?.encryptionPassphrase === 'string' ? stored.encryptionPassphrase : '',
     intervalHours: [1, 6, 24, 72].includes(stored?.intervalHours ?? 0) ? stored!.intervalHours! : 24,
   }
 }
@@ -109,11 +113,13 @@ async function withWebdavLock<T>(task: () => Promise<T>): Promise<T> {
 }
 
 export async function saveWebdavConfig(config: WebdavConfig): Promise<void> {
-  const normalized = { ...config, url: webdavDirectory(config).href, username: config.username.trim() }
+  const normalized = { ...config, url: webdavDirectory(config).href, username: config.username.trim(), encryptionPassphrase: config.encryptionPassphrase ?? '' }
   await withWebdavLock(async () => {
     const previous = await loadWebdavConfig()
-    if (previous.url !== normalized.url || previous.username !== normalized.username || previous.password !== normalized.password)
+    if (previous.url !== normalized.url || previous.username !== normalized.username || previous.password !== normalized.password
+      || previous.encryptionPassphrase !== normalized.encryptionPassphrase) {
       await storage.remove(WEBDAV_STATUS_KEY)
+    }
     await storage.set(WEBDAV_CONFIG_KEY, normalized)
   })
 }
@@ -242,14 +248,38 @@ export async function listWebdavBackups(): Promise<WebdavBackupFile[]> {
   return withWebdavLock(async () => listBackupFiles(await loadWebdavConfig()))
 }
 
-export async function readWebdavBackup(selected?: WebdavBackupFile): Promise<string> {
+export async function readWebdavBackup(selected?: WebdavBackupFile, passphraseOverride?: string): Promise<string> {
   return withWebdavLock(async () => {
     const config = await loadWebdavConfig()
     const file = selected ?? (await listBackupFiles(config))[0]
     if (!file || !isBackupFilename(file.filename) || file.directory !== webdavDirectory(config).href || file.username !== config.username)
       throw new WebdavError('missing')
     const response = await webdavRequest(config, 'GET', undefined, file.filename, undefined, file.etag)
-    const raw = await response.text()
+    let raw = await response.text()
+    let value: unknown
+    try {
+      value = JSON.parse(raw)
+    }
+    catch {
+      throw new WebdavError('invalid')
+    }
+    if (typeof value === 'object' && value !== null && 'kind' in value && value.kind === encryptedSnapshotKind) {
+      if (!('schemaVersion' in value) || value.schemaVersion !== 1 || !('payload' in value)
+        || !isEncryptedMetadataEnvelope(value.payload)
+        || !Number.isSafeInteger(value.payload.iterations) || value.payload.iterations < 100_000 || value.payload.iterations > 1_000_000
+        || !/^[A-Z0-9+/]{22}==$/i.test(value.payload.salt) || !/^[A-Z0-9+/]{16}$/i.test(value.payload.iv)) {
+        throw new WebdavError('invalid')
+      }
+      const passphrase = passphraseOverride ?? config.encryptionPassphrase
+      if (!passphrase)
+        throw new WebdavError('passphrase')
+      try {
+        raw = await decryptMetadataText(value.payload, passphrase)
+      }
+      catch {
+        throw new WebdavError('decrypt')
+      }
+    }
     try {
       parseFullBookmarkSnapshot(raw)
     }
@@ -294,7 +324,14 @@ export async function runWebdavBackup(exportSnapshot: () => Promise<string>, man
       }
       const timestamp = new Date(now).toISOString().replaceAll('-', '').replaceAll(':', '').replaceAll('.', '')
       const filename = `yunji-tab-backup-${timestamp}-${crypto.randomUUID()}.json`
-      const response = await webdavRequest(config, 'PUT', raw, filename)
+      const body = config.encryptionPassphrase
+        ? JSON.stringify({
+            kind: encryptedSnapshotKind,
+            schemaVersion: 1,
+            payload: await encryptMetadataText({ plaintext: raw, passphrase: config.encryptionPassphrase, updatedAt: now, deviceId: '' }),
+          })
+        : raw
+      const response = await webdavRequest(config, 'PUT', body, filename)
       await response.body?.cancel()
       await storage.set(WEBDAV_STATUS_KEY, { lastSuccessAt: Date.now(), lastCheckedAt: now, fingerprint, lastResult: 'uploaded' })
       return 'uploaded'

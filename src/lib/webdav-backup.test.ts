@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFullBookmarkSnapshot, createYunjiTabBackup } from './backup'
+import { decryptMetadataText, encryptMetadataText } from './metadata-crypto'
 import { normalizeSettings } from './store-settings-state'
 import {
   forgetWebdavConfig,
@@ -11,6 +12,7 @@ import {
   saveWebdavConfig,
   snapshotFingerprint,
   WEBDAV_CONFIG_KEY,
+  WEBDAV_FILENAME,
   WEBDAV_STATUS_KEY,
   webdavDirectory,
 } from './webdav-backup'
@@ -68,7 +70,7 @@ describe('webDAV backups', () => {
     expect(await loadWebdavConfig()).toMatchObject({ enabled: false, url: 'https://dav.jianguoyun.com/dav/' })
     expect(state.areas).toEqual(['local'])
     await saveWebdavConfig(config)
-    expect(await loadWebdavConfig()).toEqual({ ...config, url: `${config.url}/` })
+    expect(await loadWebdavConfig()).toEqual({ ...config, url: `${config.url}/`, encryptionPassphrase: '' })
     expect(snapshot()).not.toContain(config.password)
     await forgetWebdavConfig()
     expect(state.values.size).toBe(0)
@@ -234,5 +236,80 @@ describe('webDAV backups', () => {
     expect((await loadWebdavConfig()).url).toBe(`${config.url}/`)
     expect(state.values.has('yunji-tab:webdav-history')).toBe(false)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('encrypts the complete snapshot locally with fresh randomness while deduplicating the plaintext', async () => {
+    const passphrase = '备份口令 🔐 with spaces '
+    await saveWebdavConfig({ ...config, encryptionPassphrase: passphrase })
+    expect(await runWebdavBackup(async () => snapshot())).toBe('uploaded')
+    vi.setSystemTime(Date.now() + 24 * 3_600_000)
+    expect(await runWebdavBackup(async () => snapshot('Example', new Date().toISOString()))).toBe('unchanged')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    await runWebdavBackup(async () => snapshot(), true)
+    const first = JSON.parse(fetchMock.mock.calls[0][1].body)
+    const second = JSON.parse(fetchMock.mock.calls[1][1].body)
+    expect(first).toMatchObject({ kind: 'yunji-tab-encrypted-full-snapshot', schemaVersion: 1, payload: { encrypted: true, algorithm: 'AES-GCM', kdf: 'PBKDF2-SHA-256' } })
+    expect(first.payload.salt).not.toBe(second.payload.salt)
+    expect(first.payload.iv).not.toBe(second.payload.iv)
+    const body = fetchMock.mock.calls[0][1].body
+    expect(body).not.toContain('Example')
+    expect(body).not.toContain('https://example.com/')
+    expect(body).not.toContain(passphrase)
+    expect(body).not.toContain(config.password)
+    expect(await decryptMetadataText(first.payload, passphrase)).toBe(snapshot())
+    expect((await loadWebdavConfig()).encryptionPassphrase).toBe(passphrase)
+  })
+
+  it('prompts for missing or wrong passphrases, accepts a temporary old key, and rejects damaged ciphertext', async () => {
+    const passphrase = 'original backup key'
+    await saveWebdavConfig({ ...config, encryptionPassphrase: passphrase })
+    await runWebdavBackup(async () => snapshot(), true)
+    const body = fetchMock.mock.calls[0][1].body
+    const file = { filename: WEBDAV_FILENAME, directory: `${config.url}/`, username: config.username }
+    fetchMock.mockImplementation(async () => new Response(body))
+    expect(await readWebdavBackup(file)).toBe(snapshot())
+    await saveWebdavConfig(config)
+    await expect(readWebdavBackup(file)).rejects.toThrow('webdav.passphrase')
+    await expect(readWebdavBackup(file, 'wrong key')).rejects.toThrow('webdav.decrypt')
+    expect(await readWebdavBackup(file, passphrase)).toBe(snapshot())
+    expect((await loadWebdavConfig()).encryptionPassphrase).toBe('')
+    const damaged = JSON.parse(body)
+    damaged.payload.data = `${damaged.payload.data[0] === 'A' ? 'B' : 'A'}${damaged.payload.data.slice(1)}`
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify(damaged)))
+    await expect(readWebdavBackup(file, passphrase)).rejects.toThrow('webdav.decrypt')
+  })
+
+  it.each([0, -1, 1_000_001, '150000', undefined])('rejects unsafe remote key derivation cost %s before decrypting', async (iterations) => {
+    await saveWebdavConfig(config)
+    const envelope = await encryptMetadataText({ plaintext: snapshot(), passphrase: 'key', updatedAt: 1, deviceId: '' })
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ kind: 'yunji-tab-encrypted-full-snapshot', schemaVersion: 1, payload: { ...envelope, iterations } })))
+    await expect(readWebdavBackup({ filename: WEBDAV_FILENAME, directory: `${config.url}/`, username: config.username }, 'key')).rejects.toThrow('webdav.invalid')
+  })
+
+  it('validates decrypted snapshot content before handing it to restore', async () => {
+    await saveWebdavConfig({ ...config, encryptionPassphrase: 'key' })
+    const payload = await encryptMetadataText({ plaintext: '{}', passphrase: 'key', updatedAt: 1, deviceId: '' })
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ kind: 'yunji-tab-encrypted-full-snapshot', schemaVersion: 1, payload })))
+    await expect(readWebdavBackup({ filename: WEBDAV_FILENAME, directory: `${config.url}/`, username: config.username })).rejects.toThrow('webdav.invalid')
+  })
+
+  it('reuploads unchanged data after enabling, changing or clearing the encryption passphrase and still reads plaintext backups', async () => {
+    await saveWebdavConfig(config)
+    await runWebdavBackup(async () => snapshot())
+    const plaintext = fetchMock.mock.calls.at(-1)![1].body
+    for (const encryptionPassphrase of ['first key', 'second key', '']) {
+      await saveWebdavConfig({ ...config, encryptionPassphrase })
+      expect(await loadWebdavStatus()).toEqual({})
+      expect(await runWebdavBackup(async () => snapshot())).toBe('uploaded')
+      const body = fetchMock.mock.calls.at(-1)![1].body
+      if (encryptionPassphrase)
+        expect(await decryptMetadataText(JSON.parse(body).payload, encryptionPassphrase)).toBe(snapshot())
+      else expect(body).toBe(plaintext)
+    }
+    await saveWebdavConfig({ ...config, encryptionPassphrase: 'new key' })
+    fetchMock.mockResolvedValueOnce(new Response(plaintext))
+    expect(await readWebdavBackup({ filename: WEBDAV_FILENAME, directory: `${config.url}/`, username: config.username })).toBe(snapshot())
+    await forgetWebdavConfig()
+    expect((await loadWebdavConfig()).encryptionPassphrase).toBe('')
   })
 })

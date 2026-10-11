@@ -34,6 +34,8 @@ const errorKeys: Record<WebdavErrorCode, MessageKey> = {
   server: 'webdavErrorServer',
   invalid: 'webdavErrorInvalid',
   changed: 'webdavErrorChanged',
+  passphrase: 'webdavErrorPassphrase',
+  decrypt: 'webdavErrorDecrypt',
 }
 
 export function WebdavBackupSettings({ onRestore }: { onRestore: (raw: string) => void }) {
@@ -53,6 +55,16 @@ export function WebdavBackupSettings({ onRestore }: { onRestore: (raw: string) =
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<MessageKey | null>(null)
   const [error, setError] = useState<MessageKey | null>(null)
+  const [restoreRequest, setRestoreRequest] = useState<{ file?: WebdavBackupFile } | null>(null)
+  const [restorePassphrase, setRestorePassphrase] = useState('')
+  const restorePassphraseRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (restoreRequest) {
+      restorePassphraseRef.current?.focus()
+      restorePassphraseRef.current?.scrollIntoView({ block: 'nearest' })
+    }
+  }, [restoreRequest])
 
   useEffect(() => {
     let active = true
@@ -125,12 +137,21 @@ export function WebdavBackupSettings({ onRestore }: { onRestore: (raw: string) =
     setDirty(true)
     setMessage(null)
     setError(null)
+    setRestoreRequest(null)
+    setRestorePassphrase('')
   }
 
-  const perform = async (action: 'save' | 'test' | 'upload' | 'restore' | 'forget' | 'refresh', file?: WebdavBackupFile) => {
+  const perform = async (action: 'save' | 'test' | 'upload' | 'restore' | 'forget' | 'refresh', file?: WebdavBackupFile, passphraseOverride?: string) => {
+    if (busy)
+      return
+    const restoreFile = file ?? history[0]
     setBusy(true)
     setMessage(null)
     setError(null)
+    if (action !== 'restore') {
+      setRestoreRequest(null)
+      setRestorePassphrase('')
+    }
     try {
       if (action !== 'forget' && !await requestWebdavPermission(config)) {
         setError('webdavErrorPermission')
@@ -154,7 +175,9 @@ export function WebdavBackupSettings({ onRestore }: { onRestore: (raw: string) =
         setMessage('webdavUploaded')
       }
       else if (action === 'restore') {
-        onRestore(await readWebdavBackup(file))
+        onRestore(await readWebdavBackup(restoreFile, passphraseOverride))
+        setRestoreRequest(null)
+        setRestorePassphrase('')
       }
       else if (action === 'refresh') {
         setRefreshVersion(value => value + 1)
@@ -170,7 +193,10 @@ export function WebdavBackupSettings({ onRestore }: { onRestore: (raw: string) =
       setStatus(await loadWebdavStatus())
     }
     catch (cause) {
-      setError(errorKeys[webdavErrorCode(cause)])
+      const code = webdavErrorCode(cause)
+      setError(errorKeys[code])
+      if (action === 'restore' && (code === 'passphrase' || code === 'decrypt'))
+        setRestoreRequest({ file: restoreFile })
     }
     finally {
       setBusy(false)
@@ -199,6 +225,11 @@ export function WebdavBackupSettings({ onRestore }: { onRestore: (raw: string) =
           </label>
         </div>
         <p className="text-xs leading-5 text-muted-foreground">{t('webdavCredentialsHint')}</p>
+        <label className="block space-y-1.5 text-sm">
+          <span>{t('webdavEncryptionPassphrase')}</span>
+          <Input type="password" value={config.encryptionPassphrase ?? ''} onChange={event => update({ encryptionPassphrase: event.target.value })} autoComplete="new-password" />
+        </label>
+        <p className="text-xs leading-5 text-muted-foreground">{t('webdavEncryptionHint')}</p>
         <label className="flex items-center gap-2 text-sm">
           <Checkbox checked={config.enabled} onCheckedChange={checked => update({ enabled: checked === true })} />
           <span>{t('webdavAuto')}</span>
@@ -224,6 +255,40 @@ export function WebdavBackupSettings({ onRestore }: { onRestore: (raw: string) =
       {status.lastCheckedAt ? <p className="mt-1 text-xs text-muted-foreground">{t('webdavLastCheck', { time: formatDate(status.lastCheckedAt) })}</p> : null}
       {status.lastResult === 'unchanged' && !statusError ? <p className="mt-2 text-xs text-muted-foreground">{t('webdavHistoryUnchanged')}</p> : null}
       {statusError ? <p role="alert" className="mt-3 text-xs text-destructive">{t(statusError)}</p> : null}
+      {restoreRequest
+        ? (
+            <form
+              className="mt-3 space-y-3 rounded-md border border-border bg-background p-3"
+              onSubmit={(event) => {
+                event.preventDefault()
+                void perform('restore', restoreRequest.file, restorePassphrase)
+              }}
+            >
+              {restoreRequest.file ? <p className="break-all text-xs text-muted-foreground">{restoreRequest.file.filename}</p> : null}
+              <label className="block space-y-1.5 text-sm">
+                <span>{t('webdavRestorePassphrase')}</span>
+                <Input ref={restorePassphraseRef} type="password" value={restorePassphrase} onChange={event => setRestorePassphrase(event.target.value)} disabled={busy} autoComplete="off" />
+              </label>
+              <p className="text-xs leading-5 text-muted-foreground">{t('webdavRestorePassphraseHint')}</p>
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" size="sm" disabled={busy || !restorePassphrase}>{t('webdavDecryptPreview')}</Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => {
+                    setRestoreRequest(null)
+                    setRestorePassphrase('')
+                    setError(null)
+                  }}
+                >
+                  {t('cancel')}
+                </Button>
+              </div>
+            </form>
+          )
+        : null}
       <section aria-label={t('webdavHistory')} className="mt-4 border-t border-border pt-4">
         <div className="flex items-center justify-between gap-3">
           <h5 className="text-sm font-semibold">{t('webdavHistory')}</h5>
