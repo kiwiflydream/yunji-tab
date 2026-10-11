@@ -15,6 +15,7 @@ Key features:
 • Undo deletions immediately or restore them later from the 30-day trash
 • Save tab sessions and reopen selected tabs in their original order
 • Back up local metadata or export a complete bookmark tree snapshot
+• Back up to WebDAV with optional encryption, timestamped files, and remote history you can restore from
 • Customize themes, card density, visible fields, shortcuts, and search engines
 
 Optional AI organization:
@@ -23,7 +24,7 @@ Connect an OpenAI-compatible service to generate bookmark organization previews.
 
 Privacy:
 
-Settings stay on this device. Supplemental bookmark metadata is stored in the browser and synced across signed-in browsers with Chrome Sync by default; you can choose which fields are synced and optionally protect them with a passphrase. Yunji Tab has no analytics and requires no account. It requests website access only when you choose to fetch page details, check links, or run AI classification. Bookmark domains may be sent to Google Favicon to retrieve site icons.
+Settings and bookmark groups use browser sync. Supplemental bookmark metadata is synced across signed-in browsers by default; you can choose which fields are synced and optionally protect them with a passphrase. This metadata encryption does not cover bookmark groups. WebDAV backups can separately encrypt the complete snapshot, including groups; the connection credentials and backup passphrase stay on this device. Yunji Tab has no analytics and requires no account. It requests website access when you choose to fetch page details, check links, run AI classification, or configure WebDAV. Bookmark domains may be sent to Google Favicon to retrieve site icons.
 
 Interface languages:
 
@@ -46,6 +47,7 @@ Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, and
 • 删除后立即撤销，也可以在 30 天内从垃圾桶恢复
 • 保存标签页会话，并按原顺序恢复选中的页面
 • 备份本地元数据，或导出完整书签树快照
+• 通过 WebDAV 备份，可选口令加密，以时间戳文件保留历史并从远端记录恢复
 • 自定义主题、卡片密度、显示字段、快捷键和搜索引擎
 
 可选的 AI 整理：
@@ -54,7 +56,7 @@ Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, and
 
 隐私：
 
-设置保存在当前设备中。书签补充元数据默认通过 Chrome 同步在已登录的浏览器间同步；你可以选择同步字段，并按需启用口令加密。云吉 Tab 不收集分析数据，也不要求注册账号。只有在你主动抓取网页信息、检查链接或运行 AI 分类时，扩展才会申请网站访问权限。为了获取站点图标，书签域名可能会发送到 Google Favicon。
+设置和书签组通过浏览器同步存储保存。书签补充元数据默认在已登录的浏览器间同步；你可以选择同步字段，并按需启用口令加密，这项加密不保护书签组。WebDAV 可单独加密包含书签组的完整快照，连接凭据和备份口令仅保存在本机。云吉 Tab 不收集分析数据，也不要求注册账号。主动抓取网页信息、检查链接、运行 AI 分类或配置 WebDAV 时，扩展会按需申请网站访问权限。为了获取站点图标，书签域名可能会发送到 Google Favicon。
 
 界面语言：
 
@@ -77,6 +79,7 @@ Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, and
 • 刪除後立即復原，也可在 30 天內從垃圾桶還原
 • 儲存分頁工作階段，並依原本順序開啟選取的分頁
 • 備份本機中繼資料，或匯出完整書籤樹快照
+• 透過 WebDAV 備份，可選擇密碼加密，以時間戳記檔案保留歷史並從遠端紀錄還原
 • 自訂主題、卡片密度、顯示欄位、快速鍵及搜尋引擎
 
 選用的 AI 整理：
@@ -85,7 +88,7 @@ Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, and
 
 隱私：
 
-設定保存在目前裝置中。書籤補充中繼資料預設透過 Chrome 同步，在已登入的瀏覽器之間同步；你可以選擇同步欄位，並視需要啟用密碼加密。雲吉 Tab 不收集分析資料，也不要求註冊帳號。只有在你主動擷取網頁資訊、檢查連結或執行 AI 分類時，擴充功能才會要求網站存取權。為了取得網站圖示，書籤網域可能會傳送至 Google Favicon。
+設定和書籤群組透過瀏覽器同步儲存空間保存。書籤補充中繼資料預設在已登入的瀏覽器之間同步；你可以選擇同步欄位，並視需要啟用密碼加密，這項加密不保護書籤群組。WebDAV 可另行加密包含書籤群組的完整快照，連線憑證和備份密碼僅保存在本機。雲吉 Tab 不收集分析資料，也不要求註冊帳號。主動擷取網頁資訊、檢查連結、執行 AI 分類或設定 WebDAV 時，擴充功能會視需要要求網站存取權。為了取得網站圖示，書籤網域可能會傳送至 Google Favicon。
 
 介面語言：
 
@@ -108,6 +111,7 @@ Funciones principales:
 • Deshaz eliminaciones al instante o restaura elementos desde la papelera durante 30 días
 • Guarda sesiones de pestañas y vuelve a abrir las seleccionadas en su orden original
 • Crea copias de seguridad de los metadatos locales o exporta el árbol completo de marcadores
+• Guarda copias en WebDAV con cifrado opcional, archivos con fecha y hora e historial remoto desde el que puedes restaurar
 • Personaliza temas, densidad de tarjetas, campos visibles, atajos y motores de búsqueda
 
 Organización opcional con IA:
@@ -116,7 +120,7 @@ Conecta un servicio compatible con OpenAI para generar una vista previa de la or
 
 Privacidad:
 
-Los ajustes se guardan en este dispositivo. Los metadatos adicionales se sincronizan de forma predeterminada entre los navegadores donde has iniciado sesión mediante Chrome Sync; puedes elegir qué campos se sincronizan y protegerlos opcionalmente con una contraseña. Yunji Tab no incluye analíticas ni requiere una cuenta. Solo solicita acceso a sitios web cuando decides obtener información de una página, comprobar enlaces o ejecutar la clasificación con IA. Los dominios de los marcadores pueden enviarse a Google Favicon para obtener los iconos.
+Los ajustes y los grupos de marcadores usan la sincronización del navegador. Los metadatos adicionales se sincronizan de forma predeterminada entre los navegadores donde has iniciado sesión; puedes elegir los campos y protegerlos con una contraseña. Este cifrado de metadatos no protege los grupos. Las copias WebDAV pueden cifrar por separado la instantánea completa, incluidos los grupos; las credenciales de conexión y la contraseña de la copia permanecen en este dispositivo. Yunji Tab no incluye analíticas ni requiere una cuenta. Solicita acceso a sitios web cuando decides obtener información de una página, comprobar enlaces, ejecutar la clasificación con IA o configurar WebDAV. Los dominios de los marcadores pueden enviarse a Google Favicon para obtener los iconos.
 
 Idiomas de la interfaz:
 
@@ -139,6 +143,7 @@ Fonctions principales :
 • Annulez immédiatement une suppression ou restaurez un élément depuis la corbeille pendant 30 jours
 • Enregistrez des sessions d'onglets et rouvrez les onglets sélectionnés dans leur ordre initial
 • Sauvegardez les métadonnées locales ou exportez une copie complète de l'arborescence
+• Sauvegardez sur WebDAV avec chiffrement facultatif, fichiers horodatés et historique distant permettant la restauration
 • Personnalisez les thèmes, la densité des cartes, les champs visibles, les raccourcis et les moteurs de recherche
 
 Classement facultatif par IA :
@@ -147,7 +152,7 @@ Connectez un service compatible avec OpenAI pour générer un aperçu du classem
 
 Confidentialité :
 
-Les réglages restent sur cet appareil. Par défaut, les métadonnées supplémentaires sont synchronisées avec Chrome Sync entre les navigateurs connectés ; vous pouvez choisir les champs synchronisés et les protéger avec une phrase secrète. Yunji Tab n'intègre aucun outil d'analyse et ne demande pas de compte. L'accès aux sites n'est demandé que lorsque vous choisissez de récupérer les informations d'une page, de vérifier des liens ou de lancer le classement par IA. Les domaines des favoris peuvent être envoyés à Google Favicon pour récupérer les icônes.
+Les réglages et les groupes de favoris utilisent la synchronisation du navigateur. Par défaut, les métadonnées supplémentaires sont synchronisées entre les navigateurs connectés ; vous pouvez choisir les champs et les protéger avec une phrase secrète. Ce chiffrement des métadonnées ne protège pas les groupes. Les sauvegardes WebDAV peuvent chiffrer séparément la copie complète, groupes compris ; les identifiants de connexion et la phrase secrète de sauvegarde restent sur cet appareil. Yunji Tab n'intègre aucun outil d'analyse et ne demande pas de compte. L'accès aux sites est demandé lorsque vous choisissez de récupérer les informations d'une page, de vérifier des liens, de lancer le classement par IA ou de configurer WebDAV. Les domaines des favoris peuvent être envoyés à Google Favicon pour récupérer les icônes.
 
 Langues de l'interface :
 
@@ -170,6 +175,7 @@ Yunji Tabはブラウザ標準のブックマークを直接利用します。�
 • 削除をすぐに取り消すか、30 日以内にごみ箱から復元
 • タブセッションを保存し、選択したタブを元の順序で開き直す
 • ローカルメタデータのバックアップ、またはブックマークツリー全体の書き出し
+• WebDAVへのバックアップ、任意の暗号化、日時付きファイルによる履歴保存とリモート履歴からの復元
 • テーマ、カードの表示密度、表示項目、ショートカット、検索エンジンをカスタマイズ
 
 任意のAI整理機能：
@@ -178,7 +184,7 @@ OpenAI互換サービスを接続すると、ブックマーク整理のプレ�
 
 プライバシー：
 
-設定は現在の端末に保存されます。追加のブックマークメタデータは、デフォルトでChrome Syncを使ってログイン済みのブラウザ間で同期されます。同期する項目を選び、必要に応じてパスフレーズで暗号化できます。Yunji Tabはアクセス解析を行わず、アカウントも必要ありません。ページ情報の取得、リンク確認、AI分類を実行したときだけ、対象サイトへのアクセス権限を求めます。サイトアイコンの取得に必要なブックマークのドメインは、Google Faviconに送信される場合があります。
+設定とブックマークグループはブラウザの同期機能を利用します。追加のブックマークメタデータは、デフォルトでログイン済みのブラウザ間で同期されます。同期する項目を選び、パスフレーズで暗号化できますが、この暗号化はグループを保護しません。WebDAVバックアップではグループを含むスナップショット全体を別途暗号化でき、接続情報とバックアップ用パスフレーズは現在の端末だけに保存されます。Yunji Tabはアクセス解析を行わず、アカウントも必要ありません。ページ情報の取得、リンク確認、AI分類の実行、WebDAVの設定時に、対象サイトへのアクセス権限を求めます。サイトアイコンの取得に必要なブックマークのドメインは、Google Faviconに送信される場合があります。
 
 表示言語：
 
@@ -201,6 +207,7 @@ Yunji Tab은 브라우저 기본 북마크를 직접 사용합니다. 데이터�
 • 삭제 작업을 즉시 취소하거나 30일 이내에 휴지통에서 복원
 • 탭 세션을 저장하고 선택한 탭을 원래 순서대로 다시 열기
 • 로컬 메타데이터를 백업하거나 전체 북마크 트리 내보내기
+• WebDAV 백업, 선택적 암호화, 타임스탬프 파일로 이력 보관 및 원격 기록에서 복원
 • 테마, 카드 밀도, 표시 항목, 단축키 및 검색 엔진 사용자 지정
 
 선택형 AI 정리:
@@ -209,7 +216,7 @@ OpenAI 호환 서비스를 연결하면 북마크 정리 미리보기를 만들 
 
 개인정보 보호:
 
-설정은 현재 기기에 저장됩니다. 추가 북마크 메타데이터는 기본적으로 Chrome 동기화를 통해 로그인된 브라우저 사이에서 동기화됩니다. 동기화할 항목을 선택하고 필요하면 암호로 보호할 수 있습니다. Yunji Tab은 분석 데이터를 수집하지 않으며 계정도 필요하지 않습니다. 페이지 정보 가져오기, 링크 확인 또는 AI 분류를 실행할 때만 해당 사이트에 대한 접근 권한을 요청합니다. 사이트 아이콘을 가져오기 위해 북마크 도메인이 Google Favicon으로 전송될 수 있습니다.
+설정과 북마크 그룹은 브라우저 동기화를 사용합니다. 추가 북마크 메타데이터는 기본적으로 로그인된 브라우저 사이에서 동기화되며, 동기화할 항목을 선택하고 암호로 보호할 수 있습니다. 이 메타데이터 암호화는 그룹을 보호하지 않습니다. WebDAV 백업은 그룹을 포함한 전체 스냅샷을 별도로 암호화할 수 있으며, 연결 자격 증명과 백업 암호는 현재 기기에만 저장됩니다. Yunji Tab은 분석 데이터를 수집하지 않으며 계정도 필요하지 않습니다. 페이지 정보 가져오기, 링크 확인, AI 분류 실행 또는 WebDAV 설정 시 해당 사이트에 대한 접근 권한을 요청합니다. 사이트 아이콘을 가져오기 위해 북마크 도메인이 Google Favicon으로 전송될 수 있습니다.
 
 지원 언어:
 
