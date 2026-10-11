@@ -39,6 +39,7 @@ const COLOR_THEMES: ColorTheme[] = [
 const BACKGROUND_STYLES: BackgroundStyle[] = ['flat', 'subtle', 'panel']
 
 export const DEFAULT_CARD_FIELDS: CardFieldSettings = {
+  websiteIcon: true,
   description: true,
   tags: true,
   categoryPath: true,
@@ -50,6 +51,7 @@ export const DEFAULT_CARD_FIELDS: CardFieldSettings = {
 }
 
 export const DEFAULT_NAV_ITEMS: NavItemSettings = {
+  icons: true,
   counts: true,
   smartCategories: true,
   savedSearches: false,
@@ -535,6 +537,10 @@ export function normalizeAppearanceSettings(
       DEFAULT_APPEARANCE_SETTINGS.backgroundStyle,
     ),
     navItems: {
+      icons:
+        typeof navItems.icons === 'boolean'
+          ? navItems.icons
+          : DEFAULT_NAV_ITEMS.icons,
       counts:
         typeof navItems.counts === 'boolean'
           ? navItems.counts
@@ -553,6 +559,10 @@ export function normalizeAppearanceSettings(
           : DEFAULT_NAV_ITEMS.categoryTree,
     },
     cardFields: {
+      websiteIcon:
+        typeof cardFields.websiteIcon === 'boolean'
+          ? cardFields.websiteIcon
+          : DEFAULT_CARD_FIELDS.websiteIcon,
       description:
         typeof cardFields.description === 'boolean'
           ? cardFields.description

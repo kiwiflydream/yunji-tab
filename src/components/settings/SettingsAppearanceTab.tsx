@@ -91,8 +91,8 @@ const THEME_OPTIONS: Array<{
 
 type StylePresetSettings = Omit<
   AppearanceSettings,
-  'navLayout' | 'navItems' | 'catDecorations'
->
+  'navLayout' | 'navItems' | 'catDecorations' | 'cardFields'
+> & { cardFields: Omit<AppearanceSettings['cardFields'], 'websiteIcon'> }
 type StylePreset = 'minimal' | 'balanced' | 'compact' | 'soft' | 'kami' | 'engraving' | 'electric'
 
 interface StylePresetDefinition {
@@ -131,6 +131,7 @@ function AppearanceSwitch({
 function toStylePresetSettings(
   appearance: AppearanceSettings,
 ): StylePresetSettings {
+  const { websiteIcon: _websiteIcon, ...cardFields } = appearance.cardFields
   return {
     contentWidth: appearance.contentWidth,
     gridDensity: appearance.gridDensity,
@@ -140,7 +141,7 @@ function toStylePresetSettings(
     accentColor: appearance.accentColor,
     colorTheme: appearance.colorTheme,
     backgroundStyle: appearance.backgroundStyle,
-    cardFields: { ...appearance.cardFields },
+    cardFields,
   }
 }
 
@@ -257,7 +258,7 @@ const STYLE_PRESETS: Record<StylePreset, StylePresetDefinition> = {
       radius: 'sm',
       colorTheme: 'engraving',
       cardFields: {
-        ...DEFAULT_APPEARANCE_SETTINGS.cardFields,
+        ...toStylePresetSettings(DEFAULT_APPEARANCE_SETTINGS).cardFields,
         titleLines: 2,
       },
     },
@@ -273,7 +274,7 @@ const STYLE_PRESETS: Record<StylePreset, StylePresetDefinition> = {
       radius: 'sm',
       colorTheme: 'electric',
       cardFields: {
-        ...DEFAULT_APPEARANCE_SETTINGS.cardFields,
+        ...toStylePresetSettings(DEFAULT_APPEARANCE_SETTINGS).cardFields,
         titleLines: 2,
       },
     },
@@ -709,6 +710,20 @@ export function SettingsAppearanceTab() {
           <section className="rounded-xl border border-border bg-muted/35 p-4">
             <h3 className="text-sm font-semibold">{t('appearanceVisibleFields')}</h3>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <AppearanceSwitch
+                label={t('appearanceFieldWebsiteIcon')}
+                checked={appearance.cardFields.websiteIcon}
+                onCheckedChange={value =>
+                  void setAppearance({
+                    cardFields: { websiteIcon: value },
+                  })}
+              />
+              <AppearanceSwitch
+                label={t('appearanceMenuIcons')}
+                checked={appearance.navItems.icons}
+                onCheckedChange={value =>
+                  void setAppearance({ navItems: { icons: value } })}
+              />
               <AppearanceSwitch
                 label={t('appearanceFieldDescription')}
                 checked={appearance.cardFields.description}

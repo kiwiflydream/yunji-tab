@@ -80,6 +80,7 @@ export interface KeyboardShortcut {
 export type KeyboardShortcuts = Record<ShortcutAction, KeyboardShortcut>
 
 export interface CardFieldSettings {
+  websiteIcon: boolean
   description: boolean
   tags: boolean
   categoryPath: boolean
@@ -91,6 +92,7 @@ export interface CardFieldSettings {
 }
 
 export interface NavItemSettings {
+  icons: boolean
   counts: boolean
   smartCategories: boolean
   savedSearches: boolean

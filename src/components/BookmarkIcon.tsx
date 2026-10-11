@@ -57,6 +57,7 @@ export function BookmarkIcon({ icon, url, name, appearance, compact = false, fal
   return (
     <div
       ref={node}
+      data-slot="bookmark-icon"
       aria-hidden="true"
       className={cn(
         'flex shrink-0 items-center justify-center overflow-hidden bg-gradient-to-b from-secondary/85 to-secondary/40 text-foreground ring-1 ring-border/45 shadow-xs group-hover:ring-border/65 transition-all',

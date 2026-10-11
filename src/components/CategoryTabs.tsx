@@ -33,6 +33,7 @@ interface CategoryTabProps {
   onEdit: (category: Category) => void
   fullWidth: boolean
   showCount: boolean
+  showIcon: boolean
   leadingControl?: ReactNode
   reserveLeadingSpace?: boolean
 }
@@ -46,6 +47,7 @@ function CategoryTab({
   onEdit,
   fullWidth,
   showCount,
+  showIcon,
   leadingControl,
   reserveLeadingSpace = false,
 }: CategoryTabProps) {
@@ -112,9 +114,13 @@ function CategoryTab({
           (leadingControl || reserveLeadingSpace) && 'lg:pl-0',
         )}
       >
-        <span className="w-5 shrink-0 truncate text-center text-base">
-          {category.emoji}
-        </span>
+        {showIcon
+          ? (
+              <span data-slot="category-icon" className="w-5 shrink-0 truncate text-center text-base">
+                {category.emoji}
+              </span>
+            )
+          : null}
         <span
           title={categoryName(category)}
           className="min-w-0 flex-1 truncate text-[13px] font-medium"
@@ -185,6 +191,7 @@ interface CategoryTreeItemsProps {
   collapsedIds: Set<string>
   forcedExpandedIds: Set<string>
   showCount: boolean
+  showIcon: boolean
   count: (id: string) => number
   onSelect: (id: string) => void
   onEdit: (category: Category) => void
@@ -198,6 +205,7 @@ function CategoryTreeItems({
   collapsedIds,
   forcedExpandedIds,
   showCount,
+  showIcon,
   count,
   onSelect,
   onEdit,
@@ -232,6 +240,7 @@ function CategoryTreeItems({
           count={count(category.id)}
           fullWidth
           showCount={showCount}
+          showIcon={showIcon}
           leadingControl={leadingControl}
           reserveLeadingSpace
           onSelect={onSelect}
@@ -253,6 +262,7 @@ function CategoryTreeItems({
                   collapsedIds={collapsedIds}
                   forcedExpandedIds={forcedExpandedIds}
                   showCount={showCount}
+                  showIcon={showIcon}
                   count={count}
                   onSelect={onSelect}
                   onEdit={onEdit}
@@ -409,6 +419,7 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
         count={count(category.id)}
         fullWidth={navLayout === 'sidebar'}
         showCount={appearance.navItems.counts}
+        showIcon={appearance.navItems.icons}
         reserveLeadingSpace={treeEnabled}
         onSelect={(id) => {
           if (saved) {
@@ -436,6 +447,7 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
           count={groupCount}
           fullWidth={navLayout === 'sidebar'}
           showCount={appearance.navItems.counts}
+          showIcon={appearance.navItems.icons}
           reserveLeadingSpace={treeEnabled}
           onSelect={onSelectGroups}
           onEdit={onEditCategory}
@@ -515,6 +527,7 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
                 collapsedIds={collapsedCategoryIds}
                 forcedExpandedIds={forcedExpandedIds}
                 showCount={appearance.navItems.counts}
+                showIcon={appearance.navItems.icons}
                 count={count}
                 onSelect={setActive}
                 onEdit={onEditCategory}

@@ -268,9 +268,12 @@ export function BookmarkCard({
           && 'cursor-grab active:cursor-grabbing',
           movePending && 'cursor-wait',
           showCategoryPath && 'pb-9',
+          selectionMode && !fields.websiteIcon && 'pl-14',
         )}
       >
-        <BookmarkIcon icon={bookmark.icon} url={bookmark.url} name={bookmark.name} appearance={appearance} compact={compact} />
+        {fields.websiteIcon
+          ? <BookmarkIcon icon={bookmark.icon} url={bookmark.url} name={bookmark.name} appearance={appearance} compact={compact} />
+          : null}
 
         <div className="min-w-0 flex-1 pr-9">
           <div
