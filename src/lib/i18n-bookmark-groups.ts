@@ -32,6 +32,7 @@ const zhCN = {
   groupRetry: '重试',
   openGroupBookmark: '打开书签 {name}',
   groupOpenFailed: '打开失败，请重试。',
+  loadMoreGroups: '书签组加载更多（剩余 {count} 项）',
 } as const
 
 type GroupMessages = Record<keyof typeof zhCN, string>
@@ -70,6 +71,7 @@ export const bookmarkGroupMessages: Record<Language, GroupMessages> = {
     groupRetry: '重試',
     openGroupBookmark: '開啟書籤 {name}',
     groupOpenFailed: '開啟失敗，請重試。',
+    loadMoreGroups: '書籤組載入更多（剩餘 {count} 項）',
   },
   'en': {
     bookmarkGroups: 'Bookmark groups',
@@ -103,6 +105,7 @@ export const bookmarkGroupMessages: Record<Language, GroupMessages> = {
     groupRetry: 'Retry',
     openGroupBookmark: 'Open bookmark {name}',
     groupOpenFailed: 'Could not open the bookmark. Please retry.',
+    loadMoreGroups: 'Load more groups ({count} remaining)',
   },
   'ja': {
     bookmarkGroups: 'ブックマークグループ',
@@ -136,6 +139,7 @@ export const bookmarkGroupMessages: Record<Language, GroupMessages> = {
     groupRetry: '再試行',
     openGroupBookmark: 'ブックマーク {name} を開く',
     groupOpenFailed: '開けませんでした。再試行してください。',
+    loadMoreGroups: 'グループをさらに読み込む（残り {count} 件）',
   },
   'ko': {
     bookmarkGroups: '북마크 그룹',
@@ -169,6 +173,7 @@ export const bookmarkGroupMessages: Record<Language, GroupMessages> = {
     groupRetry: '다시 시도',
     openGroupBookmark: '북마크 {name} 열기',
     groupOpenFailed: '열지 못했습니다. 다시 시도하세요.',
+    loadMoreGroups: '그룹 더 불러오기 (남은 항목 {count}개)',
   },
   'es': {
     bookmarkGroups: 'Grupos de favoritos',
@@ -202,6 +207,7 @@ export const bookmarkGroupMessages: Record<Language, GroupMessages> = {
     groupRetry: 'Reintentar',
     openGroupBookmark: 'Abrir favorito {name}',
     groupOpenFailed: 'No se pudo abrir el favorito. Inténtalo de nuevo.',
+    loadMoreGroups: 'Cargar más grupos ({count} restantes)',
   },
   'fr': {
     bookmarkGroups: 'Groupes de favoris',
@@ -235,5 +241,6 @@ export const bookmarkGroupMessages: Record<Language, GroupMessages> = {
     groupRetry: 'Réessayer',
     openGroupBookmark: 'Ouvrir le favori {name}',
     groupOpenFailed: 'Impossible d’ouvrir le favori. Réessayez.',
+    loadMoreGroups: 'Charger plus de groupes ({count} restants)',
   },
 }

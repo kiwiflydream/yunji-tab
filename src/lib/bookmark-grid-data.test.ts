@@ -23,6 +23,19 @@ const categories: Category[] = [
 ]
 
 describe('bookmark grid data', () => {
+  it('retains ordinary view results across usage updates but refreshes usage-dependent ordering', () => {
+    const bookmarks = [bookmark('one'), bookmark('two')]
+    const before = { [bookmarks[0].url]: { openCount: 2, lastOpenedAt: 1 } }
+    const after = { ...before, [bookmarks[1].url]: { openCount: 3, lastOpenedAt: 2 } }
+    const regular = selectBookmarksForView(bookmarks, 'all', 'manual', before)
+    expect(selectBookmarksForView(bookmarks, 'all', 'manual', after)).toBe(regular)
+    const folder = selectBookmarksForView(bookmarks, 'work', 'name', before)
+    expect(selectBookmarksForView(bookmarks, 'work', 'name', after)).toBe(folder)
+    expect(selectBookmarksForView(bookmarks, 'all', 'frequent', before).map(item => item.id)).toEqual(['one', 'two'])
+    expect(selectBookmarksForView(bookmarks, 'all', 'frequent', after).map(item => item.id)).toEqual(['two', 'one'])
+    expect(selectBookmarksForView(bookmarks, 'recent', 'manual', after).map(item => item.id)).toEqual(['two', 'one'])
+  })
+
   it('selects and sorts usage views while keeping pinned bookmarks first', () => {
     const bookmarks = [
       bookmark('low', { pinnedAt: 10 }),

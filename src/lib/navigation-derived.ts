@@ -27,6 +27,7 @@ interface CategoryDerivedData {
 }
 
 const categoryCache = new WeakMap<Category[], CategoryDerivedData>()
+const searchEntryCache = new WeakMap<Bookmark, BookmarkSearchEntry>()
 const navigationCache = new WeakMap<
   Bookmark[],
   WeakMap<Category[], NavigationDerivedData>
@@ -92,12 +93,15 @@ export function getNavigationDerivedData(
 
   const getSearchEntries = (): BookmarkSearchEntry[] => {
     if (!lazySearchEntries) {
-      lazySearchEntries = bookmarks.map(bookmark =>
-        createBookmarkSearchEntry(
-          bookmark,
-          categoryDerived.categoryPathMap.get(bookmark.categoryId) ?? [],
-        ),
-      )
+      lazySearchEntries = bookmarks.map((bookmark) => {
+        const path = categoryDerived.categoryPathMap.get(bookmark.categoryId) ?? []
+        const cached = searchEntryCache.get(bookmark)
+        if (cached?.categoryPathLabel === path.join(' / '))
+          return cached
+        const entry = createBookmarkSearchEntry(bookmark, path)
+        searchEntryCache.set(bookmark, entry)
+        return entry
+      })
     }
     return lazySearchEntries
   }

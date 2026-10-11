@@ -44,16 +44,16 @@ export function useBookmarkGridData({
       ),
     [activeCategoryId, bookmarks, sortMode, usage],
   )
-  const filteredBookmarks = useMemo(
+  const searchResults = useMemo(
     () =>
       searchQuery.trim()
         ? filterGridBookmarks(
-            categorizedBookmarks,
+            [],
             derived.searchEntries,
             searchQuery,
           )
-        : categorizedBookmarks,
-    [categorizedBookmarks, derived, searchQuery],
+        : undefined,
+    [derived, searchQuery],
   )
   const filteredCategories = useMemo(
     () =>
@@ -68,7 +68,7 @@ export function useBookmarkGridData({
 
   return {
     categoryPathMap: derived.categoryPathMap,
-    filteredBookmarks,
+    filteredBookmarks: searchResults ?? categorizedBookmarks,
     filteredCategories,
     isSmartView: isSmartBookmarkView(activeCategoryId),
     itemCounts: {

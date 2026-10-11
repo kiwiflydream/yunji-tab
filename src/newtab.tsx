@@ -157,8 +157,11 @@ export default function NewTab() {
     }
     const refreshChanged = (
       id: string,
-      changeInfo: { url?: string },
+      changeInfo: { url?: string, title?: string },
     ) => {
+      // Chrome includes the current URL even when only the title changed.
+      if (changeInfo.title !== undefined && useNavStore.getState().applyNativeBookmarkTitle(id, changeInfo.title, changeInfo.url))
+        return
       if (changeInfo.url) {
         void useNavStore.getState().reconcileBookmarkUrlChange(
           id,

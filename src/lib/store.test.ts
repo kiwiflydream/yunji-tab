@@ -66,6 +66,65 @@ afterEach(() => {
 })
 
 describe('navigation store boundaries', () => {
+  it('retains unchanged bookmark and category objects across native tree reloads', async () => {
+    const tree = [{ id: '0', title: '', children: [{ id: '1', title: 'Folder', children: [
+      { id: '2', title: 'One', url: 'https://one.example' },
+      { id: '3', title: 'Two', url: 'https://two.example' },
+    ] }] }]
+    vi.stubGlobal('chrome', { bookmarks: { getTree: async () => structuredClone(tree) } })
+    useNavStore.setState({ meta: { 'https://two.example': { tags: ['keep'], description: 'Keep' } } })
+    await useNavStore.getState().loadBookmarks()
+    const first = useNavStore.getState()
+    await useNavStore.getState().loadBookmarks()
+    expect(useNavStore.getState().bookmarks).toBe(first.bookmarks)
+    expect(useNavStore.getState().categories).toBe(first.categories)
+    tree[0].children[0].children[0].title = 'Edited'
+    await useNavStore.getState().loadBookmarks()
+    expect(useNavStore.getState().bookmarks[0].name).toBe('Edited')
+    expect(useNavStore.getState().bookmarks[1]).toBe(first.bookmarks[1])
+    expect(useNavStore.getState().categories).toBe(first.categories)
+  })
+
+  it('applies native bookmark and folder titles locally while preserving metadata and siblings', async () => {
+    const untouched = { id: 'bm-3', name: 'Two', url: 'https://two.example', categoryId: 'cat-1' }
+    const categories = [{ id: 'cat-1', name: 'Folder', emoji: 'A', parentId: 'all', modifiable: true }]
+    useNavStore.setState({
+      bookmarks: [{ id: 'bm-2', name: 'One', url: 'https://one.example', categoryId: 'cat-1', tags: ['keep'] }, untouched],
+      categories,
+    })
+    expect(useNavStore.getState().applyNativeBookmarkTitle('2', 'Changed URL', 'https://changed.example')).toBe(false)
+    expect(useNavStore.getState().bookmarks[0].name).toBe('One')
+    expect(useNavStore.getState().applyNativeBookmarkTitle('2', 'Renamed', 'https://one.example')).toBe(true)
+    expect(useNavStore.getState().bookmarks[0]).toMatchObject({ name: 'Renamed', tags: ['keep'] })
+    expect(useNavStore.getState().bookmarks[1]).toBe(untouched)
+    expect(useNavStore.getState().categories).toBe(categories)
+    expect(useNavStore.getState().applyNativeBookmarkTitle('1', 'Projects')).toBe(true)
+    expect(useNavStore.getState().categories[0]).toMatchObject({ name: 'Projects', emoji: 'A' })
+    expect(useNavStore.getState().applyNativeBookmarkTitle('missing', 'Unknown')).toBe(false)
+    expect(useNavStore.getState().applyNativeBookmarkTitle('2', '')).toBe(true)
+    expect(useNavStore.getState().bookmarks[0].name).toBe('https://one.example')
+  })
+
+  it.each(['Old', 'New'])('discards an in-flight native tree snapshot when a local native title event arrives (cached title: %s)', async (cachedTitle) => {
+    useNavStore.setState({ bookmarks: [{ id: 'bm-2', name: cachedTitle, url: 'https://one.example', categoryId: 'all' }] })
+    const oldTree = deferred<chrome.bookmarks.BookmarkTreeNode[]>()
+    const entered = deferred<void>()
+    const getTree = vi.fn().mockImplementationOnce(() => {
+      entered.resolve()
+      return oldTree.promise
+    }).mockResolvedValue([
+      { id: '0', title: '', children: [{ id: '2', title: 'New', url: 'https://one.example' }] },
+    ])
+    vi.stubGlobal('chrome', { bookmarks: { getTree } })
+    const load = useNavStore.getState().loadBookmarks()
+    await entered.promise
+    useNavStore.getState().applyNativeBookmarkTitle('2', 'New')
+    oldTree.resolve([{ id: '0', title: '', syncing: false, children: [{ id: '2', title: 'Old', url: 'https://one.example', syncing: false }] }])
+    await load
+    expect(getTree).toHaveBeenCalledTimes(2)
+    expect(useNavStore.getState().bookmarks[0].name).toBe('New')
+  })
+
   it('retains another page’s category icon when editing a stale category snapshot', async () => {
     vi.useFakeTimers()
     storageState.values.set('local:yunji-tab:category-meta', { 'cat-2': { emoji: 'B' } })

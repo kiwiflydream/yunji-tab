@@ -4,6 +4,34 @@ import { DEFAULT_CATEGORY_EMOJI } from './default-data'
 
 export type BookmarkTreeNode = chrome.bookmarks.BookmarkTreeNode
 
+function sameValue(left: unknown, right: unknown): boolean {
+  return left === right || (Array.isArray(left) && Array.isArray(right)
+    && left.length === right.length && left.every((value, index) => value === right[index]))
+}
+
+function reuseItems<T extends { id: string }>(previous: T[], next: T[]): T[] {
+  const byId = new Map(previous.map(item => [item.id, item]))
+  const result = next.map((item) => {
+    const old = byId.get(item.id)
+    if (!old)
+      return item
+    const keys = new Set([...Object.keys(old), ...Object.keys(item)])
+    return [...keys].every(key => sameValue(old[key as keyof T], item[key as keyof T])) ? old : item
+  })
+  return result.length === previous.length && result.every((item, index) => item === previous[index]) ? previous : result
+}
+
+// Keep unchanged objects stable so native refreshes retain their derived indexes.
+export function reuseBookmarkTreeData(
+  previous: { bookmarks: Bookmark[], categories: Category[] },
+  next: { bookmarks: Bookmark[], categories: Category[] },
+): { bookmarks: Bookmark[], categories: Category[] } {
+  return {
+    bookmarks: reuseItems(previous.bookmarks, next.bookmarks),
+    categories: reuseItems(previous.categories, next.categories),
+  }
+}
+
 export function bookmarkTreeContainsNode(
   root: BookmarkTreeNode,
   nodeId: string,

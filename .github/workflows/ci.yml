@@ -89,6 +89,8 @@ jobs:
           e2e/startup.spec.ts
           e2e/settings-reset.spec.ts
           e2e/concurrent-storage.spec.ts
+          e2e/native-title-updates.spec.ts
+          e2e/group-pagination.spec.ts
           --reporter=list,html
 
       - name: Upload Playwright report

@@ -43,6 +43,7 @@ import { assertBookmarksApi, bookmarkApi } from './bookmark-repository'
 import {
   bookmarkTreeContainsNode,
   loadBookmarkTreeData,
+  reuseBookmarkTreeData,
   toNodeId,
 } from './bookmark-tree'
 import { normalizeAlternateBookmarkUrls } from './bookmark-urls'
@@ -102,6 +103,7 @@ let metadataSyncQuotaFailures = 0
 let metadataRefreshRevision = 0
 const bookmarkUrlMigrations = new Set<Promise<void>>()
 let bookmarkUrlMigrationRevision = 0
+let bookmarkTitleRevision = 0
 let runScheduledMetadataSync: () => void = () => {}
 let scheduleUsagePersist: () => void = () => {}
 const runBookmarkLoad = createCoalescedAsyncRunner()
@@ -453,6 +455,7 @@ export interface NavState extends SettingsSlice {
 
   init: () => Promise<void>
   loadBookmarks: () => Promise<void>
+  applyNativeBookmarkTitle: (nativeId: string, title: string, expectedUrl?: string) => boolean
   /** 手动同步当前缺失的书签描述，同一时间只运行一个任务 */
   syncMissingDescriptions: () => Promise<DescriptionSyncResult>
   syncBookmarkDescriptions: (ids: string[]) => Promise<DescriptionSyncResult>
@@ -602,25 +605,51 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
     // was read during a migration, read it again instead of applying an old URL.
     let tree: Awaited<ReturnType<typeof loadBookmarkTreeData>>
     let revision: number
+    let titleRevision: number
     do {
       while (bookmarkUrlMigrations.size > 0)
         await Promise.allSettled([...bookmarkUrlMigrations])
       revision = bookmarkUrlMigrationRevision
+      titleRevision = bookmarkTitleRevision
       tree = await loadBookmarkTreeData()
       while (bookmarkUrlMigrations.size > 0)
         await Promise.allSettled([...bookmarkUrlMigrations])
-    } while (revision !== bookmarkUrlMigrationRevision)
+    } while (revision !== bookmarkUrlMigrationRevision || titleRevision !== bookmarkTitleRevision)
     const { categories, bookmarks } = tree
     const activeCategoryId = resolveAvailableCategoryId(
       get().activeCategoryId,
       categories,
     )
     set({
-      categories: applyCategoryMeta(categories, get().categoryMeta),
-      bookmarks: applyMeta(bookmarks, get().meta),
+      ...reuseBookmarkTreeData(get(), {
+        categories: applyCategoryMeta(categories, get().categoryMeta),
+        bookmarks: applyMeta(bookmarks, get().meta),
+      }),
       activeCategoryId,
     })
   }),
+
+  applyNativeBookmarkTitle: (nativeId, title, expectedUrl) => {
+    const bookmarkId = `bm-${nativeId}`
+    const bookmark = get().bookmarks.find(item => item.id === bookmarkId)
+    if (bookmark) {
+      if (expectedUrl !== undefined && bookmark.url !== expectedUrl)
+        return false
+      bookmarkTitleRevision += 1
+      const name = title || bookmark.url
+      if (bookmark.name !== name)
+        set({ bookmarks: get().bookmarks.map(item => item === bookmark ? { ...item, name } : item) })
+      return true
+    }
+    const categoryId = `cat-${nativeId}`
+    const category = get().categories.find(item => item.id === categoryId)
+    if (!category || expectedUrl !== undefined)
+      return false
+    bookmarkTitleRevision += 1
+    if (category.name !== title)
+      set({ categories: get().categories.map(item => item === category ? { ...item, name: title } : item) })
+    return true
+  },
 
   syncMetadataNow: () => {
     if (typeof chrome === 'undefined' || !chrome.storage?.sync)

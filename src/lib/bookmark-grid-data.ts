@@ -56,7 +56,29 @@ export function sortBookmarks(
   })
 }
 
+const viewCache = new WeakMap<Bookmark[], {
+  activeCategoryId: string
+  sortMode: BookmarkSortMode
+  usage: BookmarkUsageMap | undefined
+  result: Bookmark[]
+}>()
+
 export function selectBookmarksForView(
+  bookmarks: Bookmark[],
+  activeCategoryId: string,
+  sortMode: BookmarkSortMode,
+  usage: BookmarkUsageMap,
+): Bookmark[] {
+  const relevantUsage = isUsageBookmarkView(activeCategoryId) || sortMode === 'frequent' ? usage : undefined
+  const cached = viewCache.get(bookmarks)
+  if (cached?.activeCategoryId === activeCategoryId && cached.sortMode === sortMode && cached.usage === relevantUsage)
+    return cached.result
+  const result = computeBookmarksForView(bookmarks, activeCategoryId, sortMode, usage)
+  viewCache.set(bookmarks, { activeCategoryId, sortMode, usage: relevantUsage, result })
+  return result
+}
+
+function computeBookmarksForView(
   bookmarks: Bookmark[],
   activeCategoryId: string,
   sortMode: BookmarkSortMode,

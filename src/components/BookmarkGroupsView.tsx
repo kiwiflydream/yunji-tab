@@ -23,6 +23,7 @@ interface BookmarkGroupsViewProps {
 }
 
 const HOVER_OPEN_DELAY = 100
+const RENDER_BATCH_SIZE = 50
 
 export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: BookmarkGroupsViewProps) {
   const { t } = useI18n()
@@ -48,6 +49,21 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
       ? groups.filter(group => [group.title, group.description, ...group.bookmarks.map(member => member.title)].some(value => value?.toLocaleLowerCase().includes(query)))
       : groups
   }, [groups, renderCards, searchQuery])
+  // Standalone and pinned instances mount under different React keys, but the
+  // variant and query still join the key so a future shared mount cannot leak a
+  // previous batch window into a different list.
+  const paginationKey = `${pinnedOnly ? 'pinned' : 'all'}\u0000${renderCards ? 'inline' : 'standalone'}\u0000${searchQuery}`
+  const [pagination, setPagination] = useState({ key: paginationKey, limit: RENDER_BATCH_SIZE })
+  if (pagination.key !== paginationKey)
+    setPagination({ key: paginationKey, limit: RENDER_BATCH_SIZE })
+  const visibleLimit = pagination.key === paginationKey ? pagination.limit : RENDER_BATCH_SIZE
+  const visibleGroups = useMemo(
+    // Index is the position in the full filtered list, so drag reorder and drop
+    // placement keep pointing at the same neighbours as before pagination.
+    () => cardGroups.slice(0, visibleLimit).map((group, index) => ({ group, index })),
+    [cardGroups, visibleLimit],
+  )
+  const remainingGroups = Math.max(cardGroups.length - visibleGroups.length, 0)
   const save = useBookmarkGroupsStore(state => state.save)
   const loadError = useBookmarkGroupsStore(state => state.error)
   const remove = useBookmarkGroupsStore(state => state.remove)
@@ -173,7 +189,7 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
       setBusy(false)
     }
   }
-  const cards: AdditionalGridItem[] = cardGroups.map((group, index) => ({
+  const cards: AdditionalGridItem[] = visibleGroups.map(({ group, index }) => ({
     key: groupCardKey(group.id),
     pinnedAt: group.pinnedAt ?? 0,
     pinnedOrder: group.pinnedOrder,
@@ -211,6 +227,25 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
       />
     ),
   }))
+  // The button lives here (not in BookmarkGrid) so pagination outside the grid
+  // can reuse it without the grid needing to know about group batches.
+  const loadMoreButton = remainingGroups > 0
+    ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          aria-label={t('loadMoreGroups', { count: remainingGroups })}
+          onClick={() =>
+            setPagination({
+              key: paginationKey,
+              limit: visibleLimit + RENDER_BATCH_SIZE,
+            })}
+        >
+          {t('loadMoreRemaining', { count: remainingGroups })}
+        </Button>
+      )
+    : null
   if (pinnedOnly && !renderCards && !groups.length && !error && !editor && !deleting)
     return null
 
@@ -248,10 +283,16 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
         : null}
       {enabled && error && !deleting ? <p role="alert" className="text-sm text-red-700 dark:text-red-400">{t(error)}</p> : null}
       {renderCards
-        ? renderCards(cards, cardGroups.length)
+        ? (
+            <>
+              {renderCards(cards, cardGroups.length)}
+              {loadMoreButton ? <div className="mt-5 flex justify-center">{loadMoreButton}</div> : null}
+            </>
+          )
         : (
             <div className={gridClassByMode[appearance.gridDensity][compact ? 'compact' : 'grid']}>
               {cards.map(card => card.node)}
+              {loadMoreButton ? <div className="col-span-full mt-1 flex justify-center">{loadMoreButton}</div> : null}
               {!groups.length && !loadError
                 ? (
                     <div className="col-span-full py-14 text-center">
