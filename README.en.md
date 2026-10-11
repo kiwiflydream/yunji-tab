@@ -10,7 +10,7 @@ Find the sites you have already bookmarked, every time you open a new tab.
 
 Yunji Tab is an open-source Chrome extension that works with your existing browser bookmarks and folders. Search, tag, group, and organize bookmarks in bulk, or choose a theme for your home page. Start using it after installation, without migrating bookmarks or creating another account.
 
-[Download the latest release](https://github.com/kiwiflydream/yunji-tab/releases/latest) · [Release notes](https://github.com/kiwiflydream/yunji-tab/releases) · [Report an issue](https://github.com/kiwiflydream/yunji-tab/issues) · [Development guide](./docs/development.en.md)
+[Chrome Web Store](https://chromewebstore.google.com/detail/mongacbicmimajjfljaaelfcchhkepbh) · [Download the latest release](https://github.com/kiwiflydream/yunji-tab/releases/latest) · [Release notes](https://github.com/kiwiflydream/yunji-tab/releases) · [Report an issue](https://github.com/kiwiflydream/yunji-tab/issues) · [Development guide](./docs/development.en.md)
 
 The screenshots below show the Chinese interface. English is also available in the language settings.
 

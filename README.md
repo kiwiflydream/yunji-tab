@@ -10,7 +10,7 @@
 
 云吉 Tab 是一个开源的 Chrome 扩展。它沿用浏览器原有的书签和文件夹，提供搜索、标签、书签组和批量整理，也可以换上喜欢的主题。安装后即可使用，无需迁移书签或注册额外账号。
 
-[下载最新版本](https://github.com/kiwiflydream/yunji-tab/releases/latest) · [更新记录](https://github.com/kiwiflydream/yunji-tab/releases) · [反馈问题](https://github.com/kiwiflydream/yunji-tab/issues) · [开发指南](./docs/development.md)
+[Chrome 应用商店](https://chromewebstore.google.com/detail/mongacbicmimajjfljaaelfcchhkepbh) · [下载最新版本](https://github.com/kiwiflydream/yunji-tab/releases/latest) · [更新记录](https://github.com/kiwiflydream/yunji-tab/releases) · [反馈问题](https://github.com/kiwiflydream/yunji-tab/issues) · [开发指南](./docs/development.md)
 
 ![云吉 Tab 主页：左侧浏览分类，右侧显示置顶书签和书签组](./docs/images/yunji-tab-overview.png)
 
