@@ -15,6 +15,7 @@ import { searchEngineMessages } from './i18n-search-engine'
 import { settingsDataMessages } from './i18n-settings-data'
 import { settingsSyncMessages } from './i18n-settings-sync'
 import { tabSessionsMessages } from './i18n-tab-sessions'
+import { webdavMessages } from './i18n-webdav'
 
 export {
   getBrowserLanguage,
@@ -206,6 +207,7 @@ const zhCN = {
   ...settingsSyncMessages['zh-CN'],
   ...tabSessionsMessages['zh-CN'],
   ...bookmarkGroupMessages['zh-CN'],
+  ...webdavMessages['zh-CN'],
 } as const
 
 const en: Record<keyof typeof zhCN, string> = {
@@ -398,6 +400,7 @@ const en: Record<keyof typeof zhCN, string> = {
   ...settingsSyncMessages.en,
   ...tabSessionsMessages.en,
   ...bookmarkGroupMessages.en,
+  ...webdavMessages.en,
 }
 
 export type MessageKey = keyof typeof zhCN

@@ -1,7 +1,8 @@
 import type { ImportPreview } from '~/lib/import-preview'
 import type { BackupImportResult, FullBackupRestoreResult } from '~/lib/store'
 import { Download, Upload } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { WebdavBackupSettings } from '~/components/settings/WebdavBackupSettings'
 import { Button } from '~/components/ui/button'
 import { createImportPreview } from '~/lib/import-preview'
 import { useBookmarks, useNavStore } from '~/lib/store'
@@ -22,6 +23,8 @@ export function SettingsDataTab() {
   const [fullRestoreResult, setFullRestoreResult]
     = useState<FullBackupRestoreResult | null>(null)
   const [backupError, setBackupError] = useState('')
+  const previewRef = useRef<HTMLDivElement>(null)
+  const [importing, setImporting] = useState(false)
   const [pendingImport, setPendingImport] = useState<{
     raw: string
     preview: ImportPreview
@@ -29,6 +32,11 @@ export function SettingsDataTab() {
   const [importStrategy, setImportStrategy] = useState<
     'merge' | 'replace' | 'skip'
   >('merge')
+
+  useEffect(() => {
+    if (pendingImport)
+      previewRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [pendingImport])
 
   const downloadBackup = () => {
     const blob = new Blob([exportBackup()], { type: 'application/json' })
@@ -71,8 +79,9 @@ export function SettingsDataTab() {
   }
 
   const confirmImport = async () => {
-    if (!pendingImport)
+    if (!pendingImport || importing)
       return
+    setImporting(true)
     setBackupError('')
     try {
       if (pendingImport.preview.kind === 'metadata')
@@ -82,6 +91,9 @@ export function SettingsDataTab() {
     }
     catch {
       setBackupError(t('backupImportFailed'))
+    }
+    finally {
+      setImporting(false)
     }
   }
 
@@ -157,9 +169,16 @@ export function SettingsDataTab() {
             void prepareImport(event.target.files?.[0], 'full')}
         />
       </div>
+      <WebdavBackupSettings onRestore={(raw) => {
+        setBackupResult(null)
+        setFullRestoreResult(null)
+        setBackupError('')
+        setPendingImport({ raw, preview: createImportPreview(raw, bookmarks.map(bookmark => bookmark.url), 'full') })
+      }}
+      />
       {pendingImport
         ? (
-            <div className="mt-3 rounded-md border border-border bg-background p-3">
+            <div ref={previewRef} className="mt-3 rounded-md border border-border bg-background p-3">
               <p className="text-sm font-semibold">{t('importPreview')}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {t('importPreviewSummary', {
@@ -172,6 +191,7 @@ export function SettingsDataTab() {
                 ? (
                     <select
                       value={importStrategy}
+                      disabled={importing}
                       onChange={event =>
                         setImportStrategy(event.target.value as typeof importStrategy)}
                       className="mt-3 h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
@@ -192,6 +212,7 @@ export function SettingsDataTab() {
                   type="button"
                   size="sm"
                   variant="ghost"
+                  disabled={importing}
                   onClick={() => setPendingImport(null)}
                 >
                   {t('cancel')}
@@ -199,6 +220,7 @@ export function SettingsDataTab() {
                 <Button
                   type="button"
                   size="sm"
+                  disabled={importing}
                   onClick={() => void confirmImport()}
                 >
                   {t('confirmImport')}

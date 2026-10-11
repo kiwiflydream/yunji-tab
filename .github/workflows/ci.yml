@@ -91,6 +91,7 @@ jobs:
           e2e/concurrent-storage.spec.ts
           e2e/native-title-updates.spec.ts
           e2e/group-pagination.spec.ts
+          e2e/webdav-backup.spec.ts
           --reporter=list,html
 
       - name: Upload Playwright report

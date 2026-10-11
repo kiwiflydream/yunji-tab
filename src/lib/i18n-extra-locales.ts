@@ -15,6 +15,7 @@ import { searchEngineMessages } from './i18n-search-engine'
 import { settingsDataMessages } from './i18n-settings-data'
 import { settingsSyncMessages } from './i18n-settings-sync'
 import { tabSessionsMessages } from './i18n-tab-sessions'
+import { webdavMessages } from './i18n-webdav'
 
 type ExtraLanguage = Exclude<Language, 'zh-CN' | 'en'>
 type Messages = Record<MessageKey, string>
@@ -202,6 +203,7 @@ const zhTW = {
   ...settingsSyncMessages['zh-TW'],
   ...tabSessionsMessages['zh-TW'],
   ...bookmarkGroupMessages['zh-TW'],
+  ...webdavMessages['zh-TW'],
 } satisfies Messages
 
 const ja = {
@@ -397,6 +399,7 @@ const ja = {
   ...settingsSyncMessages.ja,
   ...tabSessionsMessages.ja,
   ...bookmarkGroupMessages.ja,
+  ...webdavMessages.ja,
 } satisfies Messages
 
 const ko = {
@@ -585,6 +588,7 @@ const ko = {
   ...settingsSyncMessages.ko,
   ...tabSessionsMessages.ko,
   ...bookmarkGroupMessages.ko,
+  ...webdavMessages.ko,
 } satisfies Messages
 
 const es = {
@@ -777,6 +781,7 @@ const es = {
   ...settingsSyncMessages.es,
   ...tabSessionsMessages.es,
   ...bookmarkGroupMessages.es,
+  ...webdavMessages.es,
 } satisfies Messages
 
 const fr = {
@@ -974,6 +979,7 @@ const fr = {
   ...settingsSyncMessages.fr,
   ...tabSessionsMessages.fr,
   ...bookmarkGroupMessages.fr,
+  ...webdavMessages.fr,
 } satisfies Messages
 
 export const extraLocaleMessages: Record<ExtraLanguage, Messages> = {

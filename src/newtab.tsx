@@ -124,16 +124,25 @@ export default function NewTab() {
   // 元数据同步放到后台，避免首屏被同步阻塞。
   useEffect(() => {
     let active = true
+    let loaded = false
     void runNewtabStartup({
       isActive: () => active,
       load: async () => {
         // 先恢复设置和书签组，再加载浏览器书签，避免初始化竞态。
         await Promise.all([init(), useBookmarkGroupsStore.getState().load()])
         await useNavStore.getState().loadBookmarks()
+        loaded = true
       },
       applyDefaultCategory: () => useNavStore.getState().applyDefaultCategory(),
       syncMetadataNow: () => useNavStore.getState().syncMetadataNow(),
-      onLoaded: () => setBookmarksReady(true),
+      onLoaded: () => {
+        setBookmarksReady(true)
+        if (loaded) {
+          void import('~/lib/webdav-backup')
+            .then(({ runWebdavBackup }) => runWebdavBackup(() => useNavStore.getState().exportFullBackup()))
+            .catch(() => undefined)
+        }
+      },
     })
     return () => {
       active = false
