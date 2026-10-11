@@ -117,6 +117,7 @@ interface PreparedField {
 export interface BookmarkSearchEntry {
   bookmark: Bookmark
   categoryPathLabel: string
+  categoryPathField: PreparedField
   tags: PreparedField[]
   primaryHost: PreparedField
   alternateHosts: PreparedField[]
@@ -130,29 +131,6 @@ function prepareField(value: string, weight: number): PreparedField {
     initials: pinyinInitials(value),
     weight,
   }
-}
-
-function preparedFieldScore(field: PreparedField, token: string): number {
-  const compactToken = compactText(token)
-  if (field.text === token)
-    return field.weight * 4
-  if (field.text.startsWith(token))
-    return field.weight * 3
-  if (field.text.includes(token))
-    return field.weight * 2
-  if (field.compact && field.compact === compactToken)
-    return field.weight * 3.5
-  if (field.compact && field.compact.startsWith(compactToken))
-    return field.weight * 2.8
-  if (field.compact && field.compact.includes(compactToken))
-    return field.weight * 1.8
-  if (field.initials && field.initials === compactToken)
-    return field.weight * 3.2
-  if (field.initials && field.initials.startsWith(compactToken))
-    return field.weight * 2.6
-  if (field.initials && fuzzyMatchNormalized(field.initials, compactToken))
-    return field.weight * 1.4
-  return fuzzyMatchNormalized(field.text, token) ? field.weight : 0
 }
 
 export function createBookmarkSearchEntry(
@@ -176,53 +154,189 @@ export function createBookmarkSearchEntry(
     prepareField((bookmark.tags ?? []).join(' '), 70),
     prepareField(bookmark.description ?? '', 20),
   ]
-  return { bookmark, categoryPathLabel, tags, primaryHost, alternateHosts, fields }
+  return {
+    bookmark,
+    categoryPathLabel,
+    categoryPathField: prepareField(categoryPathLabel, 100),
+    tags,
+    primaryHost,
+    alternateHosts,
+    fields,
+  }
 }
 
-export function bookmarkSearchEntryScore(entry: BookmarkSearchEntry, query: string): number {
-  const rawTokens = rawTokensFor(query)
-  if (rawTokens.length === 0)
+export type CompiledBookmarkSearchToken
+  = | { kind: 'token', token: string, compact: string }
+    | { kind: 'tag', token: string, compact: string }
+    | { kind: 'site', token: string, compact: string }
+    | { kind: 'folder', token: string, compact: string }
+
+export interface CompiledBookmarkSearchQuery {
+  query: string
+  tokens: CompiledBookmarkSearchToken[]
+}
+
+const MAX_COMPILED_QUERY_CACHE_ENTRIES = 64
+const compiledQueryCache = new Map<string, CompiledBookmarkSearchQuery>()
+
+/**
+ * 解析查询并按 token 预计算归一化/紧凑形态，供同一查询在大量 entry 上复用，
+ * 避免在每个 entry、每个字段里重复做 normalize/compact。
+ */
+export function compileBookmarkSearchQuery(
+  query: string,
+): CompiledBookmarkSearchQuery {
+  const cached = compiledQueryCache.get(query)
+  if (cached)
+    return cached
+
+  const tokens: CompiledBookmarkSearchToken[] = []
+  for (const rawToken of rawTokensFor(query)) {
+    if (rawToken.startsWith('tag:')) {
+      const subject = rawToken.slice(4)
+      tokens.push({
+        kind: 'tag',
+        token: normalizeText(subject),
+        compact: compactText(subject),
+      })
+      continue
+    }
+    if (rawToken.startsWith('site:')) {
+      const subject = rawToken.slice(5)
+      tokens.push({
+        kind: 'site',
+        token: normalizeText(subject),
+        compact: compactText(subject),
+      })
+      continue
+    }
+    if (rawToken.startsWith('folder:')) {
+      const subject = rawToken.slice(7)
+      tokens.push({
+        kind: 'folder',
+        token: normalizeText(subject),
+        compact: compactText(subject),
+      })
+      continue
+    }
+    tokens.push({
+      kind: 'token',
+      token: normalizeText(rawToken),
+      compact: compactText(rawToken),
+    })
+  }
+
+  const compiled: CompiledBookmarkSearchQuery = { query, tokens }
+  if (compiledQueryCache.size >= MAX_COMPILED_QUERY_CACHE_ENTRIES) {
+    const oldest = compiledQueryCache.keys().next().value
+    if (oldest !== undefined)
+      compiledQueryCache.delete(oldest)
+  }
+  compiledQueryCache.set(query, compiled)
+  return compiled
+}
+
+export function bookmarkSearchEntryScore(
+  entry: BookmarkSearchEntry,
+  query: string,
+): number {
+  return bookmarkSearchEntryScoreCompiled(
+    entry,
+    compileBookmarkSearchQuery(query),
+  )
+}
+
+export function bookmarkSearchEntryScoreCompiled(
+  entry: BookmarkSearchEntry,
+  compiled: CompiledBookmarkSearchQuery,
+): number {
+  const { tokens } = compiled
+  if (tokens.length === 0)
     return 0
   let total = 0
-  for (const rawToken of rawTokens) {
-    const token = normalizeText(rawToken)
-    if (!token)
+  for (const token of tokens) {
+    // 与旧实现保持一致：归一化后为空的 token 直接跳过。
+    if (!token.token && token.kind === 'token')
       continue
-    if (rawToken.startsWith('tag:')) {
-      const tagToken = normalizeText(rawToken.slice(4))
-      const best = Math.max(...entry.tags.map(tag => preparedFieldScore(tag, tagToken)), 0)
+    if (token.kind === 'tag') {
+      const best = Math.max(
+        ...entry.tags.map(tag => preparedFieldScoreCompiled(tag, token)),
+        0,
+      )
       if (best === 0)
         return -1
       total += best + 100
       continue
     }
-    if (rawToken.startsWith('site:')) {
-      const siteToken = normalizeText(rawToken.slice(5))
+    if (token.kind === 'site') {
       const best = Math.max(
-        preparedFieldScore(entry.primaryHost, siteToken),
-        ...entry.alternateHosts.map(host => preparedFieldScore(host, siteToken)),
+        preparedFieldScoreCompiled(entry.primaryHost, token),
+        ...entry.alternateHosts.map(host =>
+          preparedFieldScoreCompiled(host, token)),
       )
       if (best === 0)
         return -1
       total += best + 80
       continue
     }
-    if (rawToken.startsWith('folder:')) {
-      const best = preparedFieldScore(
-        prepareField(entry.categoryPathLabel, 100),
-        normalizeText(rawToken.slice(7)),
-      )
+    if (token.kind === 'folder') {
+      const best = preparedFieldScoreCompiled(entry.categoryPathField, token)
       if (best === 0)
         return -1
       total += best + 60
       continue
     }
-    const best = Math.max(...entry.fields.map(field => preparedFieldScore(field, token)))
+    const best = Math.max(
+      ...entry.fields.map(field => preparedFieldScoreCompiled(field, token)),
+    )
     if (best === 0)
       return -1
     total += best
   }
   return total
+}
+
+/**
+ * 统计命中的 entry 数量。第一遍编译查询，随后在整组 entry 上复用，
+ * 供导航里的 savedSearch 计数在 stable derive 上缓存复用。
+ */
+export function countMatchingSearchEntries(
+  entries: readonly BookmarkSearchEntry[],
+  query: string,
+): number {
+  const compiled = compileBookmarkSearchQuery(query)
+  let count = 0
+  for (const entry of entries) {
+    if (bookmarkSearchEntryScoreCompiled(entry, compiled) >= 0)
+      count += 1
+  }
+  return count
+}
+
+function preparedFieldScoreCompiled(
+  field: PreparedField,
+  token: CompiledBookmarkSearchToken,
+): number {
+  const { token: text, compact: compactToken } = token
+  if (field.text === text)
+    return field.weight * 4
+  if (field.text.startsWith(text))
+    return field.weight * 3
+  if (field.text.includes(text))
+    return field.weight * 2
+  if (field.compact && field.compact === compactToken)
+    return field.weight * 3.5
+  if (field.compact && field.compact.startsWith(compactToken))
+    return field.weight * 2.8
+  if (field.compact && field.compact.includes(compactToken))
+    return field.weight * 1.8
+  if (field.initials && field.initials === compactToken)
+    return field.weight * 3.2
+  if (field.initials && field.initials.startsWith(compactToken))
+    return field.weight * 2.6
+  if (field.initials && fuzzyMatchNormalized(field.initials, compactToken))
+    return field.weight * 1.4
+  return fuzzyMatchNormalized(field.text, text) ? field.weight : 0
 }
 
 function fieldScore(value: string, token: string, weight: number): number {

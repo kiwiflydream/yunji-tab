@@ -46,7 +46,7 @@ import {
   toNodeId,
 } from './bookmark-tree'
 import { normalizeAlternateBookmarkUrls } from './bookmark-urls'
-import { mergeBookmarkUsageMaps } from './bookmark-usage'
+import { createBookmarkUsagePersistence } from './bookmark-usage'
 import { bookmarkCardKey, getPinnedCards, groupCardKey, reorderPinnedCards } from './card-order'
 import { findCategoryByPath } from './category-path'
 import { createCoalescedAsyncRunner } from './coalesced-async'
@@ -71,7 +71,9 @@ import {
   settingsStorage,
   STORAGE_KEYS,
   updateBookmarkMetadata,
+  updateCategoryMetadata,
   withBookmarkMetadataLock,
+  withBookmarkUsageLock,
 } from './store-persistence'
 import { createSettingsSlice } from './store-settings-slice'
 import {
@@ -483,6 +485,7 @@ export interface NavState extends SettingsSlice {
   reorderPinnedBookmark: (id: string, targetId: string) => Promise<void>
   removeBookmarks: (ids: string[]) => Promise<void>
   recordBookmarkOpen: (url: string) => Promise<void>
+  refreshUsage: () => Promise<void>
   exportBackup: () => string
   importBackup: (raw: string, strategy?: 'merge' | 'replace' | 'skip') => Promise<BackupImportResult>
   exportFullBackup: () => Promise<string>
@@ -504,6 +507,14 @@ export interface NavState extends SettingsSlice {
   finishTask: (id: string, state: 'success' | 'error', message?: LocalizedText) => void
   clearFinishedTasks: () => void
 }
+
+let publishUsage: (usage: Record<string, BookmarkUsage>) => void = () => {}
+const usagePersistence = createBookmarkUsagePersistence({
+  read: () => metaStorage.get<Record<string, BookmarkUsage>>(STORAGE_KEYS.usage),
+  write: usage => persist(metaStorage, STORAGE_KEYS.usage, usage),
+  withLock: withBookmarkUsageLock,
+  onChange: usage => publishUsage(usage),
+})
 
 export const useNavStore = create<NavState>()((set, get, store) => ({
   categories: [],
@@ -636,9 +647,10 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
           throw new LocalizedError('runtimeMetadataPassphraseRequired')
         }
         const metadataAtSyncStart = get().meta
+        const categoryMetadataAtSyncStart = get().categoryMeta
         const result = await synchronizeMetadata({
           meta: metadataAtSyncStart,
-          categoryMeta: get().categoryMeta,
+          categoryMeta: categoryMetadataAtSyncStart,
           categories: get().categories,
           scope: get().settings.metadataSyncScope,
           encryptionPassphrase,
@@ -649,13 +661,22 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
           await withBookmarkMetadataLock(async () => {
             const previousMeta = await metaStorage.get<Record<string, BookmarkMeta>>(STORAGE_KEYS.meta)
               ?? get().meta
-            const previousCategoryMeta = get().categoryMeta
+            const previousCategoryMeta = await metaStorage.get<Record<string, CategoryMeta>>(STORAGE_KEYS.categoryMeta)
+              ?? get().categoryMeta
             const categoryMeta: Record<string, CategoryMeta> = {}
             if (get().settings.metadataSyncScope.categoryIcons) {
               for (const item of result.document.categoryMeta) {
                 const category = findCategoryByPath(item.path, get().categories)
                 if (category)
                   categoryMeta[category.id] = { emoji: item.emoji }
+              }
+              for (const id of new Set([...Object.keys(categoryMetadataAtSyncStart), ...Object.keys(previousCategoryMeta)])) {
+                if (previousCategoryMeta[id]?.emoji !== categoryMetadataAtSyncStart[id]?.emoji) {
+                  if (previousCategoryMeta[id])
+                    categoryMeta[id] = previousCategoryMeta[id]
+                  else
+                    delete categoryMeta[id]
+                }
               }
             }
             else {
@@ -940,12 +961,16 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
         restoreError = localizedErrorMessage(cause, 'runtimeRestoreFailed')
       }
     }
-    const categoryMeta = { ...get().categoryMeta }
+    const restoredCategoryMeta: Record<string, CategoryMeta> = {}
     for (const [oldId, meta] of Object.entries(entry.categoryMeta)) {
       const newId = categoryIdMap.get(oldId)
       if (newId)
-        categoryMeta[newId] = meta
+        restoredCategoryMeta[newId] = meta
     }
+    const categoryMeta = await updateCategoryMetadata(
+      latest => ({ ...latest, ...restoredCategoryMeta }),
+      () => get().categoryMeta,
+    )
     const remainingRootCount = entry.roots.length - completed.size
     const trash = remainingRootCount === 0
       ? get().trash.filter(item => item.id !== id)
@@ -955,7 +980,6 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
     set({ trash, categoryMeta })
     const operations: Array<Promise<unknown>> = [
       metaStorage.set(trashStorageKey, trash),
-      persist(metaStorage, STORAGE_KEYS.categoryMeta, categoryMeta),
     ]
     if (restoredRootCount > 0)
       operations.push(get().recordActivity('restore', entry.label))
@@ -985,8 +1009,7 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
   },
 
   clearUsage: async () => {
-    set({ usage: {} })
-    await metaStorage.set(STORAGE_KEYS.usage, {})
+    await usagePersistence.update(() => ({}))
   },
 
   clearTrash: async () => {
@@ -1150,12 +1173,11 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
     const categoryId = `cat-${node.id}`
     const normalizedEmoji = emoji?.trim()
     if (normalizedEmoji && normalizedEmoji !== DEFAULT_CATEGORY_EMOJI) {
-      const categoryMeta = {
-        ...get().categoryMeta,
+      const categoryMeta = await updateCategoryMetadata(latest => ({
+        ...latest,
         [categoryId]: { emoji: normalizedEmoji },
-      }
+      }), () => get().categoryMeta)
       set({ categoryMeta })
-      await persist(metaStorage, STORAGE_KEYS.categoryMeta, categoryMeta)
     }
     await get().loadBookmarks()
     return categoryId
@@ -1199,15 +1221,15 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
 
     if (patch.emoji !== undefined) {
       const emoji = patch.emoji.trim() || DEFAULT_CATEGORY_EMOJI
-      const categoryMeta = { ...get().categoryMeta }
-      if (emoji === DEFAULT_CATEGORY_EMOJI) {
-        delete categoryMeta[id]
-      }
-      else {
-        categoryMeta[id] = { emoji }
-      }
+      const categoryMeta = await updateCategoryMetadata((latest) => {
+        const categoryMeta = { ...latest }
+        if (emoji === DEFAULT_CATEGORY_EMOJI)
+          delete categoryMeta[id]
+        else
+          categoryMeta[id] = { emoji }
+        return categoryMeta
+      }, () => get().categoryMeta)
       set({ categoryMeta })
-      await persist(metaStorage, STORAGE_KEYS.categoryMeta, categoryMeta)
     }
 
     await get().loadBookmarks()
@@ -1235,26 +1257,23 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
       : undefined
     await removeNativeBookmark(toNodeId(id), true)
 
-    const categoryMeta = { ...get().categoryMeta }
-    let categoryMetaChanged = false
-    for (const removedId of removedIds) {
-      if (!categoryMeta[removedId])
-        continue
-      delete categoryMeta[removedId]
-      categoryMetaChanged = true
-    }
-
     let settings = get().settings
     const settingsChanged = removedIds.has(settings.defaultCategoryId)
     if (settingsChanged) {
       settings = { ...settings, defaultCategoryId: 'all' }
     }
 
-    set({ categoryMeta, settings })
+    set({ settings })
     await Promise.allSettled([
-      categoryMetaChanged
-        ? persist(metaStorage, STORAGE_KEYS.categoryMeta, categoryMeta)
-        : Promise.resolve(),
+      updateCategoryMetadata((latest) => {
+        const categoryMeta = { ...latest }
+        for (const removedId of removedIds) {
+          if (categoryMeta[removedId])
+            removedCategoryMeta[removedId] = categoryMeta[removedId]
+          delete categoryMeta[removedId]
+        }
+        return categoryMeta
+      }, () => get().categoryMeta).then(categoryMeta => set({ categoryMeta })),
       settingsChanged
         ? persist(settingsStorage, STORAGE_KEYS.settings, settings)
         : Promise.resolve(),
@@ -1315,11 +1334,11 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
       throw cause
     }
 
-    const categoryMeta = { ...get().categoryMeta }
+    const restoredCategoryMeta: Record<string, CategoryMeta> = {}
     for (const [oldId, meta] of Object.entries(snapshot.categoryMeta)) {
       const newId = categoryIdMap.get(oldId)
       if (newId)
-        categoryMeta[newId] = meta
+        restoredCategoryMeta[newId] = meta
     }
 
     let settings = get().settings
@@ -1335,9 +1354,12 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
     if (trashEntry)
       await get().removeTrashEntry(trashEntry.id)
     await get().recordActivity('restore', snapshot.label)
-    set({ categoryMeta, settings, pendingDeletion: null })
+    set({ settings, pendingDeletion: null })
     await Promise.allSettled([
-      persist(metaStorage, STORAGE_KEYS.categoryMeta, categoryMeta),
+      updateCategoryMetadata(
+        latest => ({ ...latest, ...restoredCategoryMeta }),
+        () => get().categoryMeta,
+      ).then(categoryMeta => set({ categoryMeta })),
       persist(settingsStorage, STORAGE_KEYS.settings, settings),
     ])
     await get().loadBookmarks()
@@ -1568,30 +1590,21 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
         await useBookmarkGroupsStore.getState().migrateUrl(current.url, url).catch(() => useBookmarkGroupsStore.setState({ error: true }))
       }
 
-      const usage = { ...get().usage }
-      const previousUsage = usage[current.url]
-      if (previousUsage && !oldUrlStillInUse) {
-        const existingUsage = usage[url]
-        usage[url] = existingUsage
-          ? {
-              openCount: existingUsage.openCount + previousUsage.openCount,
-              lastOpenedAt: Math.max(
-                existingUsage.lastOpenedAt,
-                previousUsage.lastOpenedAt,
-              ),
-            }
-          : previousUsage
-        delete usage[current.url]
-      }
-
       // Advance the cached URL before releasing the lock, so another native
       // URL change migrates from this destination even before the tree reload.
       const bookmarks = get().bookmarks.map(bookmark => bookmark.id === id
         ? { ...bookmark, url }
         : bookmark)
-      set({ meta, usage, bookmarks: applyMeta(bookmarks, meta) })
-      if (previousUsage && !oldUrlStillInUse)
-        await persist(metaStorage, STORAGE_KEYS.usage, usage)
+      set({ meta, bookmarks: applyMeta(bookmarks, meta) })
+      if (!oldUrlStillInUse) {
+        try {
+          await usagePersistence.migrate(current.url, url)
+        }
+        catch (cause) {
+          scheduleUsagePersist()
+          throw cause
+        }
+      }
     })
     bookmarkUrlMigrations.add(migration)
     try {
@@ -1833,21 +1846,21 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
   },
 
   recordBookmarkOpen: async (url) => {
-    const persistedUsage = await metaStorage.get<Record<string, BookmarkUsage>>(
-      STORAGE_KEYS.usage,
-    )
-    const mergedUsage = mergeBookmarkUsageMaps(persistedUsage, get().usage)
-    const current = mergedUsage[url]
+    const current = get().usage[url]
+    const openedAt = Date.now()
+    usagePersistence.record(url, openedAt)
     const usage = {
-      ...mergedUsage,
+      ...get().usage,
       [url]: {
         openCount: (current?.openCount ?? 0) + 1,
-        lastOpenedAt: Date.now(),
+        lastOpenedAt: openedAt,
       },
     }
     set({ usage })
     scheduleUsagePersist()
   },
+
+  refreshUsage: () => usagePersistence.refresh(),
 
   exportBackup: () =>
     JSON.stringify(
@@ -1899,14 +1912,13 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
       }
       return meta
     }, () => get().meta)
-    const usage = { ...get().usage, ...backup.usage }
-    const categoryMeta = { ...get().categoryMeta }
+    const importedCategoryMeta: Record<string, CategoryMeta> = {}
     let restoredCategoryMetaCount = 0
     for (const item of backup.categoryMeta) {
       const category = findCategoryByPath(item.path, get().categories)
       if (!category)
         continue
-      categoryMeta[category.id] = { emoji: item.emoji }
+      importedCategoryMeta[category.id] = { emoji: item.emoji }
       restoredCategoryMetaCount += 1
     }
     const defaultCategory = findCategoryByPath(
@@ -1922,10 +1934,13 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
           : 'all'),
     })
 
-    set({ meta, categoryMeta, usage, settings })
+    const categoryMeta = await updateCategoryMetadata(
+      latest => ({ ...latest, ...importedCategoryMeta }),
+      () => get().categoryMeta,
+    )
+    set({ meta, categoryMeta, settings })
     await Promise.all([
-      persist(metaStorage, STORAGE_KEYS.categoryMeta, categoryMeta),
-      persist(metaStorage, STORAGE_KEYS.usage, usage),
+      usagePersistence.update(latest => ({ ...latest, ...backup.usage })),
       persist(settingsStorage, STORAGE_KEYS.settings, settings),
     ])
     await get().loadBookmarks()
@@ -2006,13 +2021,13 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
       return meta
     }, () => get().meta)
     await useBookmarkGroupsStore.getState().restore(snapshot.yunjiTab.bookmarkGroups ?? [], 'replace')
-    const categoryMeta = { ...get().categoryMeta }
+    const restoredCategoryMeta: Record<string, CategoryMeta> = {}
     let restoredCategoryMetaCount = 0
     for (const item of snapshot.yunjiTab.categoryMeta) {
       const restoredId = categoryIdByPath.get(JSON.stringify(item.path))
       if (!restoredId)
         continue
-      categoryMeta[restoredId] = { emoji: item.emoji }
+      restoredCategoryMeta[restoredId] = { emoji: item.emoji }
       restoredCategoryMetaCount += 1
     }
 
@@ -2027,12 +2042,13 @@ export const useNavStore = create<NavState>()((set, get, store) => ({
           ? snapshot.yunjiTab.settings.defaultCategoryId
           : 'all'),
     })
-    const usage = { ...get().usage, ...snapshot.yunjiTab.usage }
-
-    set({ meta, categoryMeta, settings, usage })
+    const categoryMeta = await updateCategoryMetadata(
+      latest => ({ ...latest, ...restoredCategoryMeta }),
+      () => get().categoryMeta,
+    )
+    set({ meta, categoryMeta, settings })
     await Promise.all([
-      persist(metaStorage, STORAGE_KEYS.categoryMeta, categoryMeta),
-      persist(metaStorage, STORAGE_KEYS.usage, usage),
+      usagePersistence.update(latest => ({ ...latest, ...snapshot.yunjiTab.usage })),
       persist(settingsStorage, STORAGE_KEYS.settings, settings),
     ])
     await get().loadBookmarks()
@@ -2052,33 +2068,40 @@ runScheduledMetadataSync = () => {
   void useNavStore.getState().syncMetadataNow()
 }
 
+publishUsage = usage => useNavStore.setState({ usage })
+
 let usagePersistTimer: ReturnType<typeof setTimeout> | undefined
-let usagePersistPending = false
+let usagePersistFailures = 0
 
 export async function flushUsagePersistence(): Promise<void> {
-  if (!usagePersistPending)
-    return
   if (usagePersistTimer) {
     clearTimeout(usagePersistTimer)
     usagePersistTimer = undefined
   }
-  usagePersistPending = false
-  await persist(
-    metaStorage,
-    STORAGE_KEYS.usage,
-    useNavStore.getState().usage,
-  )
+  if (!usagePersistence.hasPending())
+    return
+  try {
+    await usagePersistence.flush()
+    usagePersistFailures = 0
+  }
+  catch (cause) {
+    usagePersistFailures += 1
+    if (!usagePersistTimer)
+      scheduleUsagePersistAfter(Math.min(5_000 * 2 ** (usagePersistFailures - 1), 60_000))
+    throw cause
+  }
 }
 
-scheduleUsagePersist = () => {
-  usagePersistPending = true
+function scheduleUsagePersistAfter(delayMs: number) {
   if (usagePersistTimer)
     clearTimeout(usagePersistTimer)
   usagePersistTimer = setTimeout(() => {
     usagePersistTimer = undefined
-    void flushUsagePersistence()
-  }, usagePersistDelayMs)
+    void flushUsagePersistence().catch(() => undefined)
+  }, delayMs)
 }
+
+scheduleUsagePersist = () => scheduleUsagePersistAfter(usagePersistDelayMs)
 
 registerSupplementaryPersisted(async () => {
   await markLocalMetadataChanged()

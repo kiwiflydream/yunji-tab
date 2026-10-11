@@ -138,6 +138,8 @@ test('receives sync parts in a separate Chrome profile with different native boo
     await page.setViewportSize({ width: 375, height: 812 })
     await page.getByRole('button', { name: '查看书签组 跨设备组', exact: true }).click()
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    // Contrast must be sampled after the pointer menu's opacity animation ends.
+    await page.getByRole('menu', { name: '查看书签组 跨设备组', exact: true }).evaluate(element => Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => undefined))))
     expect((await new AxeBuilder({ page }).analyze()).violations.filter(item => ['critical', 'serious'].includes(item.impact ?? ''))).toEqual([])
     await page.screenshot({ path: '/tmp/yunji-tab-bookmark-group-mobile.png', fullPage: true })
     await page.setViewportSize({ width: 1280, height: 900 })

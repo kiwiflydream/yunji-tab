@@ -1,4 +1,4 @@
-import type { Bookmark, BookmarkUsage, Category } from '~/lib/types'
+import type { Bookmark, Category } from '~/lib/types'
 
 import { lazy, Suspense, useEffect, useState } from 'react'
 import engravingArtworkUrl from 'url:~assets/themes/engraving-cat-astronaut.png'
@@ -28,7 +28,6 @@ import {
 } from '~/lib/appearance'
 import { bookmarkGroupsKeyPrefix } from '~/lib/bookmark-groups'
 import { useBookmarkGroupsStore } from '~/lib/bookmark-groups-store'
-import { mergeBookmarkUsageMaps } from '~/lib/bookmark-usage'
 import { globalPaletteHomeHash } from '~/lib/global-command-palette'
 import { homeTabReadyMessage } from '~/lib/home-tabs'
 import { languageTag, translate } from '~/lib/i18n'
@@ -37,8 +36,9 @@ import {
   shortcutMatchesEvent,
 } from '~/lib/keyboard-shortcuts'
 import { metadataSyncManifestKey } from '~/lib/metadata-sync'
+import { runNewtabStartup } from '~/lib/newtab-startup'
 import { flushUsagePersistence, useNavStore } from '~/lib/store'
-import { metaStorage, STORAGE_KEYS } from '~/lib/store-persistence'
+import { STORAGE_KEYS } from '~/lib/store-persistence'
 import { normalizeSettings } from '~/lib/store-settings-state'
 import { cn } from '~/lib/utils'
 import '~main.css'
@@ -115,26 +115,26 @@ export default function NewTab() {
   }, [])
 
   useEffect(() => {
-    const flushUsage = () => void flushUsagePersistence()
+    const flushUsage = () => void flushUsagePersistence().catch(() => undefined)
     window.addEventListener('pagehide', flushUsage)
     return () => window.removeEventListener('pagehide', flushUsage)
   }, [])
 
-  // 先恢复设置和补充元数据，再加载浏览器书签，避免初始化竞态。
+  // 先恢复设置和书签组，再加载浏览器书签；加载结束立即应用默认分类并收起骨架屏，
+  // 元数据同步放到后台，避免首屏被同步阻塞。
   useEffect(() => {
     let active = true
-    void (async () => {
-      try {
+    void runNewtabStartup({
+      isActive: () => active,
+      load: async () => {
+        // 先恢复设置和书签组，再加载浏览器书签，避免初始化竞态。
         await Promise.all([init(), useBookmarkGroupsStore.getState().load()])
         await useNavStore.getState().loadBookmarks()
-        await useNavStore.getState().syncMetadataNow()
-        useNavStore.getState().applyDefaultCategory()
-      }
-      finally {
-        if (active)
-          setBookmarksReady(true)
-      }
-    })()
+      },
+      applyDefaultCategory: () => useNavStore.getState().applyDefaultCategory(),
+      syncMetadataNow: () => useNavStore.getState().syncMetadataNow(),
+      onLoaded: () => setBookmarksReady(true),
+    })
     return () => {
       active = false
     }
@@ -228,13 +228,7 @@ export default function NewTab() {
         })
       }
       if (areaName === 'local' && changes[STORAGE_KEYS.usage]) {
-        void metaStorage
-          .get<Record<string, BookmarkUsage>>(STORAGE_KEYS.usage)
-          .then((persistedUsage) => {
-            useNavStore.setState(state => ({
-              usage: mergeBookmarkUsageMaps(state.usage, persistedUsage),
-            }))
-          })
+        void useNavStore.getState().refreshUsage().catch(() => undefined)
       }
     }
     const storageChanges = chrome.storage.onChanged
@@ -390,6 +384,7 @@ export default function NewTab() {
   return (
     <BookmarkDragDropProvider>
       <div
+        data-newtab-ready={bookmarksReady || undefined}
         className={cn(
           'newtab-shell min-h-dvh',
           backgroundStyleClass[appearance.backgroundStyle],

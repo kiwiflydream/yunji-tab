@@ -60,7 +60,7 @@ import {
   quickSaveBookmarkMessage,
   quickSaveCategoryKey,
 } from '~/lib/quick-save'
-import { updateBookmarkMetadata } from '~/lib/store-persistence'
+import { updateBookmarkMetadata, withBookmarkMetadataLock, withBookmarkUsageLock } from '~/lib/store-persistence'
 
 const MENU_ID = 'yunji-tab-save-page'
 const META_KEY = 'yunji-tab:meta'
@@ -152,49 +152,51 @@ async function archiveExternalBookmarkDeletion(
 ): Promise<void> {
   if (await consumeBookmarkDeletionSuppression(node.id))
     return
-  const [storedTrash, storedHistory, storedCategoryMeta] = await Promise.all([
-    localStorage.get<unknown>(trashStorageKey),
-    localStorage.get<unknown>(historyStorageKey),
-    localStorage.get<Record<string, CategoryMeta>>(CATEGORY_META_KEY),
-  ])
-  const categoryIds = collectCategoryIds(node)
-  const categoryMeta = { ...(storedCategoryMeta ?? {}) }
-  const removedCategoryMeta: Record<string, CategoryMeta> = {}
-  for (const id of categoryIds) {
-    if (categoryMeta[id])
-      removedCategoryMeta[id] = categoryMeta[id]
-    delete categoryMeta[id]
-  }
-  const deletedAt = Date.now()
-  const label = node.url
-    ? runtimeMessage('runtimeExternalBookmarkDeletion', {
-        name: node.title || node.url,
-      })
-    : runtimeMessage('runtimeExternalFolderDeletion', {
-        name: node.title,
-      })
-  const entry: TrashEntry = {
-    id: crypto.randomUUID(),
-    label,
-    deletedAt,
-    expiresAt: deletedAt + trashRetentionMs,
-    roots: [node],
-    categoryMeta: removedCategoryMeta,
-  }
-  const historyEntry: HistoryEntry = {
-    id: crypto.randomUUID(),
-    action: 'delete',
-    label,
-    createdAt: deletedAt,
-  }
-  const trash = [entry, ...pruneTrash(storedTrash)].slice(0, 100)
-  const history = [historyEntry, ...pruneHistory(storedHistory)].slice(0, 200)
-  await Promise.all([
-    localStorage.set(trashStorageKey, trash),
-    localStorage.set(historyStorageKey, history),
-    localStorage.set(CATEGORY_META_KEY, categoryMeta),
-    markLocalMetadataChanged(),
-  ])
+  await withBookmarkMetadataLock(async () => {
+    const [storedTrash, storedHistory, storedCategoryMeta] = await Promise.all([
+      localStorage.get<unknown>(trashStorageKey),
+      localStorage.get<unknown>(historyStorageKey),
+      localStorage.get<Record<string, CategoryMeta>>(CATEGORY_META_KEY),
+    ])
+    const categoryIds = collectCategoryIds(node)
+    const categoryMeta = { ...(storedCategoryMeta ?? {}) }
+    const removedCategoryMeta: Record<string, CategoryMeta> = {}
+    for (const id of categoryIds) {
+      if (categoryMeta[id])
+        removedCategoryMeta[id] = categoryMeta[id]
+      delete categoryMeta[id]
+    }
+    const deletedAt = Date.now()
+    const label = node.url
+      ? runtimeMessage('runtimeExternalBookmarkDeletion', {
+          name: node.title || node.url,
+        })
+      : runtimeMessage('runtimeExternalFolderDeletion', {
+          name: node.title,
+        })
+    const entry: TrashEntry = {
+      id: crypto.randomUUID(),
+      label,
+      deletedAt,
+      expiresAt: deletedAt + trashRetentionMs,
+      roots: [node],
+      categoryMeta: removedCategoryMeta,
+    }
+    const historyEntry: HistoryEntry = {
+      id: crypto.randomUUID(),
+      action: 'delete',
+      label,
+      createdAt: deletedAt,
+    }
+    const trash = [entry, ...pruneTrash(storedTrash)].slice(0, 100)
+    const history = [historyEntry, ...pruneHistory(storedHistory)].slice(0, 200)
+    await Promise.all([
+      localStorage.set(trashStorageKey, trash),
+      localStorage.set(historyStorageKey, history),
+      localStorage.set(CATEGORY_META_KEY, categoryMeta),
+      markLocalMetadataChanged(),
+    ])
+  })
 }
 
 function isExtensionHomeUrl(url?: string): boolean {
@@ -457,14 +459,16 @@ async function pruneExpiredGlobalPaletteSessions(): Promise<void> {
 }
 
 async function recordGlobalPaletteBookmarkOpen(url: string): Promise<void> {
-  const usage = await localStorage.get<Record<string, BookmarkUsage>>(USAGE_KEY)
-    ?? {}
-  const current = usage[url]
-  usage[url] = {
-    openCount: (current?.openCount ?? 0) + 1,
-    lastOpenedAt: Date.now(),
-  }
-  await localStorage.set(USAGE_KEY, usage)
+  await withBookmarkUsageLock(async () => {
+    const usage = await localStorage.get<Record<string, BookmarkUsage>>(USAGE_KEY)
+      ?? {}
+    const current = usage[url]
+    usage[url] = {
+      openCount: (current?.openCount ?? 0) + 1,
+      lastOpenedAt: Date.now(),
+    }
+    await localStorage.set(USAGE_KEY, usage)
+  })
 }
 
 async function loadGlobalPaletteData() {

@@ -12,7 +12,10 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '~/components/ui/button'
 import { Kbd } from '~/components/ui/kbd'
-import { bookmarkSearchEntryScore } from '~/lib/bookmark-search'
+import {
+  bookmarkSearchEntryScoreCompiled,
+  compileBookmarkSearchQuery,
+} from '~/lib/bookmark-search'
 import {
   globalPaletteCloseMessage,
   globalPaletteOpenBookmarkMessage,
@@ -158,10 +161,11 @@ export default function GlobalCommandPalette() {
         )
         .slice(0, 10)
     }
+    const compiledQuery = compileBookmarkSearchQuery(trimmedQuery)
     return derived.searchEntries
       .map(entry => ({
         bookmark: entry.bookmark,
-        score: bookmarkSearchEntryScore(entry, trimmedQuery),
+        score: bookmarkSearchEntryScoreCompiled(entry, compiledQuery),
       }))
       .filter(result => result.score >= 0)
       .sort((left, right) => right.score - left.score)

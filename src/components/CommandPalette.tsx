@@ -19,8 +19,9 @@ import {
   DialogTitle,
 } from '~/components/ui/dialog'
 import {
-  bookmarkSearchEntryScore,
+  bookmarkSearchEntryScoreCompiled,
   categorySearchScore,
+  compileBookmarkSearchQuery,
 } from '~/lib/bookmark-search'
 import { openBookmarkUrl } from '~/lib/bookmark-urls'
 import { getNavigationDerivedData } from '~/lib/navigation-derived'
@@ -251,10 +252,11 @@ export function CommandPalette({
         })
         .slice(0, 12)
     }
+    const compiledQuery = compileBookmarkSearchQuery(trimmedQuery)
     const scoredItems = commands.reduce<Array<{ item: CommandItem, score: number }>>((results, item) => {
       const score
         = item.bookmarkSearchEntry
-          ? bookmarkSearchEntryScore(item.bookmarkSearchEntry, trimmedQuery)
+          ? bookmarkSearchEntryScoreCompiled(item.bookmarkSearchEntry, compiledQuery)
           : item.category
             ? categorySearchScore(
                 item.category,

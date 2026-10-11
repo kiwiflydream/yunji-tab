@@ -14,7 +14,7 @@ import {
 } from '~/components/ui/collapsible'
 import { useCategoryDropTarget } from '~/components/useCategoryDropTarget'
 import { useBookmarkGroupsStore } from '~/lib/bookmark-groups-store'
-import { bookmarkSearchEntryScore } from '~/lib/bookmark-search'
+import { countMatchingSearchEntries } from '~/lib/bookmark-search'
 import { getCategoryAncestorIds } from '~/lib/category-tree'
 import { VIRTUAL_CATEGORIES } from '~/lib/default-data'
 import { getNavigationDerivedData } from '~/lib/navigation-derived'
@@ -348,6 +348,27 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
   )
   const { bookmarkCountByCategory, childCategoryCountByCategory }
     = derived
+  const showCounts = appearance.navItems.counts
+  // savedSearch 计数依赖 derived 的 searchEntries 索引；按稳定的 derived 与
+  // savedSearches 缓存，输入 / 布局变化时不重扫整组书签。counts 隐藏时完全不计算。
+  const savedSearchCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    if (!showCounts || !appearance.navItems.savedSearches)
+      return counts
+    const entries = derived.searchEntries
+    for (const item of savedSearches) {
+      counts.set(
+        `saved-search:${item.id}`,
+        countMatchingSearchEntries(entries, item.query),
+      )
+    }
+    return counts
+  }, [
+    derived,
+    savedSearches,
+    showCounts,
+    appearance.navItems.savedSearches,
+  ])
   const smartCounts = useMemo(() => {
     let used = 0
     for (const bookmark of bookmarks) {
@@ -372,14 +393,7 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
     if (id === 'undescribed')
       return smartCounts.undescribed
     if (id.startsWith('saved-search:')) {
-      const saved = savedSearches.find(
-        item => `saved-search:${item.id}` === id,
-      )
-      return saved
-        ? derived.searchEntries.filter(
-          entry => bookmarkSearchEntryScore(entry, saved.query) >= 0,
-        ).length
-        : 0
+      return savedSearchCounts.get(id) ?? 0
     }
     return (
       (bookmarkCountByCategory.get(id) ?? 0)
@@ -418,7 +432,7 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
         active={!groupsActive && active}
         count={count(category.id)}
         fullWidth={navLayout === 'sidebar'}
-        showCount={appearance.navItems.counts}
+        showCount={showCounts}
         showIcon={appearance.navItems.icons}
         reserveLeadingSpace={treeEnabled}
         onSelect={(id) => {
@@ -446,7 +460,7 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
           active={Boolean(groupsActive)}
           count={groupCount}
           fullWidth={navLayout === 'sidebar'}
-          showCount={appearance.navItems.counts}
+          showCount={showCounts}
           showIcon={appearance.navItems.icons}
           reserveLeadingSpace={treeEnabled}
           onSelect={onSelectGroups}
@@ -526,7 +540,7 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
                 activeId={groupsActive ? '' : activeId}
                 collapsedIds={collapsedCategoryIds}
                 forcedExpandedIds={forcedExpandedIds}
-                showCount={appearance.navItems.counts}
+                showCount={showCounts}
                 showIcon={appearance.navItems.icons}
                 count={count}
                 onSelect={setActive}

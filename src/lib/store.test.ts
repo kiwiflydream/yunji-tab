@@ -7,6 +7,7 @@ import * as metadataSync from './metadata-sync'
 import { applyMaterializedBookmarkMetadata } from './metadata-sync'
 import * as siteMetadata from './site-metadata'
 import {
+  flushUsagePersistence,
   mergeAlternateUrlsForDuplicate,
   metadataAutoSyncDelayMs,
   usagePersistDelayMs,
@@ -65,6 +66,39 @@ afterEach(() => {
 })
 
 describe('navigation store boundaries', () => {
+  it('retains another page’s category icon when editing a stale category snapshot', async () => {
+    vi.useFakeTimers()
+    storageState.values.set('local:yunji-tab:category-meta', { 'cat-2': { emoji: 'B' } })
+    useNavStore.setState({
+      categories: [{ id: 'cat-1', name: 'One', emoji: '📁', parentId: 'cat-root', modifiable: true }],
+      categoryMeta: {},
+      loadBookmarks: vi.fn().mockResolvedValue(undefined),
+    })
+    await useNavStore.getState().updateCategory('cat-1', { emoji: 'A' })
+    expect(storageState.values.get('local:yunji-tab:category-meta')).toEqual({
+      'cat-1': { emoji: 'A' },
+      'cat-2': { emoji: 'B' },
+    })
+    await vi.advanceTimersByTimeAsync(metadataAutoSyncDelayMs)
+  })
+
+  it('adds pending opens to the latest persisted count instead of overwriting another page', async () => {
+    vi.useFakeTimers()
+    const url = 'https://usage-concurrency.example/'
+    storageState.values.set('local:yunji-tab:usage', { [url]: { openCount: 3, lastOpenedAt: 1 } })
+    useNavStore.setState({ usage: { [url]: { openCount: 3, lastOpenedAt: 1 } } })
+    await useNavStore.getState().recordBookmarkOpen(url)
+    storageState.values.set('local:yunji-tab:usage', {
+      [url]: { openCount: 5, lastOpenedAt: 2 },
+      'https://other.example/': { openCount: 1, lastOpenedAt: 2 },
+    })
+    await flushUsagePersistence()
+    expect(storageState.values.get('local:yunji-tab:usage')).toEqual({
+      [url]: expect.objectContaining({ openCount: 6 }),
+      'https://other.example/': { openCount: 1, lastOpenedAt: 2 },
+    })
+  })
+
   it('resets general preferences in one write while retaining appearance and user data', async () => {
     const settings = normalizeSettings({
       language: 'ja',
@@ -386,6 +420,20 @@ describe('navigation store boundaries', () => {
         },
       },
     ])
+  })
+
+  it('retries a scheduled usage write after a temporary storage failure', async () => {
+    vi.useFakeTimers()
+    const url = 'https://retry.example/'
+    await useNavStore.getState().recordBookmarkOpen(url)
+    storageState.setError = new Error('temporary failure')
+    await vi.advanceTimersByTimeAsync(usagePersistDelayMs)
+    expect(storageState.values.get('local:yunji-tab:usage')).toBeUndefined()
+    storageState.setError = null
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(storageState.values.get('local:yunji-tab:usage')).toEqual({
+      [url]: expect.objectContaining({ openCount: 1 }),
+    })
   })
 
   it('preserves unaffected bookmark objects during metadata updates', async () => {
@@ -780,6 +828,11 @@ describe('metadata concurrency regressions', () => {
     vi.useFakeTimers()
     const backup = JSON.parse(useNavStore.getState().exportBackup())
     backup.bookmarkMeta = { 'https://example.test': { description: 'Imported' } }
+    backup.categoryMeta = [{ path: ['Folder'], emoji: 'Imported' }]
+    backup.usage = { 'https://example.test': { openCount: 9, lastOpenedAt: 9 } }
+    useNavStore.setState({ categories: [{ id: 'cat-1', name: 'Folder', emoji: '📁', parentId: 'all', modifiable: false }] })
+    storageState.values.set('local:yunji-tab:category-meta', { 'cat-2': { emoji: 'Keep' } })
+    storageState.values.set('local:yunji-tab:usage', { 'https://other.example': { openCount: 1, lastOpenedAt: 1 } })
     storageState.values.set('local:yunji-tab:meta', {
       'https://example.test': { alternateUrls: ['https://backup.example'] },
       'https://other.example': { tags: ['keep'] },
@@ -789,6 +842,14 @@ describe('metadata concurrency regressions', () => {
     expect(storageState.values.get('local:yunji-tab:meta')).toEqual({
       'https://example.test': { alternateUrls: ['https://backup.example'], description: 'Imported' },
       'https://other.example': { tags: ['keep'] },
+    })
+    expect(storageState.values.get('local:yunji-tab:category-meta')).toEqual({
+      'cat-1': { emoji: 'Imported' },
+      'cat-2': { emoji: 'Keep' },
+    })
+    expect(storageState.values.get('local:yunji-tab:usage')).toEqual({
+      'https://example.test': { openCount: 9, lastOpenedAt: 9 },
+      'https://other.example': { openCount: 1, lastOpenedAt: 1 },
     })
     await drainMetadataTimer()
   })
@@ -846,5 +907,31 @@ describe('metadata concurrency regressions', () => {
       'https://example.test': { description: 'Remote', alternateUrls: ['https://backup.example'] },
     })
     await drainMetadataTimer()
+  })
+
+  it('retains category icon edits and removals made by another page during sync', async () => {
+    vi.stubGlobal('chrome', { bookmarks: {}, storage: { sync: {} } })
+    const remote = deferred<Awaited<ReturnType<typeof metadataSync.synchronizeMetadata>>>()
+    vi.spyOn(metadataSync, 'synchronizeMetadata').mockReturnValue(remote.promise)
+    useNavStore.setState({
+      categories: [
+        { id: 'cat-1', name: 'One', emoji: 'Before', parentId: 'all', modifiable: false },
+        { id: 'cat-2', name: 'Two', emoji: 'Before', parentId: 'all', modifiable: false },
+      ],
+      categoryMeta: { 'cat-1': { emoji: 'Before' }, 'cat-2': { emoji: 'Before' } },
+    })
+    const sync = useNavStore.getState().syncMetadataNow()
+    storageState.values.set('local:yunji-tab:category-meta', { 'cat-1': { emoji: 'Edited' } })
+    remote.resolve({
+      direction: 'downloaded',
+      document: { bookmarkMeta: {}, categoryMeta: [{ path: ['One'], emoji: 'Remote' }, { path: ['Two'], emoji: 'Remote' }] },
+      omittedBookmarkCount: 0,
+      omittedBookmarkUrls: [],
+      byteCount: 100,
+      syncedAt: 1,
+      retryCount: 0,
+    })
+    await sync
+    expect(storageState.values.get('local:yunji-tab:category-meta')).toEqual({ 'cat-1': { emoji: 'Edited' } })
   })
 })

@@ -1,0 +1,4 @@
+{
+  "extends": "./node_modules/.pnpm/node_modules/@plasmohq/parcel-config/index.json",
+  "bundler": "./node_modules/.pnpm/node_modules/@parcel/bundler-default/lib/DefaultBundler.js"
+}

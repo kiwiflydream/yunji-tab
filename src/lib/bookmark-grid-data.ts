@@ -6,8 +6,9 @@ import type {
   Category,
 } from './types'
 import {
-  bookmarkSearchEntryScore,
+  bookmarkSearchEntryScoreCompiled,
   categorySearchScore,
+  compileBookmarkSearchQuery,
 } from './bookmark-search'
 import { pinnedCardRank } from './card-order'
 
@@ -102,8 +103,9 @@ export function filterGridBookmarks(
   if (!searchQuery.trim())
     return categorized
 
+  const compiledQuery = compileBookmarkSearchQuery(searchQuery)
   const matches = searchEntries.reduce<Array<{ bookmark: Bookmark, score: number }>>((results, entry) => {
-    const score = bookmarkSearchEntryScore(entry, searchQuery)
+    const score = bookmarkSearchEntryScoreCompiled(entry, compiledQuery)
     if (score >= 0)
       results.push({ bookmark: entry.bookmark, score })
     return results

@@ -1,4 +1,4 @@
-import type { BookmarkMeta } from './types'
+import type { BookmarkMeta, CategoryMeta } from './types'
 import { Storage } from '@plasmohq/storage'
 
 // 补充描述和图标可能较多，使用 local 避免 sync 配额导致刷新后丢失。
@@ -17,6 +17,7 @@ export const STORAGE_KEYS = {
 
 let supplementaryPersisted: () => Promise<void> = async () => {}
 let metadataWriteQueue: Promise<unknown> = Promise.resolve()
+let usageWriteQueue: Promise<unknown> = Promise.resolve()
 
 export function registerSupplementaryPersisted(callback: () => Promise<void>) {
   supplementaryPersisted = callback
@@ -56,4 +57,27 @@ export function updateBookmarkMetadata(
       await persist(metaStorage, STORAGE_KEYS.meta, meta)
     return meta
   })
+}
+
+export function updateCategoryMetadata(
+  update: (latest: Record<string, CategoryMeta>) => Record<string, CategoryMeta>,
+  fallback: () => Record<string, CategoryMeta>,
+): Promise<Record<string, CategoryMeta>> {
+  return withBookmarkMetadataLock(async () => {
+    const latest = await metaStorage.get<Record<string, CategoryMeta>>(STORAGE_KEYS.categoryMeta)
+      ?? fallback()
+    const categoryMeta = update(latest)
+    if (categoryMeta !== latest)
+      await persist(metaStorage, STORAGE_KEYS.categoryMeta, categoryMeta)
+    return categoryMeta
+  })
+}
+
+export async function withBookmarkUsageLock<T>(commit: () => Promise<T>): Promise<T> {
+  if (typeof navigator !== 'undefined' && navigator.locks)
+    return navigator.locks.request(STORAGE_KEYS.usage, commit)
+
+  const pending = usageWriteQueue.then(commit, commit)
+  usageWriteQueue = pending.catch(() => undefined)
+  return pending
 }

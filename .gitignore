@@ -3,7 +3,6 @@
 
 # Local agent and planning files
 .claude/
-.github/
 plans/
 
 # Local store tooling

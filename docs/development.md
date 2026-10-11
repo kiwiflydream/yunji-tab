@@ -50,6 +50,14 @@ pnpm test:e2e
 
 端到端测试会构建并加载真实扩展，覆盖书签管理、书签组、键盘导航、主题、AI 分类、网站图标、内存和无障碍检查。功能改动应运行对应测试，提交前完成上述检查。
 
+## 持续集成
+
+生产构建通过根目录 `.parcelrc` 使用 Parcel 默认 bundler 抽取公共依赖，保留 Plasmo 的其他打包插件。配置路径依赖当前 pnpm 默认的 `node_modules/.pnpm/node_modules` 布局；升级 Plasmo、Parcel 或修改 node-linker 后，应重新验证各扩展入口与共享资源。文件路径形式的 `extends` 会触发 Plasmo 的配置提示，但仍继承其完整配置。
+
+`.github/workflows/ci.yml` 在推送到 `main` 和所有拉取请求上运行：Node.js 22、pnpm 10.34.4，先执行 `pnpm install --frozen-lockfile`，再跑 `pnpm typecheck`、`pnpm lint`、`pnpm test` 和 `pnpm build`。构建产物 `build/chrome-mv3-prod/` 会作为 artifact 上传。
+
+构建通过后，CI 再安装 Playwright Chromium，下载已通过检查的构建产物并运行关键端到端用例：键盘导航、内存、启动顺序、设置重置和并发存储。其余端到端用例仍在本地按需运行。
+
 书签组页面的异步加载使用网格加载态，避免显示弹窗遮罩。组成员列表无论向上还是向下展开，都应避开卡片操作按钮；悬浮展开等待 100ms，卡片内的鼠标移动只更新定位，不重新计时，移出后保留 200ms 的关闭缓冲。
 
 书签组成员菜单的按钮应铺满边框内侧，文字留白放在按钮内部；容器不留不可点击的内边距，按下时不缩小按钮，以免边缘点击失效。
