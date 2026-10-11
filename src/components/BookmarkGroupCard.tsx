@@ -75,7 +75,9 @@ export function BookmarkGroupCard({ group, appearance, compact, pinning, expande
         onPointerLeave={onLeave}
         className={cn('flex w-full items-center text-left focus-visible:outline-none active:scale-[0.99]', compact ? cardContentClass.compact : cardContentClass.grid, reorderEnabled && 'cursor-grab active:cursor-grabbing', moving && 'cursor-wait')}
       >
-        <BookmarkIcon icon={group.icon} name={group.title} appearance={appearance} compact={compact} fallbackIcon="🗂️" />
+        {fields.websiteIcon
+          ? <BookmarkIcon icon={group.icon} name={group.title} appearance={appearance} compact={compact} fallbackIcon="🗂️" />
+          : null}
         <div className="min-w-0 flex-1 pr-9">
           <div className={cn(cardTitleClass, titleLineClass[fields.titleLines])}>{group.title}</div>
           {fields.description && group.description && !compact

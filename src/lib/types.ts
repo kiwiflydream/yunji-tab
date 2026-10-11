@@ -80,6 +80,7 @@ export interface KeyboardShortcut {
 export type KeyboardShortcuts = Record<ShortcutAction, KeyboardShortcut>
 
 export interface CardFieldSettings {
+  /** Shared by bookmark, folder and group cards; keep the stored key for compatibility. */
   websiteIcon: boolean
   description: boolean
   tags: boolean

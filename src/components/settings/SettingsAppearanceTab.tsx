@@ -711,7 +711,7 @@ export function SettingsAppearanceTab() {
             <h3 className="text-sm font-semibold">{t('appearanceVisibleFields')}</h3>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <AppearanceSwitch
-                label={t('appearanceFieldWebsiteIcon')}
+                label={t('appearanceFieldCardIcon')}
                 checked={appearance.cardFields.websiteIcon}
                 onCheckedChange={value =>
                   void setAppearance({

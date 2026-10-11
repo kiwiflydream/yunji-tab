@@ -96,25 +96,30 @@ export function CategoryCard({
         aria-label={t('openFolder', { name: category.name })}
         className="flex min-w-0 flex-1 items-center gap-4 px-4 py-4 pr-16 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/25"
       >
-        <div
-          className={cn(
-            'flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-secondary/85 to-secondary/40 text-foreground ring-1 ring-border/45 shadow-xs group-hover:ring-border/65 transition-all',
-            iconClasses.grid,
-          )}
-        >
-          {category.emoji === DEFAULT_CATEGORY_EMOJI
-            ? (
-                <Folder className="size-6 text-muted-foreground/80" />
-              )
-            : (
-                <span
-                  className="max-w-full truncate px-2 text-3xl"
-                  aria-hidden="true"
-                >
-                  {category.emoji}
-                </span>
-              )}
-        </div>
+        {appearance.cardFields.websiteIcon
+          ? (
+              <div
+                data-slot="folder-card-icon"
+                className={cn(
+                  'flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-secondary/85 to-secondary/40 text-foreground ring-1 ring-border/45 shadow-xs group-hover:ring-border/65 transition-all',
+                  iconClasses.grid,
+                )}
+              >
+                {category.emoji === DEFAULT_CATEGORY_EMOJI
+                  ? (
+                      <Folder className="size-6 text-muted-foreground/80" />
+                    )
+                  : (
+                      <span
+                        className="max-w-full truncate px-2 text-3xl"
+                        aria-hidden="true"
+                      >
+                        {category.emoji}
+                      </span>
+                    )}
+              </div>
+            )
+          : null}
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">

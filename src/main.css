@@ -168,7 +168,7 @@
   background-color: hsl(var(--muted-foreground) / 0.4);
 }
 
-/* Electric Blue: quiet surfaces and fine rules let the blue typography lead. */
+/* Electric Blue: quiet surfaces let the blue typography lead. */
 html.theme-electric,
 html.theme-electric body {
   font-family:
@@ -189,9 +189,7 @@ html.theme-electric :is(header, .workspace-layout > aside, .surface-panel, .glas
 }
 
 html.theme-electric :is(article, .group.border-dashed) {
-  border-width: 0 0 1px;
-  border-style: solid;
-  border-color: hsl(var(--border));
+  border-width: 0;
   border-radius: 0;
   background-color: transparent;
   box-shadow: none;
@@ -199,7 +197,6 @@ html.theme-electric :is(article, .group.border-dashed) {
 
 html.theme-electric :is(article, .group.border-dashed):hover {
   background-color: hsl(var(--accent) / 0.4);
-  border-color: hsl(var(--primary) / 0.4);
   transform: none;
 }
 
