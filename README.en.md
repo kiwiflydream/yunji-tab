@@ -108,7 +108,7 @@ Open **Settings › Data & Privacy** to export or import supplementary bookmark 
 | Descriptions, tags, custom icons, alternate URLs, pinned state, and inbox state | AI API token, WebDAV connection settings, and backup encryption passphrase |
 | Groups and member order, folder icons, open counts, last-opened times, and app settings | Browser sync encryption passphrase |
 
-A full snapshot restore shows a preview first. After confirmation, the native bookmark tree is imported into a new `Yunji Tab Restore ...` folder, keeping existing native bookmarks. **Supplementary data and usage records for matching URLs revert to the snapshot values. The snapshot replaces the group list and app settings.** Restored data continues to participate in cross-device sync according to the browser and extension settings.
+A full snapshot restore shows a preview first. After confirmation, the native bookmark tree is imported into a new `Yunji Tab Restore ...` folder, keeping existing native bookmarks. **Supplementary data and usage records for matching URLs revert to the snapshot values. Groups are restored by ID: matching groups are replaced by the snapshot, while other existing groups are kept. App settings are replaced by the snapshot.** Restored data continues to participate in cross-device sync according to the browser and extension settings.
 
 To configure WebDAV:
 

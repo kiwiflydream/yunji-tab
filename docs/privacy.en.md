@@ -80,7 +80,7 @@ The global command palette is disabled by default. To use it with a browser shor
 
 **Settings › Data & Privacy** provides supplementary data JSON export and import, plus full snapshots. WebDAV uses the same full snapshot. Snapshots contain the native bookmark tree, supplementary data such as alternate URLs, groups, folder icons, usage records, and app settings. They exclude tab sessions, trash, operation history, caches, AI tokens, WebDAV configuration, and all encryption passphrases.
 
-Imports can be previewed for conflicts. After confirmation, a full snapshot restores into a new `Yunji Tab Restore ...` folder without clearing or overwriting existing native bookmarks. Supplementary data and usage records for matching URLs revert to the snapshot values. The snapshot replaces the group list and app settings. Newly created native bookmarks and restored extension data continue to sync to other devices according to their respective settings. WebDAV does not take over browser sync.
+Imports can be previewed for conflicts. After confirmation, a full snapshot restores into a new `Yunji Tab Restore ...` folder without clearing or overwriting existing native bookmarks. Supplementary data and usage records for matching URLs revert to the snapshot values. Groups are restored by ID: matching groups are replaced by the snapshot, while other existing groups are kept. App settings are replaced by the snapshot. Newly created native bookmarks and restored extension data continue to sync to other devices according to their respective settings. WebDAV does not take over browser sync.
 
 The WebDAV passphrase protects uploaded remote snapshots only. It does not encrypt manually exported local JSON. Store exported files securely.
 
