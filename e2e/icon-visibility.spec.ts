@@ -2,6 +2,7 @@ import type { BookmarkGroup } from '../src/lib/bookmark-groups'
 import { expect, test } from './extension.fixture'
 
 test('toggles bookmark, folder, group and navigation icons, preserves choices across presets and reloads', async ({ extensionWorker, newTabPage }) => {
+  const bookmarkBarTitle = await extensionWorker.evaluate(async () => (await chrome.bookmarks.get('1'))[0].title)
   const folderId = await extensionWorker.evaluate(async () => {
     const folder = await chrome.bookmarks.create({ parentId: '1', title: 'Icon Settings Folder' })
     const child = await chrome.bookmarks.create({ parentId: folder.id, title: 'Icon Settings Child' })
@@ -50,7 +51,7 @@ test('toggles bookmark, folder, group and navigation icons, preserves choices ac
     await expect(folderIcons).toHaveCount(0)
     await expect(nav.locator('[data-slot="category-icon"]')).toHaveCount(0)
     await expect(nav.getByRole('button', { name: '折叠目录 Icon Settings Folder', exact: true })).toBeVisible()
-    await newTabPage.getByRole('button', { name: '打开目录 Bookmarks Bar', exact: true }).click()
+    await newTabPage.getByRole('button', { name: `打开目录 ${bookmarkBarTitle}`, exact: true }).click()
     await expect(newTabPage.getByRole('button', { name: '打开目录 Icon Settings Folder', exact: true })).toBeVisible()
     await expect(folderIcons).toHaveCount(0)
     await newTabPage.getByRole('button', { name: '打开目录 Icon Settings Folder', exact: true }).click()

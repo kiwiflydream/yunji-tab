@@ -79,6 +79,7 @@ test('opens the restored bookmark search result without clicking a stale directo
   newTabPage,
 }) => {
   const url = 'https://example.com/keyboard-search-result'
+  const bookmarkBarTitle = await extensionWorker.evaluate(async () => (await chrome.bookmarks.get('1'))[0].title)
   await extensionWorker.evaluate(async (url) => {
     await chrome.bookmarks.create({ parentId: '1', title: 'Keyboard Search Result', url })
   }, url)
@@ -88,7 +89,7 @@ test('opens the restored bookmark search result without clicking a stale directo
   await expect(newTabPage.getByText('Keyboard Search Result', { exact: true })).toBeVisible()
   await newTabPage.getByRole('radio', { name: '搜索网页' }).click()
   await expect(newTabPage.getByLabel('搜索网页或输入网址')).toHaveValue('Keyboard Search Result')
-  await expect(newTabPage.getByRole('button', { name: '打开目录 Bookmarks Bar', exact: true })).toBeVisible()
+  await expect(newTabPage.getByRole('button', { name: `打开目录 ${bookmarkBarTitle}`, exact: true })).toBeVisible()
   await newTabPage.evaluate(() => {
     const button = document.querySelector<HTMLButtonElement>('[role="radio"][aria-label="搜索书签"]')!
     button.click()
@@ -114,7 +115,7 @@ test('opens the restored bookmark search result without clicking a stale directo
     }).immediateSearch)
   expect(immediate.label).toBe('搜索书签和目录')
   expect(immediate.value).toBe('Keyboard Search Result')
-  expect(immediate.firstLabel).toContain('Bookmarks Bar')
+  expect(immediate.firstLabel).toContain(bookmarkBarTitle)
   await expect.poll(async () => extensionWorker.evaluate(async url =>
     (await chrome.tabs.query({})).some(tab => tab.url === url), url)).toBe(true)
   await extensionWorker.evaluate(async (url) => {

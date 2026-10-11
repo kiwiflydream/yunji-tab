@@ -222,17 +222,21 @@ test('backs up changed data on new-tab opens, skips unchanged snapshots, and coa
     await openDataSettings(newTabPage)
     await expect(newTabPage.getByText('内容未变化，未上传', { exact: true })).toBeVisible()
     await expect(history.getByRole('listitem')).toHaveCount(1)
+    const previousSuccessAt = await extensionWorker.evaluate(async key => JSON.parse(String((await chrome.storage.local.get(key))[key])).lastSuccessAt as number, statusKey)
     bookmarkId = await extensionWorker.evaluate(async () => (await chrome.bookmarks.create({ parentId: '1', title: 'WebDAV Changed Bookmark', url: 'https://webdav-changed.example/' })).id)
     await expire()
     await newTabPage.reload()
     await expect.poll(() => uploads).toBe(2)
     await expect.poll(() => remote).toContain('WebDAV Changed Bookmark')
+    // Request arrival precedes the delayed response and persisted success status.
+    await expect.poll(() => extensionWorker.evaluate(async key => JSON.parse(String((await chrome.storage.local.get(key))[key])).lastSuccessAt as number, statusKey)).toBeGreaterThan(previousSuccessAt)
     expect(remote).not.toContain(password)
     const manifest = await extensionWorker.evaluate(() => chrome.runtime.getManifest())
     expect(manifest.permissions).not.toContain('alarms')
     expect(manifest.permissions).not.toContain('notifications')
   }
   finally {
+    await extensionContext.unrouteAll({ behavior: 'wait' })
     await other?.close()
     await extensionWorker.evaluate(async ({ keys, previous, bookmarkId }) => {
       if (bookmarkId)
@@ -240,7 +244,6 @@ test('backs up changed data on new-tab opens, skips unchanged snapshots, and coa
       await chrome.storage.local.remove(keys)
       await chrome.storage.local.set(previous)
     }, { keys: [configKey, statusKey, historyKey], previous, bookmarkId })
-    await extensionContext.unroute(`${directory}**`)
   }
 })
 
