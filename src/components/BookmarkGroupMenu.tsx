@@ -35,6 +35,7 @@ export function BookmarkGroupMenu({ group, anchor, appearance, onPointerEnter, o
   const typeaheadRef = useRef({ text: '', time: 0 })
   const [highlighted, setHighlighted] = useState<string | null>(null)
   const inFlightRef = useRef(false)
+  const wasHoverRef = useRef(anchor.hover)
   const [opening, setOpening] = useState<string | null>(null)
   const [error, setError] = useState(false)
   const bookmarks = useBookmarks()
@@ -57,6 +58,16 @@ export function BookmarkGroupMenu({ group, anchor, appearance, onPointerEnter, o
       window.removeEventListener('resize', dismiss)
     }
   }, [onClose])
+
+  // A hover menu promoted by clicking its card takes focus the way a freshly opened one does.
+  useEffect(() => {
+    if (wasHoverRef.current && !anchor.hover) {
+      const firstItem = contentRef.current?.querySelector<HTMLElement>('[role="menuitem"]:not(:disabled)')
+      const initialFocus = anchor.keyboard ? firstItem ?? contentRef.current : contentRef.current
+      initialFocus?.focus({ preventScroll: true })
+    }
+    wasHoverRef.current = anchor.hover
+  }, [anchor.hover, anchor.keyboard])
 
   const openMember = async (member: BookmarkGroupMember) => {
     const bookmark = resolveGroupBookmark(member, useNavStore.getState().bookmarks)

@@ -118,16 +118,22 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
       dismissedTriggerRef.current = trigger
     const keyboard = event.detail === 0
     const bounds = trigger.getBoundingClientRect()
-    setMenu(current => current?.id === group.id && !current.hover
-      ? null
-      : {
-          id: group.id,
-          x: keyboard ? bounds.left : event.clientX,
-          y: keyboard ? bounds.bottom : event.clientY,
-          trigger,
-          keyboard,
-          hover: false,
-        })
+    setMenu((current) => {
+      if (current?.id === group.id && !current.hover)
+        return null
+      // Clicking a card whose hover menu is already showing keeps that menu in place;
+      // remounting it would flash and swallow the click the user aimed at a member.
+      if (current?.id === group.id)
+        return { ...current, trigger, keyboard, hover: false }
+      return {
+        id: group.id,
+        x: keyboard ? bounds.left : event.clientX,
+        y: keyboard ? bounds.bottom : event.clientY,
+        trigger,
+        keyboard,
+        hover: false,
+      }
+    })
     setError(null)
   }
   const hoverGroup = (group: BookmarkGroup, event: PointerEvent<HTMLButtonElement>) => {
@@ -307,7 +313,7 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
       {menu && menuGroup
         ? (
             <BookmarkGroupMenu
-              key={`${menu.id}-${menu.hover ? 'hover' : 'explicit'}`}
+              key={menu.id}
               group={menuGroup}
               anchor={menu}
               appearance={appearance}

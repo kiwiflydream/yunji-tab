@@ -158,6 +158,37 @@ test('opens the hover menu within 100ms even while the mouse moves inside the ca
   }
 })
 
+test('keeps the hover menu in place when the card is clicked right after it opens', async ({ extensionContext, newTabPage }) => {
+  await newTabPage.getByRole('navigation', { name: '书签分类' }).getByRole('button', { name: '书签组', exact: true }).click()
+  const trigger = newTabPage.getByRole('button', { name: `查看书签组 ${title}`, exact: true })
+  const bounds = (await trigger.boundingBox())!
+  const menu = newTabPage.getByRole('menu', { name: `查看书签组 ${title}`, exact: true })
+  // The menu opens 8px beside the pointer, so a quick click still lands on the card.
+  await newTabPage.mouse.move(bounds.x + 60, bounds.y + 40)
+  await expect(menu).toBeVisible()
+  const before = (await menu.boundingBox())!
+  await menu.evaluate((element) => {
+    (window as unknown as { hoverMenu: Element }).hoverMenu = element
+  })
+  const pagesBefore = extensionContext.pages().length
+  await newTabPage.mouse.down()
+  await newTabPage.mouse.up()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+  expect(await menu.evaluate(element => element === (window as unknown as { hoverMenu: Element }).hoverMenu)).toBe(true)
+  await expect.poll(() => menu.evaluate(element => element.contains(document.activeElement))).toBe(true)
+  const after = (await menu.boundingBox())!
+  expect(Math.abs(after.x - before.x)).toBeLessThanOrEqual(1)
+  expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(1)
+  expect(extensionContext.pages()).toHaveLength(pagesBefore)
+
+  await extensionContext.route(sourceUrl, route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Opened group bookmark</title>' }))
+  const opened = extensionContext.waitForEvent('page')
+  await menu.getByRole('menuitem', { name: `打开书签 ${sourceName}`, exact: true }).click()
+  const target = await opened
+  await expect.poll(() => target.url()).toBe(sourceUrl)
+  await target.close()
+})
+
 test('shares compact card preferences and exposes hover actions through keyboard focus', async ({ extensionWorker, newTabPage }) => {
   await newTabPage.getByRole('navigation', { name: '书签分类' }).getByRole('button', { name: '书签组', exact: true }).click()
   const card = newTabPage.locator('article[data-bookmark-group-id="ui-tools"]')
