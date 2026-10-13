@@ -116,7 +116,7 @@ function CategoryTab({
         fullWidth && 'lg:w-full',
         active
           ? 'bg-accent font-medium text-accent-foreground'
-          : 'text-foreground hover:bg-accent/65',
+          : 'text-foreground/75 hover:bg-accent/65 hover:text-foreground',
         isDragging && 'opacity-35',
         isOver
         && validation?.status === 'valid'
@@ -143,7 +143,7 @@ function CategoryTab({
         {showIcon ? <CategoryIcon category={category} active={active} /> : null}
         <span
           title={categoryName(category)}
-          className="min-w-0 flex-1 truncate text-[13px] font-medium"
+          className="min-w-0 flex-1 truncate text-[13px]"
         >
           {categoryName(category)}
         </span>

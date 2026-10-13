@@ -25,6 +25,25 @@
     --ring: 211 88% 52%;
     --brand: 211 88% 52%;
     --radius: 0.875rem;
+    /* CJK families follow the interface language so Japanese and Traditional Chinese keep their own glyphs.
+       Each list names macOS, Windows and Linux fonts; missing ones are skipped. */
+    --cjk-sans: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC";
+    --cjk-serif: "Songti SC", "Noto Serif CJK SC", STSong, SimSun;
+  }
+
+  :root:lang(zh-TW) {
+    --cjk-sans: "PingFang TC", "Microsoft JhengHei", "Noto Sans CJK TC";
+    --cjk-serif: "Songti TC", "Noto Serif CJK TC", PMingLiU;
+  }
+
+  :root:lang(ja) {
+    --cjk-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, "Noto Sans CJK JP";
+    --cjk-serif: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP";
+  }
+
+  :root:lang(ko) {
+    --cjk-sans: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR";
+    --cjk-serif: AppleMyungjo, "Noto Serif CJK KR", Batang;
   }
 
   .dark {
@@ -62,9 +81,7 @@
       -apple-system,
       BlinkMacSystemFont,
       "Segoe UI",
-      "PingFang SC",
-      "Noto Sans CJK SC",
-      "Microsoft YaHei",
+      var(--cjk-sans),
       sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -178,7 +195,7 @@ html.theme-electric,
 html.theme-electric body {
   font-family:
     ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono",
-    "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", monospace;
+    var(--cjk-sans), monospace;
   font-variant-numeric: tabular-nums;
 }
 
@@ -193,14 +210,14 @@ html.theme-electric :is(header, .workspace-layout > aside, .surface-panel, .glas
   backdrop-filter: none;
 }
 
-html.theme-electric :is(article, .group.border-dashed) {
+html.theme-electric :is(article, .folder-card) {
   border-width: 0;
   border-radius: 0;
   background-color: transparent;
   box-shadow: none;
 }
 
-html.theme-electric :is(article, .group.border-dashed):hover {
+html.theme-electric :is(article, .folder-card):hover {
   background-color: hsl(var(--accent) / 0.4);
   transform: none;
 }
@@ -227,7 +244,7 @@ html.theme-electric ::selection {
 html.theme-kami,
 html.theme-kami body {
   font-family:
-    "TsangerJinKai02", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC",
+    "TsangerJinKai02", var(--cjk-serif),
     STSong, Georgia, serif;
   background-color: hsl(var(--background));
 }
@@ -278,12 +295,11 @@ html.theme-kami img {
 html.theme-engraving,
 html.theme-engraving body {
   font-family:
-    Baskerville, "Palatino Linotype", "Book Antiqua", "Songti SC",
-    "Noto Serif CJK SC", "Noto Serif CJK JP", "Noto Serif CJK KR", Georgia, serif;
+    Baskerville, "Palatino Linotype", "Book Antiqua", var(--cjk-serif), Georgia, serif;
 }
 
 /* Texture lives behind content on each ink surface, so opaque cards do not hide it. */
-html.theme-engraving :is(.newtab-shell, header, .workspace-layout > aside, article, .group.border-dashed, .surface-panel, .glass-panel, [role="dialog"], [role="alertdialog"], [role="menu"]) {
+html.theme-engraving :is(.newtab-shell, header, .workspace-layout > aside, article, .folder-card, .surface-panel, .glass-panel, [role="dialog"], [role="alertdialog"], [role="menu"]) {
   background-image: url("../assets/themes/engraving-grain.svg");
   background-repeat: repeat;
   background-size: 640px 640px;
@@ -327,7 +343,7 @@ html.theme-engraving .bookmark-card-title {
   letter-spacing: 0.01em;
 }
 
-html.theme-engraving :is(article, .group.border-dashed) p {
+html.theme-engraving :is(article, .folder-card) p {
   color: hsl(var(--foreground) / 0.84);
   font-size: 0.875rem;
   font-style: italic;
@@ -353,7 +369,7 @@ html.theme-engraving article {
 }
 
 html.theme-engraving article:hover,
-html.theme-engraving .group.border-dashed:hover {
+html.theme-engraving .folder-card:hover {
   background-color: hsl(var(--accent) / 0.94);
 }
 

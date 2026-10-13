@@ -94,9 +94,10 @@ export function Header({
             aria-label={t('addBookmark')}
             title={`${t('addBookmark')} (${formatShortcut(addBookmarkShortcut)})`}
             size="sm"
+            variant={centered ? 'outline' : 'default'}
             className="shrink-0"
           >
-            <Plus data-icon="inline-start" />
+            <Plus data-icon="inline-start" className={cn(centered && 'text-primary')} />
             <span className="hidden xl:inline">{t('addBookmark')}</span>
           </Button>
           <HeaderMoreMenu open={healthOpen} onOpenChange={onHealthOpenChange} />

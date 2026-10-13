@@ -75,7 +75,7 @@ export function CategoryCard({
     <div
       ref={setNodeRef}
       className={cn(
-        'group relative flex min-h-[76px] border-dashed [contain-intrinsic-size:76px] [content-visibility:auto] transition-[background-color,border-color,box-shadow,transform] duration-200',
+        'folder-card group relative flex min-h-[76px] [contain-intrinsic-size:76px] [content-visibility:auto] transition-[background-color,border-color,box-shadow,transform] duration-200',
         cardStyleClass[appearance.cardStyle],
         radiusClass[appearance.radius],
         isDragging && 'opacity-35',
