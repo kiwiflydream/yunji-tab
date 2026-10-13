@@ -92,6 +92,8 @@ Clear Sky is the default on first install or when no style is configured: white 
 
 **Settings › General › Home layout** switches between two layouts. Centered puts the time, weather, search, and pinned bookmarks in the middle of the page; Workspace keeps search and the time and weather in the header. First installs start centered and existing settings keep the workspace layout. With the time and weather turned off, the centered layout shows only search and pinned bookmarks.
 
+In the centered Clear Sky layout, the background follows the current weather: a slowly turning sun on clear days, a crescent and stars at night, drifting clouds when it is cloudy, and matching effects for rain, snow, fog, and thunderstorms. Without a city, or when weather fails to load, the background stays static. Turn off **Weather background** under **Time & weather**; animations also stop when the system asks for reduced motion.
+
 Electric Blue uses a pale gray background, electric blue text, and local monospace fonts with a fixed light palette. Accent color and background selection are disabled for this theme. Your navigation position and icon visibility preferences are retained.
 
 Under **Settings › Appearance › Advanced customization › Visible fields**, **Card icons** controls icons on bookmark, folder, and group cards together. **Menu icons** controls category navigation icons. Both are enabled by default, and your choices persist across reloads and theme changes.

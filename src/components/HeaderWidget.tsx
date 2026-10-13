@@ -6,7 +6,8 @@ import { HeaderWidgetSettingsPanel } from '~/components/settings/HeaderWidgetSet
 import { weatherMessages } from '~/lib/i18n-weather'
 import { useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
-import { loadWeather, WEATHER_CACHE_TTL_MS, weatherKind } from '~/lib/weather'
+import { loadWeather, WEATHER_CACHE_TTL_MS, weatherKind, weatherScene } from '~/lib/weather'
+import { useWeatherScene } from '~/lib/weather-scene'
 
 const weatherIcons = { clear: Sun, cloudy: Cloud, fog: CloudFog, rain: CloudRain, snow: CloudSnow, storm: CloudLightning }
 
@@ -71,6 +72,14 @@ export function HeaderWidget({ variant = 'header' }: HeaderWidgetProps) {
       document.removeEventListener('visibilitychange', update)
     }
   }, [settings.weatherEnabled, settings.location, settings.temperatureUnit, retry, weatherKey])
+
+  // Only the hero publishes a scene; loading, failures and a missing city fall back to the static wash.
+  const scene = variant === 'hero' && settings.weatherEnabled && settings.location && reading && !failed ? weatherScene(reading) : null
+  const setScene = useWeatherScene(state => state.setScene)
+  useEffect(() => {
+    setScene(scene)
+    return () => setScene(null)
+  }, [scene, setScene])
 
   if (!settings.clockEnabled && !settings.weatherEnabled)
     return null

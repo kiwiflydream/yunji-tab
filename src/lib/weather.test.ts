@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { loadWeather, normalizeHeaderWidget, searchWeatherCities, weatherKind } from './weather'
+import { loadWeather, normalizeHeaderWidget, searchWeatherCities, weatherKind, weatherScene } from './weather'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -13,6 +13,17 @@ describe('weather settings and API', () => {
 
   it('maps WMO conditions including freezing fog and snow showers', () => {
     expect([0, 3, 48, 65, 85, 99].map(weatherKind)).toEqual(['clear', 'cloudy', 'fog', 'rain', 'snow', 'storm'])
+  })
+
+  it('splits clear skies into day and night scenes and keeps other conditions', () => {
+    expect(weatherScene({ code: 0, isDay: true })).toBe('clear-day')
+    expect(weatherScene({ code: 0, isDay: false })).toBe('clear-night')
+    expect([2, 45, 61, 73, 96].map(code => weatherScene({ code, isDay: false }))).toEqual(['cloudy', 'fog', 'rain', 'snow', 'storm'])
+  })
+
+  it('enables the weather background unless it was turned off', () => {
+    expect(normalizeHeaderWidget().weatherBackground).toBe(true)
+    expect(normalizeHeaderWidget({ weatherBackground: false }).weatherBackground).toBe(false)
   })
 
   it('reuses fresh cached weather without a network request', async () => {

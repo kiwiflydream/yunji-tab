@@ -17,7 +17,7 @@ Key features:
 • Back up local metadata or export a complete bookmark tree snapshot
 • Back up to WebDAV with optional encryption, timestamped files, and remote history you can restore from
 • Customize themes, card density, visible fields, shortcuts, and search engines
-• Start from a centered home with the time, search, and pinned bookmarks, or switch to the workspace layout; the clock, date, and weather for a manually selected city are configurable
+• Start from a centered home with the time, search, and pinned bookmarks, or switch to the workspace layout; the clock, date, and weather for a manually selected city are configurable, and Clear Sky's background follows the weather
 
 Optional AI organization:
 
@@ -50,7 +50,7 @@ Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, and
 • 备份本地元数据，或导出完整书签树快照
 • 通过 WebDAV 备份，可选口令加密，以时间戳文件保留历史并从远端记录恢复
 • 自定义主题、卡片密度、显示字段、快捷键和搜索引擎
-• 首屏居中展示时间、搜索和置顶书签，也可切换为工作台布局；时间、日期和手选城市的天气均可配置
+• 首屏居中展示时间、搜索和置顶书签，也可切换为工作台布局；时间、日期和手选城市的天气均可配置，晴空风格的背景随天气变化
 
 可选的 AI 整理：
 
@@ -83,7 +83,7 @@ Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, and
 • 備份本機中繼資料，或匯出完整書籤樹快照
 • 透過 WebDAV 備份，可選擇密碼加密，以時間戳記檔案保留歷史並從遠端紀錄還原
 • 自訂主題、卡片密度、顯示欄位、快速鍵及搜尋引擎
-• 首屏置中顯示時間、搜尋和置頂書籤，也可切換為工作台佈局；時間、日期及手選城市的天氣皆可設定
+• 首屏置中顯示時間、搜尋和置頂書籤，也可切換為工作台佈局；時間、日期及手選城市的天氣皆可設定，晴空風格的背景隨天氣變化
 
 選用的 AI 整理：
 
@@ -116,7 +116,7 @@ Funciones principales:
 • Crea copias de seguridad de los metadatos locales o exporta el árbol completo de marcadores
 • Guarda copias en WebDAV con cifrado opcional, archivos con fecha y hora e historial remoto desde el que puedes restaurar
 • Personaliza temas, densidad de tarjetas, campos visibles, atajos y motores de búsqueda
-• Inicio centrado con la hora, la búsqueda y los marcadores fijados, o diseño de espacio de trabajo; configura la hora, la fecha y el tiempo de una ciudad elegida manualmente
+• Inicio centrado con la hora, la búsqueda y los marcadores fijados, o diseño de espacio de trabajo; configura la hora, la fecha y el tiempo de una ciudad elegida manualmente; el fondo de Cielo claro sigue el tiempo
 
 Organización opcional con IA:
 
@@ -149,7 +149,7 @@ Fonctions principales :
 • Sauvegardez les métadonnées locales ou exportez une copie complète de l'arborescence
 • Sauvegardez sur WebDAV avec chiffrement facultatif, fichiers horodatés et historique distant permettant la restauration
 • Personnalisez les thèmes, la densité des cartes, les champs visibles, les raccourcis et les moteurs de recherche
-• Accueil centré avec l’heure, la recherche et les favoris épinglés, ou disposition espace de travail ; configurez l’heure, la date et la météo d’une ville choisie manuellement
+• Accueil centré avec l’heure, la recherche et les favoris épinglés, ou disposition espace de travail ; configurez l’heure, la date et la météo d’une ville choisie manuellement ; le fond Ciel clair suit la météo
 
 Classement facultatif par IA :
 
@@ -182,7 +182,7 @@ Yunji Tabはブラウザ標準のブックマークを直接利用します。�
 • ローカルメタデータのバックアップ、またはブックマークツリー全体の書き出し
 • WebDAVへのバックアップ、任意の暗号化、日時付きファイルによる履歴保存とリモート履歴からの復元
 • テーマ、カードの表示密度、表示項目、ショートカット、検索エンジンをカスタマイズ
-• 時刻・検索・ピン留めしたブックマークを中央に置くホーム、またはワークスペース表示を選択。時計・日付と、手動で選んだ都市の天気を設定
+• 時刻・検索・ピン留めしたブックマークを中央に置くホーム、またはワークスペース表示を選択。時計・日付と、手動で選んだ都市の天気を設定。晴れ空スタイルでは背景が天気に合わせて変化
 
 任意のAI整理機能：
 
@@ -215,7 +215,7 @@ Yunji Tab은 브라우저 기본 북마크를 직접 사용합니다. 데이터�
 • 로컬 메타데이터를 백업하거나 전체 북마크 트리 내보내기
 • WebDAV 백업, 선택적 암호화, 타임스탬프 파일로 이력 보관 및 원격 기록에서 복원
 • 테마, 카드 밀도, 표시 항목, 단축키 및 검색 엔진 사용자 지정
-• 시간, 검색, 고정된 북마크를 가운데 두는 홈 또는 작업 공간 레이아웃 선택, 시계와 날짜, 직접 선택한 도시의 날씨 설정
+• 시간, 검색, 고정된 북마크를 가운데 두는 홈 또는 작업 공간 레이아웃 선택, 시계와 날짜, 직접 선택한 도시의 날씨 설정, 맑은 하늘 스타일은 배경이 날씨를 따라 변화
 
 선택형 AI 정리:
 

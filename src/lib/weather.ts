@@ -9,6 +9,7 @@ export const DEFAULT_HEADER_WIDGET: HeaderWidgetSettings = {
   hour12: false,
   temperatureUnit: 'celsius',
   location: null,
+  weatherBackground: true,
 }
 
 export function normalizeHeaderWidget(value?: Partial<HeaderWidgetSettings>): HeaderWidgetSettings {
@@ -24,6 +25,7 @@ export function normalizeHeaderWidget(value?: Partial<HeaderWidgetSettings>): He
       && Number.isFinite(location.longitude) && Math.abs(location.longitude) <= 180
       ? { name: location.name.trim().slice(0, 100), latitude: location.latitude, longitude: location.longitude }
       : null,
+    weatherBackground: value?.weatherBackground !== false,
   }
 }
 
@@ -84,4 +86,13 @@ export function weatherKind(code: number) {
   if (code >= 95)
     return 'storm'
   return 'rain'
+}
+
+export type WeatherScene = 'clear-day' | 'clear-night' | 'cloudy' | 'fog' | 'rain' | 'snow' | 'storm'
+
+export function weatherScene(reading: Pick<WeatherReading, 'code' | 'isDay'>): WeatherScene {
+  const kind = weatherKind(reading.code)
+  if (kind === 'clear')
+    return reading.isDay ? 'clear-day' : 'clear-night'
+  return kind
 }

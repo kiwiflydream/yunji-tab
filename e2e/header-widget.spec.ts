@@ -212,3 +212,42 @@ test('centers time, search and pinned bookmarks on fresh installs and collapses 
     }, bookmarkId)
   }
 })
+
+test('follows the weather with a Clear Sky backdrop and respects the switch, theme and layout', async ({ newTabPage, extensionWorker }) => {
+  const location = { name: '上海 · 上海市 · 中国', latitude: 31.22, longitude: 121.46 }
+  const writeSettings = (extra: Record<string, unknown>) => extensionWorker.evaluate(async ({ location, extra }) => {
+    await chrome.storage.sync.set({ 'yunji-tab:settings': JSON.stringify({ language: 'zh-CN', onboardingDismissed: true, headerWidget: { location }, ...extra }) })
+  }, { location, extra })
+  // A fresh cached reading is served before any permission check or request. Seed it from the page so
+  // fetchedAt uses the same clock the widget compares against (earlier tests move the page clock).
+  const seedReading = (code: number, isDay: boolean) => newTabPage.evaluate(async reading => chrome.storage.local.set({ 'yunji-weather:31.22:121.46:celsius': { ...reading, temperature: 15, fetchedAt: Date.now() } }), { code, isDay })
+  const backdrop = newTabPage.locator('.weather-backdrop')
+
+  await seedReading(61, true)
+  await writeSettings({})
+  await newTabPage.setViewportSize({ width: 1440, height: 900 })
+  await newTabPage.reload()
+  await expect(backdrop).toHaveAttribute('data-weather-scene', 'rain')
+  await expect(backdrop).toHaveAttribute('aria-hidden', 'true')
+  await newTabPage.screenshot({ path: '/tmp/yunji-header-widget/weather-rain.png' })
+
+  await seedReading(0, false)
+  await newTabPage.reload()
+  await expect(backdrop).toHaveAttribute('data-weather-scene', 'clear-night')
+
+  await newTabPage.locator('[data-home-hero]').getByTestId('header-widget').click()
+  await newTabPage.getByRole('switch', { name: /天气背景/ }).click()
+  await expect(backdrop).toHaveCount(0)
+  await newTabPage.keyboard.press('Escape')
+  await newTabPage.reload()
+  await expect(newTabPage.locator('[data-home-hero]').getByTestId('header-widget')).toBeVisible()
+  await expect(backdrop).toHaveCount(0)
+
+  for (const appearance of [{ colorTheme: 'electric', homeLayout: 'centered' }, { colorTheme: 'sky', homeLayout: 'workspace' }]) {
+    await writeSettings({ appearance })
+    await newTabPage.reload()
+    await expect(newTabPage.getByTestId('header-widget')).toBeVisible()
+    await expect(backdrop).toHaveCount(0)
+  }
+  await newTabPage.evaluate(async () => chrome.storage.local.remove('yunji-weather:31.22:121.46:celsius'))
+})

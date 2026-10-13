@@ -12,6 +12,7 @@ import { Header } from '~/components/Header'
 import { HomeHero } from '~/components/HomeHero'
 import { LazyDialogFallback } from '~/components/LazyDialogFallback'
 import { UndoDeletionToast } from '~/components/UndoDeletionToast'
+import { WeatherBackdrop } from '~/components/WeatherBackdrop'
 import {
   historyStorageKey,
   metadataSyncRecoveryStorageKey,
@@ -72,6 +73,7 @@ export default function NewTab() {
   const appearance = useNavStore(s => s.settings.appearance)
   const language = useNavStore(s => s.settings.language)
   const keyboardShortcuts = useNavStore(s => s.settings.keyboardShortcuts)
+  const weatherBackground = useNavStore(s => s.settings.headerWidget.weatherBackground)
 
   const activeCategoryId = useNavStore(state => state.activeCategoryId)
   const groupsEnabled = useNavStore(state => state.settings.bookmarkGroupsEnabled)
@@ -447,6 +449,7 @@ export default function NewTab() {
 
           <main className="relative min-w-0 px-3 py-5 sm:px-5 sm:py-6 lg:px-7 lg:py-7 xl:px-10">
             {appearance.catDecorations ? <CatDoodles /> : null}
+            {appearance.homeLayout === 'centered' && appearance.colorTheme === 'sky' && weatherBackground ? <WeatherBackdrop /> : null}
             <div
               className={cn(
                 'relative',

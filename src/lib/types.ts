@@ -174,6 +174,8 @@ export interface HeaderWidgetSettings {
   hour12: boolean
   temperatureUnit: 'celsius' | 'fahrenheit'
   location: WeatherLocation | null
+  /** Animated hero background that follows the current weather (Clear Sky, centered home only). */
+  weatherBackground: boolean
 }
 
 export interface Settings {

@@ -1,6 +1,6 @@
 import type { HeaderWidgetSettings, WeatherLocation } from '~/lib/types'
 import { Search } from 'lucide-react'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Switch } from '~/components/ui/switch'
@@ -20,6 +20,7 @@ export function HeaderWidgetSettingsPanel() {
   const [busy, setBusy] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const backgroundHintId = useId()
 
   const save = async (patch: Partial<HeaderWidgetSettings>) => {
     setSaving(true)
@@ -95,6 +96,13 @@ export function HeaderWidgetSettingsPanel() {
         )}
         {settings.weatherEnabled && (
           <div className="space-y-3 border-t border-border/60 pt-3">
+            <div>
+              <label className="flex items-center justify-between gap-3 text-sm">
+                <span>{messages.background}</span>
+                <Switch checked={settings.weatherBackground} aria-describedby={backgroundHintId} onCheckedChange={value => void save({ weatherBackground: value })} />
+              </label>
+              <p id={backgroundHintId} className="mt-1 text-xs leading-5 text-muted-foreground">{messages.backgroundHint}</p>
+            </div>
             <label className="flex items-center justify-between gap-3 text-sm">
               <span>{messages.unit}</span>
               <select aria-label={messages.unit} className={selectClass} value={settings.temperatureUnit} onChange={event => void save({ temperatureUnit: event.target.value as HeaderWidgetSettings['temperatureUnit'] })}>
