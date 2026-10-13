@@ -86,9 +86,11 @@ Undo a deletion immediately, or restore its snapshot within 30 days through **Mo
 
 ### Choose a home page style
 
-Under **Settings › Appearance**, choose Minimal, Balanced, Compact, Soft, Paper & Ink, Blue Engraving, or Electric Blue. Place the category bar on the left or at the top, and switch bookmarks to a compact view if you prefer.
+Under **Settings › Appearance**, choose Clear Sky, Minimal, Balanced, Compact, Soft, Paper & Ink, Blue Engraving, or Electric Blue. Place the category bar on the left or at the top, and switch bookmarks to a compact view if you prefer.
 
-Electric Blue is the default on first install or when no style is configured. Existing style choices are retained.
+Clear Sky is the default on first install or when no style is configured: white cards with sky-blue accents that follow light and dark mode. Existing style choices are retained.
+
+**Settings › General › Home layout** switches between two layouts. Centered puts the time, weather, search, and pinned bookmarks in the middle of the page; Workspace keeps search and the time and weather in the header. First installs start centered and existing settings keep the workspace layout. With the time and weather turned off, the centered layout shows only search and pinned bookmarks.
 
 Electric Blue uses a pale gray background, electric blue text, and local monospace fonts with a fixed light palette. Accent color and background selection are disabled for this theme. Your navigation position and icon visibility preferences are retained.
 

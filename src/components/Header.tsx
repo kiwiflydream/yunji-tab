@@ -5,7 +5,7 @@ import { HeaderWidget } from '~/components/HeaderWidget'
 import { SearchBar } from '~/components/SearchBar'
 import { Button } from '~/components/ui/button'
 import { formatShortcut } from '~/lib/keyboard-shortcuts'
-import { useBookmarks, useNavStore } from '~/lib/store'
+import { useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
 import { cn } from '~/lib/utils'
 
@@ -23,12 +23,15 @@ export function Header({
   onHealthOpenChange,
 }: HeaderProps) {
   const { t } = useI18n()
-  const count = useBookmarks().length
   const catDecorations = useNavStore(
     state => state.settings.appearance.catDecorations,
   )
   const addBookmarkShortcut = useNavStore(
     state => state.settings.keyboardShortcuts.addBookmark,
+  )
+  // The centered home layout moves search and time into the page hero.
+  const centered = useNavStore(
+    state => state.settings.appearance.homeLayout === 'centered',
   )
 
   return (
@@ -71,19 +74,20 @@ export function Header({
                     )
                   : null}
               </h1>
-              <p className="whitespace-nowrap text-[11px] font-mono tabular-nums text-muted-foreground">
-                {t('bookmarkCount', { count })}
-              </p>
             </div>
           </div>
         </div>
 
-        <div className="col-span-2 row-start-2 flex w-full min-w-0 justify-center lg:order-none lg:col-auto lg:row-auto lg:flex-1">
-          <SearchBar onOpenCommand={onOpenCommand} />
-        </div>
+        {centered
+          ? <div className="hidden lg:block lg:flex-1" />
+          : (
+              <div className="col-span-2 row-start-2 flex w-full min-w-0 justify-center lg:order-none lg:col-auto lg:row-auto lg:flex-1">
+                <SearchBar onOpenCommand={onOpenCommand} />
+              </div>
+            )}
 
         <div className="col-start-2 row-start-1 ml-auto flex shrink-0 items-center gap-2 lg:col-auto lg:row-auto">
-          <HeaderWidget />
+          {centered ? null : <HeaderWidget />}
           <Button
             type="button"
             onClick={onAdd}

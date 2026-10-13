@@ -24,7 +24,7 @@ export function BookmarkGridLoadingState({
         {Array.from({ length: 6 }, (_, index) => (
           <div
             key={index}
-            className="flex min-h-[108px] items-center gap-4 rounded-xl border border-border/55 bg-card/70 px-4"
+            className="flex min-h-[76px] items-center gap-3.5 rounded-xl border border-border/55 bg-card/70 px-4"
             aria-hidden="true"
           >
             <Skeleton className="size-12 shrink-0 rounded-xl" />

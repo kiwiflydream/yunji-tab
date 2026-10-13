@@ -121,7 +121,8 @@ test('keeps the page scrollable when bookmark menus open', async ({
     expect(await newTabPage.evaluate(() => getComputedStyle(document.body).overflow)).not.toBe('hidden')
     await newTabPage.keyboard.press('Escape')
 
-    await newTabPage.getByRole('button', { name: '批量管理' }).click()
+    await newTabPage.getByRole('button', { name: '整理', exact: true }).click()
+    await newTabPage.getByRole('menuitem', { name: '批量管理', exact: true }).click()
     await newTabPage.getByRole('checkbox', { name: '选择 E2E Menu 0' }).click()
     await newTabPage.getByRole('button', { name: '更多', exact: true }).click()
     await expect(newTabPage.getByRole('menu')).toBeVisible()
@@ -303,7 +304,8 @@ test('requires an explicit destination before bulk moving bookmarks', async ({
   })
   await newTabPage.reload()
 
-  await newTabPage.getByRole('button', { name: '批量管理' }).click()
+  await newTabPage.getByRole('button', { name: '整理', exact: true }).click()
+  await newTabPage.getByRole('menuitem', { name: '批量管理', exact: true }).click()
   const destination = newTabPage.getByLabel('批量移动目标目录')
   const move = newTabPage.getByRole('button', { name: '移动', exact: true })
   await expect(destination).toHaveValue('')

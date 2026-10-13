@@ -51,6 +51,7 @@ export const createSettingsSlice: StateCreator<
       appearance: {
         ...current.appearance,
         navLayout: DEFAULT_SETTINGS.appearance.navLayout,
+        homeLayout: DEFAULT_SETTINGS.appearance.homeLayout,
         navItems: { ...DEFAULT_SETTINGS.appearance.navItems, icons: current.appearance.navItems.icons },
       },
     }
@@ -66,6 +67,7 @@ export const createSettingsSlice: StateCreator<
       appearance: {
         ...structuredClone(DEFAULT_SETTINGS.appearance),
         navLayout: current.appearance.navLayout,
+        homeLayout: current.appearance.homeLayout,
         navItems: { ...current.appearance.navItems, icons: DEFAULT_SETTINGS.appearance.navItems.icons },
       },
     }

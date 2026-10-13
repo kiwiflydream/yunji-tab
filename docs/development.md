@@ -69,7 +69,9 @@ pnpm typecheck
 
 时间天气配置保存在同步设置的 `headerWidget` 字段，旧数据由 `normalizeHeaderWidget` 补齐默认值，并参与备份和常规设置重置。天气请求只使用手选城市的坐标，城市搜索时申请 Open-Meteo 两个域名的可选访问权限；结果在 local 缓存 15 分钟，组件关闭或卸载时清理定时器并取消在途天气请求。验证见 `e2e/header-widget.spec.ts` 与 `src/lib/weather.test.ts`。
 
-首次安装和缺失外观配置使用完整电光蓝预设。平衡与蓝墨版画的基础配置使用独立的 `BALANCED_APPEARANCE_SETTINGS`，避免默认风格变化影响已有预设。
+首次安装和缺失外观配置使用完整晴空预设（`DEFAULT_APPEARANCE_SETTINGS`），电光蓝预设改用 `ELECTRIC_APPEARANCE_SETTINGS`。平衡与蓝墨版画的基础配置使用独立的 `BALANCED_APPEARANCE_SETTINGS`，避免默认风格变化影响已有预设。
+
+首页布局保存在 `appearance.homeLayout`：没有外观配置时为 `centered`，已有外观配置缺少该字段时为 `workspace`，避免升级后改变老用户的首页。它和分类栏位置一样归常规设置重置，外观重置会保留。视觉规范见 [DESIGN.md](../DESIGN.md)。
 
 生产构建通过根目录 `.parcelrc` 使用 Parcel 默认 bundler 抽取公共依赖，保留 Plasmo 的其他打包插件。配置路径依赖当前 pnpm 默认的 `node_modules/.pnpm/node_modules` 布局；升级 Plasmo、Parcel 或修改 node-linker 后，应重新验证各扩展入口与共享资源。文件路径形式的 `extends` 会触发 Plasmo 的配置提示，但仍继承其完整配置。
 

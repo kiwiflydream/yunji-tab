@@ -66,7 +66,7 @@ export function CategoryCard({
     [setDragNodeRef, setDropNodeRef],
   )
   const parts = [
-    t('folderBookmarkCount', { count: bookmarkCount }),
+    bookmarkCount > 0 ? t('folderBookmarkCount', { count: bookmarkCount }) : '',
     childCategoryCount > 0 ? t('subfolderCount', { count: childCategoryCount }) : '',
   ].filter(Boolean)
   const iconClasses = iconSizeClass[appearance.iconSize]
@@ -75,7 +75,7 @@ export function CategoryCard({
     <div
       ref={setNodeRef}
       className={cn(
-        'group relative flex min-h-[108px] border-dashed [contain-intrinsic-size:108px] [content-visibility:auto] transition-[background-color,border-color,box-shadow,transform] duration-200',
+        'group relative flex min-h-[76px] border-dashed [contain-intrinsic-size:76px] [content-visibility:auto] transition-[background-color,border-color,box-shadow,transform] duration-200',
         cardStyleClass[appearance.cardStyle],
         radiusClass[appearance.radius],
         isDragging && 'opacity-35',
@@ -94,7 +94,7 @@ export function CategoryCard({
         onClick={() =>
           onOpen ? onOpen(category) : setActiveCategory(category.id)}
         aria-label={t('openFolder', { name: category.name })}
-        className="flex min-w-0 flex-1 items-center gap-4 px-4 py-4 pr-16 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/25"
+        className="flex min-w-0 flex-1 items-center gap-3.5 px-4 py-3.5 pr-16 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/25"
       >
         {appearance.cardFields.websiteIcon
           ? (
@@ -138,9 +138,13 @@ export function CategoryCard({
                 </p>
               )
             : null}
-          <p className="mt-1 text-xs leading-4 text-muted-foreground">
-            {parts.join(' · ')}
-          </p>
+          {parts.length > 0
+            ? (
+                <p className="mt-1 text-xs leading-4 text-muted-foreground">
+                  {parts.join(' · ')}
+                </p>
+              )
+            : null}
         </div>
       </button>
 

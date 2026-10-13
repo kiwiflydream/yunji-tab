@@ -1,7 +1,17 @@
 import type { BookmarkSortMode, BookmarkViewMode } from '~/lib/types'
-import { BookmarkPlus, LayoutGrid, List, ListChecks } from 'lucide-react'
+import { BookmarkPlus, LayoutGrid, List, ListChecks, SlidersHorizontal } from 'lucide-react'
 import { InboxTriageDialog } from '~/components/InboxTriageDialog'
 import { Button } from '~/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu'
 import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group'
 import { VIRTUAL_CATEGORIES } from '~/lib/default-data'
 import { useCategories, useNavStore } from '~/lib/store'
@@ -51,12 +61,12 @@ export function BookmarkGridToolbar({
   const itemCount = visibleBookmarkCount + visibleCategoryCount + (selectionMode ? 0 : additionalItemCount)
 
   return (
-    <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div className="min-w-0 border-l-2 border-primary/80 pl-3">
-        <h2 className="truncate text-xl font-semibold tracking-[-0.015em] sm:text-2xl text-foreground">
+    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-baseline gap-2.5">
+        <h2 className="truncate text-xl font-semibold tracking-[-0.015em] text-foreground">
           {title}
         </h2>
-        <p className="mt-0.5 text-xs font-mono tabular-nums text-muted-foreground">
+        <p className="shrink-0 text-sm tabular-nums text-muted-foreground">
           {t('itemCount', { count: itemCount })}
         </p>
       </div>
@@ -79,18 +89,6 @@ export function BookmarkGridToolbar({
               </Button>
             )
           : null}
-        <select
-          value={sortMode}
-          onChange={event =>
-            void setSortMode(event.target.value as BookmarkSortMode)}
-          aria-label={t('bookmarkSort')}
-          className="h-8.5 rounded-lg border border-border/70 bg-card px-2.5 text-xs font-medium text-foreground shadow-xs outline-none transition-colors hover:border-border focus-visible:ring-2 focus-visible:ring-ring/25"
-        >
-          <option value="manual">{t('nativeOrder')}</option>
-          <option value="name">{t('byName')}</option>
-          <option value="recentlyAdded">{t('recentlyAdded')}</option>
-          <option value="frequent">{t('byFrequency')}</option>
-        </select>
         <ToggleGroup
           type="single"
           value={viewMode}
@@ -120,16 +118,36 @@ export function BookmarkGridToolbar({
         </ToggleGroup>
         {!selectionMode
           ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={onStartSelection}
-                disabled={visibleBookmarkCount === 0}
-              >
-                <ListChecks data-icon="inline-start" />
-                {t('bulkManage')}
-              </Button>
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" size="sm" variant="outline">
+                    <SlidersHorizontal data-icon="inline-start" />
+                    {t('organizeBookmarks')}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" sideOffset={6} className="w-48">
+                  <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                    {t('bookmarkSort')}
+                  </DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={sortMode}
+                    onValueChange={mode => void setSortMode(mode as BookmarkSortMode)}
+                  >
+                    <DropdownMenuRadioItem value="manual">{t('nativeOrder')}</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="name">{t('byName')}</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="recentlyAdded">{t('recentlyAdded')}</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="frequent">{t('byFrequency')}</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={onStartSelection}
+                    disabled={visibleBookmarkCount === 0}
+                  >
+                    <ListChecks />
+                    {t('bulkManage')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )
           : null}
       </div>

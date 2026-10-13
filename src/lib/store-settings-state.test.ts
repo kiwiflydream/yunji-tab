@@ -6,12 +6,19 @@ import {
 } from './store-settings-state'
 
 describe('store settings state', () => {
-  it('defaults missing styles to electric blue and preserves explicit themes', () => {
-    expect(normalizeSettings().appearance.colorTheme).toBe('electric')
+  it('defaults missing styles to clear sky and preserves explicit themes', () => {
+    expect(normalizeSettings().appearance.colorTheme).toBe('sky')
     expect(normalizeSettings().appearance).toEqual(DEFAULT_SETTINGS.appearance)
     for (const colorTheme of ['default', 'engraving', 'electric'] as const) {
       expect(normalizeSettings({ appearance: { colorTheme } as never }).appearance.colorTheme).toBe(colorTheme)
     }
+  })
+
+  it('centers fresh installs but keeps the workspace header for saved appearances', () => {
+    expect(normalizeSettings().appearance.homeLayout).toBe('centered')
+    expect(normalizeSettings({ appearance: { colorTheme: 'electric' } as never }).appearance.homeLayout).toBe('workspace')
+    expect(normalizeSettings({ appearance: { homeLayout: 'centered' } as never }).appearance.homeLayout).toBe('centered')
+    expect(normalizeSettings({ appearance: { homeLayout: 'floating' } as never }).appearance.homeLayout).toBe('workspace')
   })
 
   it('adds header defaults to legacy settings and preserves disabled widgets', () => {

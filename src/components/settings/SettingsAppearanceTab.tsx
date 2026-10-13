@@ -12,7 +12,7 @@ import {
 } from '~/components/ui/collapsible'
 import { Switch } from '~/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group'
-import { BALANCED_APPEARANCE_SETTINGS, DEFAULT_APPEARANCE_SETTINGS } from '~/lib/appearance'
+import { BALANCED_APPEARANCE_SETTINGS, DEFAULT_APPEARANCE_SETTINGS, ELECTRIC_APPEARANCE_SETTINGS } from '~/lib/appearance'
 import { useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
 import { cn } from '~/lib/utils'
@@ -51,6 +51,7 @@ const APPEARANCE_OPTIONS = {
   ],
   colorTheme: [
     { value: 'default', labelKey: 'appearanceColorDefault' },
+    { value: 'sky', labelKey: 'appearanceColorSky' },
     { value: 'graphite', labelKey: 'appearanceColorGraphite' },
     { value: 'meadow', labelKey: 'appearanceColorMeadow' },
     { value: 'dawn', labelKey: 'appearanceColorDawn' },
@@ -92,9 +93,9 @@ const THEME_OPTIONS: Array<{
 
 type StylePresetSettings = Omit<
   AppearanceSettings,
-  'navLayout' | 'navItems' | 'catDecorations' | 'cardFields'
+  'navLayout' | 'homeLayout' | 'navItems' | 'catDecorations' | 'cardFields'
 > & { cardFields: Omit<AppearanceSettings['cardFields'], 'websiteIcon'> }
-type StylePreset = 'minimal' | 'balanced' | 'compact' | 'soft' | 'kami' | 'engraving' | 'electric'
+type StylePreset = 'sky' | 'minimal' | 'balanced' | 'compact' | 'soft' | 'kami' | 'engraving' | 'electric'
 
 interface StylePresetDefinition {
   labelKey: MessageKey
@@ -147,6 +148,11 @@ function toStylePresetSettings(
 }
 
 const STYLE_PRESETS: Record<StylePreset, StylePresetDefinition> = {
+  sky: {
+    labelKey: 'appearanceStyleSky',
+    descriptionKey: 'appearanceStyleSkyDescription',
+    settings: toStylePresetSettings(DEFAULT_APPEARANCE_SETTINGS),
+  },
   minimal: {
     labelKey: 'appearanceStyleMinimal',
     descriptionKey: 'appearanceStyleMinimalDescription',
@@ -268,7 +274,7 @@ const STYLE_PRESETS: Record<StylePreset, StylePresetDefinition> = {
     labelKey: 'appearanceStyleElectric',
     descriptionKey: 'appearanceStyleElectricDescription',
     badgeKey: 'appearanceStyleElectricBadge',
-    settings: toStylePresetSettings(DEFAULT_APPEARANCE_SETTINGS),
+    settings: toStylePresetSettings(ELECTRIC_APPEARANCE_SETTINGS),
   },
 }
 

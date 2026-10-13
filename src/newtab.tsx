@@ -9,6 +9,7 @@ import { BookmarkGrid } from '~/components/BookmarkGrid'
 import { CatDoodles } from '~/components/CatDoodles'
 import { CategoryTabs } from '~/components/CategoryTabs'
 import { Header } from '~/components/Header'
+import { HomeHero } from '~/components/HomeHero'
 import { LazyDialogFallback } from '~/components/LazyDialogFallback'
 import { UndoDeletionToast } from '~/components/UndoDeletionToast'
 import {
@@ -406,6 +407,7 @@ export default function NewTab() {
     <BookmarkDragDropProvider>
       <div
         data-newtab-ready={bookmarksReady || undefined}
+        data-home-layout={appearance.homeLayout}
         className={cn(
           'newtab-shell min-h-dvh',
           backgroundStyleClass[appearance.backgroundStyle],
@@ -433,7 +435,11 @@ export default function NewTab() {
             className={
               appearance.navLayout === 'sidebar'
                 ? 'border-b border-border/60 bg-background/45 px-3 py-2 lg:sticky lg:top-[4.5rem] lg:h-[calc(100dvh-4.5rem)] lg:border-b-0 lg:border-r lg:px-3 lg:py-5'
-                : 'sticky top-[7.75rem] z-30 border-b border-border/60 bg-background/95 px-3 py-2 sm:px-5 lg:top-[4.5rem] lg:px-6'
+                : cn(
+                    'sticky z-30 border-b border-border/60 bg-background/95 px-3 py-2 sm:px-5 lg:top-[4.5rem] lg:px-6',
+                    // Narrow headers wrap search onto a second row only in the workspace layout.
+                    appearance.homeLayout === 'centered' ? 'top-[4.5rem]' : 'top-[7.75rem]',
+                  )
             }
           >
             <CategoryTabs onEditCategory={setEditingCategory} groupsActive={groupsActive} onSelectGroups={() => setGroupsOpen(true)} onSelectCategory={() => setGroupsOpen(false)} />
@@ -447,6 +453,7 @@ export default function NewTab() {
                 contentWidthClass[appearance.contentWidth],
               )}
             >
+              {appearance.homeLayout === 'centered' ? <HomeHero onOpenCommand={() => setCommandOpen(true)} /> : null}
               {groupsOpen
                 ? (
                     <Suspense fallback={<BookmarkGridLoadingState label={`${translate(language, 'bookmarks')}…`} />}>

@@ -74,7 +74,8 @@ test('toggles bookmark, folder, group and navigation icons, preserves choices ac
 
     await newTabPage.getByRole('radio', { name: '紧凑视图', exact: true }).click()
     await expect(card.locator('[data-slot="bookmark-icon"]')).toHaveCount(0)
-    await newTabPage.getByRole('button', { name: '批量管理', exact: true }).click()
+    await newTabPage.getByRole('button', { name: '整理', exact: true }).click()
+    await newTabPage.getByRole('menuitem', { name: '批量管理', exact: true }).click()
     const checkbox = card.getByRole('checkbox', { name: '选择 Icon Settings Website', exact: true })
     await expect(checkbox).toBeVisible()
     const checkboxBox = await checkbox.boundingBox()

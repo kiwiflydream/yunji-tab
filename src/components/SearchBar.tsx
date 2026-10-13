@@ -25,6 +25,7 @@ import {
 } from '~/lib/search-engines'
 import { useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
+import { cn } from '~/lib/utils'
 
 // 简单判断输入是否为网址（形如 example.com/path）
 function looksLikeUrl(s: string): boolean {
@@ -33,12 +34,13 @@ function looksLikeUrl(s: string): boolean {
 
 interface SearchBarProps {
   onOpenCommand: () => void
+  variant?: 'header' | 'hero'
 }
 
 type SearchMode = 'bookmarks' | 'web'
 const BROWSER_DEFAULT_ENGINE_ID = 'browser-default'
 
-export function SearchBar({ onOpenCommand }: SearchBarProps) {
+export function SearchBar({ onOpenCommand, variant = 'header' }: SearchBarProps) {
   const { t } = useI18n()
   const settings = useNavStore(s => s.settings)
   const query = useNavStore(s => s.bookmarkSearchQuery)
@@ -171,7 +173,12 @@ export function SearchBar({ onOpenCommand }: SearchBarProps) {
       <label htmlFor="yunji-tab-search" className="sr-only">
         {t('searchOrEnterUrl')}
       </label>
-      <div className="flex h-11 items-center rounded-xl border border-border/70 bg-card/90 backdrop-blur-xs shadow-xs transition-all duration-200 focus-within:border-ring/40 focus-within:shadow-md focus-within:ring-2 focus-within:ring-ring/10">
+      <div
+        className={cn(
+          'flex h-11 items-center rounded-xl border border-border/70 bg-card/90 backdrop-blur-xs shadow-xs transition-all duration-200 focus-within:border-ring/40 focus-within:shadow-md focus-within:ring-2 focus-within:ring-ring/10',
+          variant === 'hero' && 'h-[3.25rem] rounded-2xl bg-card px-1 shadow-[0_14px_36px_-18px_hsl(var(--foreground)/0.28)]',
+        )}
+      >
         <ToggleGroup
           type="single"
           value={mode}
@@ -309,7 +316,7 @@ export function SearchBar({ onOpenCommand }: SearchBarProps) {
           title={`${t('openCommandPalette')} (${commandShortcut})`}
           className="mr-1 hidden h-6 shrink-0 items-center gap-1 rounded-[6px] border border-border/70 bg-muted/50 px-1.5 text-[10.5px] font-mono font-medium text-muted-foreground shadow-xs transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 sm:flex"
         >
-          <Command className="h-3 w-3" />
+          <Command className="h-3 w-3 md:hidden" />
           <span className="hidden md:inline">{commandShortcut}</span>
         </button>
 

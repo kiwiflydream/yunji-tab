@@ -56,7 +56,8 @@ for (const scope of ['general', 'appearance'] as const) {
         await expect(other.locator('.workspace-layout')).toHaveAttribute('data-nav-layout', 'sidebar')
       }
       else {
-        await expect(other.locator('html')).toHaveClass(/theme-electric/)
+        await expect(other.locator('html')).not.toHaveClass(/theme-electric/)
+        await expect(other.locator('.newtab-shell')).toHaveAttribute('data-home-layout', DEFAULT_APPEARANCE_SETTINGS.homeLayout)
       }
       await newTabPage.screenshot({ path: `/tmp/yunji-settings-reset-${scope}.png`, fullPage: true })
       await newTabPage.reload()

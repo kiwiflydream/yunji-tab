@@ -168,6 +168,11 @@
   background-color: hsl(var(--muted-foreground) / 0.4);
 }
 
+/* Centered home: a faint wash of the primary colour above the hero; fixed-ink presets keep their own ground. */
+html:not(.theme-electric, .theme-kami, .theme-engraving) .newtab-shell[data-home-layout="centered"] main {
+  background-image: radial-gradient(60% 22rem at 50% 0, hsl(var(--primary) / 0.08), transparent 75%);
+}
+
 /* Electric Blue: quiet surfaces let the blue typography lead. */
 html.theme-electric,
 html.theme-electric body {

@@ -1,9 +1,10 @@
+import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { CategoryTreeNode } from '~/lib/category-tree'
 import type { Category } from '~/lib/types'
-import { useDraggable } from '@dnd-kit/core'
 
-import { ChevronRight, GripVertical, Pencil } from 'lucide-react'
+import { useDraggable } from '@dnd-kit/core'
+import { ChevronRight, Clock3, FileText, Folder, GripVertical, Inbox, Layers, LayoutGrid, ListFilter, Pencil, Pin, Star, Tag } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useMovePending } from '~/components/BookmarkDragDropContext'
 import { Button } from '~/components/ui/button'
@@ -16,13 +17,38 @@ import { useCategoryDropTarget } from '~/components/useCategoryDropTarget'
 import { useBookmarkGroupsStore } from '~/lib/bookmark-groups-store'
 import { countMatchingSearchEntries } from '~/lib/bookmark-search'
 import { getCategoryAncestorIds } from '~/lib/category-tree'
-import { VIRTUAL_CATEGORIES } from '~/lib/default-data'
+import { DEFAULT_CATEGORY_EMOJI, VIRTUAL_CATEGORIES } from '~/lib/default-data'
 import { getNavigationDerivedData } from '~/lib/navigation-derived'
 import { useBookmarks, useCategories, useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
 import { cn } from '~/lib/utils'
 
 const MAX_TREE_INDENT_DEPTH = 3
+
+// Built-in entries and untouched folders share one line-icon set; user-picked emoji still win.
+const builtInCategoryIcons: Record<string, LucideIcon> = {
+  'all': LayoutGrid,
+  'inbox': Inbox,
+  'pinned': Pin,
+  'frequent': Star,
+  'recent': Clock3,
+  'untagged': Tag,
+  'undescribed': FileText,
+  'bookmark-groups': Layers,
+}
+
+function CategoryIcon({ category, active }: { category: Category, active: boolean }) {
+  const Icon = category.id.startsWith('saved-search:')
+    ? ListFilter
+    : builtInCategoryIcons[category.id] ?? (category.emoji === DEFAULT_CATEGORY_EMOJI ? Folder : undefined)
+  return (
+    <span data-slot="category-icon" className="flex w-5 shrink-0 items-center justify-center truncate text-base">
+      {Icon
+        ? <Icon aria-hidden="true" strokeWidth={1.75} className={cn('size-4', active ? 'text-primary' : 'text-muted-foreground')} />
+        : category.emoji}
+    </span>
+  )
+}
 
 interface CategoryTabProps {
   accessibleName?: string
@@ -89,7 +115,7 @@ function CategoryTab({
         'group relative flex h-9 shrink-0 items-center gap-1 rounded-lg text-sm transition-all duration-150',
         fullWidth && 'lg:w-full',
         active
-          ? 'bg-accent font-medium text-accent-foreground shadow-xs relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:bg-primary before:rounded-r-full'
+          ? 'bg-accent font-medium text-accent-foreground'
           : 'text-foreground hover:bg-accent/65',
         isDragging && 'opacity-35',
         isOver
@@ -114,27 +140,21 @@ function CategoryTab({
           (leadingControl || reserveLeadingSpace) && 'lg:pl-0',
         )}
       >
-        {showIcon
-          ? (
-              <span data-slot="category-icon" className="w-5 shrink-0 truncate text-center text-base">
-                {category.emoji}
-              </span>
-            )
-          : null}
+        {showIcon ? <CategoryIcon category={category} active={active} /> : null}
         <span
           title={categoryName(category)}
           className="min-w-0 flex-1 truncate text-[13px] font-medium"
         >
           {categoryName(category)}
         </span>
-        {showCount
+        {showCount && count > 0
           ? (
               <span
                 className={cn(
-                  'ml-auto shrink-0 rounded-full bg-muted/60 px-1.5 py-0.5 text-[10.5px] font-mono tabular-nums text-muted-foreground transition-opacity',
+                  'ml-auto shrink-0 px-1 text-xs tabular-nums text-muted-foreground transition-opacity',
                   category.modifiable
                   && 'group-hover:opacity-0 group-focus-within:opacity-0',
-                  active && 'bg-background/60 text-foreground font-medium',
+                  active && 'text-accent-foreground',
                 )}
               >
                 {count}

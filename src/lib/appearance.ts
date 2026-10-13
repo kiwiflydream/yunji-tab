@@ -9,12 +9,14 @@ import type {
   ContentWidth,
   DescriptionLineCount,
   GridDensity,
+  HomeLayout,
   NavItemSettings,
   NavLayout,
   TitleLineCount,
 } from './types'
 
 const NAV_LAYOUTS: NavLayout[] = ['sidebar', 'top']
+const HOME_LAYOUTS: HomeLayout[] = ['workspace', 'centered']
 const CONTENT_WIDTHS: ContentWidth[] = ['standard', 'wide', 'full']
 const GRID_DENSITIES: GridDensity[] = ['comfortable', 'dense']
 const CARD_STYLES: CardStyle[] = ['soft', 'outline', 'plain']
@@ -32,6 +34,7 @@ const COLOR_THEMES: ColorTheme[] = [
   'meadow',
   'dawn',
   'berry',
+  'sky',
   'kami',
   'engraving',
   'electric',
@@ -60,6 +63,7 @@ export const DEFAULT_NAV_ITEMS: NavItemSettings = {
 
 export const BALANCED_APPEARANCE_SETTINGS: AppearanceSettings = {
   navLayout: 'sidebar',
+  homeLayout: 'workspace',
   catDecorations: false,
   contentWidth: 'wide',
   gridDensity: 'comfortable',
@@ -74,6 +78,14 @@ export const BALANCED_APPEARANCE_SETTINGS: AppearanceSettings = {
 }
 
 export const DEFAULT_APPEARANCE_SETTINGS: AppearanceSettings = {
+  ...BALANCED_APPEARANCE_SETTINGS,
+  homeLayout: 'centered',
+  iconSize: 'sm',
+  radius: 'md',
+  colorTheme: 'sky',
+}
+
+export const ELECTRIC_APPEARANCE_SETTINGS: AppearanceSettings = {
   ...BALANCED_APPEARANCE_SETTINGS,
   cardStyle: 'plain',
   iconSize: 'sm',
@@ -111,11 +123,11 @@ export const cardStyleClass: Record<CardStyle, string> = {
 // Shared by ordinary bookmarks and bookmark groups.
 export const cardContainerClass = 'group relative overflow-hidden [content-visibility:auto] transition-[background-color,border-color,box-shadow,transform] duration-200 focus-within:ring-2 focus-within:ring-ring/30'
 export const cardSizeClass = {
-  grid: 'min-h-[108px] [contain-intrinsic-size:108px]',
+  grid: 'min-h-[76px] [contain-intrinsic-size:76px]',
   compact: 'min-h-[68px] [contain-intrinsic-size:68px]',
 }
 export const cardContentClass = {
-  grid: 'min-h-[108px] gap-4 px-4 py-4',
+  grid: 'min-h-[76px] gap-3.5 px-4 py-3.5',
   compact: 'min-h-[68px] gap-3 px-3.5 py-2.5',
 }
 export const cardTitleClass = 'bookmark-card-title text-[14.5px] font-medium leading-snug tracking-[-0.01em] text-foreground group-hover:text-primary transition-colors'
@@ -219,6 +231,48 @@ const engravingPalette: Record<string, string> = {
   '--ring': '43 75% 80%',
 }
 
+// Sky: white cards on a cool paper ground; the logo's sky blue is reserved for focus and actions.
+const skyPalette = {
+  light: {
+    '--background': '216 30% 96.5%',
+    '--foreground': '221 32% 13%',
+    '--card': '0 0% 100%',
+    '--card-foreground': '221 32% 13%',
+    '--popover': '0 0% 100%',
+    '--popover-foreground': '221 32% 13%',
+    '--primary': '221 87% 55%',
+    '--primary-foreground': '0 0% 100%',
+    '--secondary': '216 28% 93%',
+    '--secondary-foreground': '221 32% 16%',
+    '--muted': '216 28% 93.5%',
+    '--muted-foreground': '219 13% 40%',
+    '--accent': '218 70% 95%',
+    '--accent-foreground': '221 60% 30%',
+    '--border': '216 22% 89%',
+    '--input': '216 20% 84%',
+    '--ring': '221 87% 55%',
+  },
+  dark: {
+    '--background': '222 24% 8%',
+    '--foreground': '214 30% 94%',
+    '--card': '222 20% 11%',
+    '--card-foreground': '214 30% 94%',
+    '--popover': '222 20% 11%',
+    '--popover-foreground': '214 30% 94%',
+    '--primary': '217 92% 66%',
+    '--primary-foreground': '222 30% 8%',
+    '--secondary': '222 16% 16%',
+    '--secondary-foreground': '214 30% 94%',
+    '--muted': '222 16% 16%',
+    '--muted-foreground': '216 14% 68%',
+    '--accent': '220 28% 19%',
+    '--accent-foreground': '214 30% 94%',
+    '--border': '222 14% 20%',
+    '--input': '222 14% 25%',
+    '--ring': '217 92% 66%',
+  },
+}
+
 const electricPalette: Record<string, string> = {
   '--background': '0 0% 95%',
   '--foreground': '240 100% 45.5%',
@@ -248,6 +302,7 @@ export const colorThemeVars: Record<
 > = {
   engraving: { light: engravingPalette, dark: engravingPalette },
   electric: { light: electricPalette, dark: electricPalette },
+  sky: skyPalette,
   graphite: {
     light: {
       '--background': '210 20% 98%',
@@ -506,6 +561,12 @@ export function normalizeAppearanceSettings(
       value?.navLayout,
       NAV_LAYOUTS,
       DEFAULT_APPEARANCE_SETTINGS.navLayout,
+    ),
+    // Only fresh installs start centered; saved appearances keep the workspace header.
+    homeLayout: pick(
+      value?.homeLayout,
+      HOME_LAYOUTS,
+      isRecord(value) ? 'workspace' : DEFAULT_APPEARANCE_SETTINGS.homeLayout,
     ),
     catDecorations:
       typeof value?.catDecorations === 'boolean'

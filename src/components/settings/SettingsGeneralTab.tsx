@@ -1,4 +1,4 @@
-import { ChevronDown, PanelLeft, PanelTop } from 'lucide-react'
+import { AlignCenter, ChevronDown, PanelLeft, PanelTop } from 'lucide-react'
 import { useState } from 'react'
 import { AutoOrganizeSettings } from '~/components/AutoOrganizeSettings'
 import { HeaderWidgetSettingsPanel } from '~/components/settings/HeaderWidgetSettingsPanel'
@@ -11,7 +11,7 @@ import {
 } from '~/components/ui/collapsible'
 import { Switch } from '~/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group'
-import { ALL_CATEGORY, VIRTUAL_CATEGORIES } from '~/lib/default-data'
+import { ALL_CATEGORY, DEFAULT_CATEGORY_EMOJI, VIRTUAL_CATEGORIES } from '~/lib/default-data'
 import { homeTabReadyMessage } from '~/lib/home-tabs'
 import { languageOptions } from '~/lib/i18n'
 import { useCategories, useNavStore } from '~/lib/store'
@@ -20,6 +20,11 @@ import { useI18n } from '~/lib/use-i18n'
 const NAV_LAYOUT_OPTIONS = [
   { value: 'sidebar', labelKey: 'sidebar', Icon: PanelLeft },
   { value: 'top', labelKey: 'topbar', Icon: PanelTop },
+] as const
+
+const HOME_LAYOUT_OPTIONS = [
+  { value: 'centered', labelKey: 'appearanceHomeLayoutCentered', Icon: AlignCenter },
+  { value: 'workspace', labelKey: 'appearanceHomeLayoutWorkspace', Icon: PanelTop },
 ] as const
 
 interface NavigationSwitchProps {
@@ -92,16 +97,12 @@ export function SettingsGeneralTab() {
         >
           {VIRTUAL_CATEGORIES.map(category => (
             <option key={category.id} value={category.id}>
-              {category.emoji}
-              {' '}
               {categoryName(category)}
             </option>
           ))}
           {categories.map(category => (
             <option key={category.id} value={category.id}>
-              {category.emoji}
-              {' '}
-              {category.name}
+              {category.emoji === DEFAULT_CATEGORY_EMOJI ? category.name : `${category.emoji} ${category.name}`}
             </option>
           ))}
         </select>
@@ -127,6 +128,31 @@ export function SettingsGeneralTab() {
             </option>
           ))}
         </select>
+      </section>
+
+      <section className="rounded-xl border border-border bg-muted/35 p-4">
+        <h3 className="text-sm font-semibold">{t('appearanceHomeLayout')}</h3>
+        <p className="mt-1 text-sm leading-5 text-muted-foreground">
+          {t('appearanceHomeLayoutDescription')}
+        </p>
+        <ToggleGroup
+          type="single"
+          value={appearance.homeLayout}
+          onValueChange={(value) => {
+            if (value)
+              void setAppearance({ homeLayout: value as typeof appearance.homeLayout })
+          }}
+          variant="outline"
+          className="mt-3 grid grid-cols-2"
+          aria-label={t('appearanceHomeLayout')}
+        >
+          {HOME_LAYOUT_OPTIONS.map(({ value, labelKey, Icon }) => (
+            <ToggleGroupItem key={value} value={value} aria-label={t(labelKey)}>
+              <Icon />
+              <span>{t(labelKey)}</span>
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </section>
 
       <section className="rounded-xl border border-border bg-muted/35 p-4">

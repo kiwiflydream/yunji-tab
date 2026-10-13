@@ -56,13 +56,14 @@ export type Language = 'zh-CN' | 'zh-TW' | 'en' | 'ja' | 'ko' | 'es' | 'fr'
 export type BookmarkSortMode = 'manual' | 'name' | 'recentlyAdded' | 'frequent'
 export type BookmarkViewMode = 'grid' | 'compact'
 export type NavLayout = 'sidebar' | 'top'
+export type HomeLayout = 'workspace' | 'centered'
 export type ContentWidth = 'standard' | 'wide' | 'full'
 export type GridDensity = 'comfortable' | 'dense'
 export type CardStyle = 'soft' | 'outline' | 'plain'
 export type AppearanceSize = 'sm' | 'md' | 'lg'
 export type AccentColor = 'neutral' | 'blue' | 'green' | 'orange' | 'rose'
 export type ColorTheme
-  = 'default' | 'graphite' | 'meadow' | 'dawn' | 'berry' | 'kami' | 'engraving' | 'electric'
+  = 'default' | 'graphite' | 'meadow' | 'dawn' | 'berry' | 'sky' | 'kami' | 'engraving' | 'electric'
 export type ActionVisibility = 'hover' | 'always'
 export type BackgroundStyle = 'flat' | 'subtle' | 'panel'
 export type TitleLineCount = 1 | 2
@@ -102,6 +103,7 @@ export interface NavItemSettings {
 
 export interface AppearanceSettings {
   navLayout: NavLayout
+  homeLayout: HomeLayout
   catDecorations: boolean
   contentWidth: ContentWidth
   gridDensity: GridDensity

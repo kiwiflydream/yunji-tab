@@ -244,7 +244,7 @@ test('pins groups alongside ordinary bookmarks and syncs unpinning to another ho
   await pinnedCategory.click()
   await expect(pinnedCategory).toContainText('2')
   await expect(newTabPage.getByRole('button', { name: '查看书签组 星标测试组', exact: true })).toBeVisible()
-  await expect(newTabPage.getByText('Group favorite source', { exact: true })).toBeVisible()
+  await expect(newTabPage.locator('article').getByText('Group favorite source', { exact: true })).toBeVisible()
   await newTabPage.screenshot({ path: '/tmp/yunji-tab-pinned-groups.png', fullPage: true })
   const other = await extensionContext.newPage()
   try {
@@ -266,7 +266,7 @@ test('pins groups alongside ordinary bookmarks and syncs unpinning to another ho
     await oldEditor.getByRole('button', { name: '保存', exact: true }).click()
     await expect(oldEditor).toBeHidden()
     await expect(newTabPage.getByRole('menuitem', { name: '打开书签 常用文档', exact: true })).toHaveCount(0)
-    await expect(newTabPage.getByText('Group favorite source', { exact: true })).toBeVisible()
+    await expect(newTabPage.locator('article').getByText('Group favorite source', { exact: true })).toBeVisible()
     await other.reload()
     await other.getByRole('navigation', { name: '书签分类' }).getByRole('button', { name: /^书签组/ }).click()
     await expect(other.getByRole('button', { name: '置顶 星标测试组', exact: true })).toHaveAttribute('aria-pressed', 'false')

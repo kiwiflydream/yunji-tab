@@ -12,9 +12,10 @@ interface BookmarkIconProps {
   appearance: AppearanceSettings
   compact?: boolean
   fallbackIcon?: string
+  className?: string
 }
 
-export function BookmarkIcon({ icon, url, name, appearance, compact = false, fallbackIcon }: BookmarkIconProps) {
+export function BookmarkIcon({ icon, url, name, appearance, compact = false, fallbackIcon, className }: BookmarkIconProps) {
   const node = useRef<HTMLDivElement | null>(null)
   const [shouldLoad, setShouldLoad] = useState(false)
   const [source, setSource] = useState('')
@@ -62,6 +63,7 @@ export function BookmarkIcon({ icon, url, name, appearance, compact = false, fal
       className={cn(
         'flex shrink-0 items-center justify-center overflow-hidden bg-gradient-to-b from-secondary/85 to-secondary/40 text-foreground ring-1 ring-border/45 shadow-xs group-hover:ring-border/65 transition-all',
         compact ? sizes.compact : sizes.grid,
+        className,
       )}
     >
       {textIcon

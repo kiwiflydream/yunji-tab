@@ -17,7 +17,7 @@ The theme follows the reference image's pale gray background, electric blue prim
 
 ## Maintenance constraints
 
-First installs and missing style settings use the complete Electric Blue preset. Explicit existing style choices are retained; Balanced and Blue Engraving keep a base configuration independent of the default preset.
+Electric Blue is no longer the default; first installs use Clear Sky. Existing Electric Blue selections are retained. The Electric Blue preset uses its own `ELECTRIC_APPEARANCE_SETTINGS`, and Balanced and Blue Engraving keep a base configuration independent of the default preset.
 
 Reuse existing color variables, overall style presets, and settings persistence. Disable accent color and background selection while the theme is active. These preferences must not override the fixed palette at runtime.
 

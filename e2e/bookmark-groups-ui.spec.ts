@@ -202,7 +202,7 @@ test('places groups after smart categories and preserves data when toggled off a
   const nav = newTabPage.getByRole('navigation', { name: '书签分类' })
   const groupsEntry = nav.getByRole('button', { name: '书签组', exact: true })
   const smart = nav.getByRole('button', { name: /^智能分类/ })
-  await expect(groupsEntry).toContainText('🗂️')
+  await expect(groupsEntry.locator('[data-slot="category-icon"] svg')).toBeVisible()
   expect((await groupsEntry.boundingBox())!.y).toBeGreaterThan((await smart.boundingBox())!.y)
   await groupsEntry.click()
   const viewGroup = newTabPage.getByRole('button', { name: `查看书签组 ${title}`, exact: true })
@@ -225,7 +225,8 @@ test('places groups after smart categories and preserves data when toggled off a
     await expect(groupsEntry).toHaveCount(0)
     await smart.click()
     const pinned = nav.getByRole('button', { name: /置顶/ })
-    const disabledCount = Number((await pinned.textContent())?.match(/\d+$/)?.[0])
+    // Zero counts are hidden in the sidebar.
+    const disabledCount = Number((await pinned.textContent())?.match(/\d+$/)?.[0] ?? 0)
     await pinned.click()
     await expect(viewGroup).toHaveCount(0)
     await openSettings(newTabPage)
