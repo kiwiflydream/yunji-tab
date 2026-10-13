@@ -187,7 +187,7 @@ test('shares compact card preferences and exposes hover actions through keyboard
   await card.evaluate(element => Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => undefined))))
   await newTabPage.screenshot({ path: '/tmp/yunji-group-default-icon-b.png' })
   await extensionWorker.evaluate(async () => {
-    await chrome.storage.sync.set({ 'yunji-tab:settings': JSON.stringify({ language: 'zh-CN', theme: 'light', bookmarkViewMode: 'compact', appearance: { navLayout: 'sidebar', radius: 'sm', iconSize: 'lg', cardStyle: 'outline', cardFields: { actions: 'always' } } }) })
+    await chrome.storage.sync.set({ 'yunji-tab:settings': JSON.stringify({ language: 'zh-CN', theme: 'light', bookmarkViewMode: 'compact', appearance: { colorTheme: 'default', navLayout: 'sidebar', radius: 'sm', iconSize: 'lg', cardStyle: 'outline', cardFields: { actions: 'always' } } }) })
   })
   await newTabPage.reload()
   await newTabPage.getByRole('navigation', { name: '书签分类' }).getByRole('button', { name: '书签组', exact: true }).click()

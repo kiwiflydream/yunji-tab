@@ -9,8 +9,14 @@ import {
   parseYunjiTabBackup,
 } from './backup'
 import { DEFAULT_KEYBOARD_SHORTCUTS } from './keyboard-shortcuts'
+import { DEFAULT_HEADER_WIDGET } from './weather'
 
 const settings: Settings = {
+  headerWidget: {
+    ...DEFAULT_HEADER_WIDGET,
+    temperatureUnit: 'fahrenheit',
+    location: { name: '上海', latitude: 31.22, longitude: 121.46 },
+  },
   bookmarkGroupsEnabled: false,
   language: 'zh-CN',
   theme: 'system',
@@ -95,10 +101,13 @@ describe('yunji tab backup', () => {
     expect(parsed.defaultCategoryPath).toEqual(['工作', '文档'])
     expect(parsed.settings.globalCommandPaletteEnabled).toBe(true)
     expect(parsed.settings.bookmarkGroupsEnabled).toBe(false)
+    expect(parsed.settings.headerWidget).toEqual(settings.headerWidget)
     expect(parsed.bookmarkGroups).toEqual(backup.bookmarkGroups)
     const legacy = { ...backup, settings: { ...backup.settings } }
     delete legacy.bookmarkGroups
     delete (legacy.settings as Partial<Settings>).bookmarkGroupsEnabled
+    delete (legacy.settings as Partial<Settings>).headerWidget
+    expect(parseYunjiTabBackup(JSON.stringify(legacy)).settings.headerWidget).toEqual(DEFAULT_HEADER_WIDGET)
     expect(parseYunjiTabBackup(JSON.stringify(legacy)).settings.bookmarkGroupsEnabled).toBe(true)
     expect(parseYunjiTabBackup(JSON.stringify(legacy)).bookmarkGroups).toEqual([])
   })

@@ -1,6 +1,7 @@
 import { PawPrint, Plus } from 'lucide-react'
 import logoUrl from 'url:~assets/brand-mark.png'
 import { HeaderMoreMenu } from '~/components/HeaderMoreMenu'
+import { HeaderWidget } from '~/components/HeaderWidget'
 import { SearchBar } from '~/components/SearchBar'
 import { Button } from '~/components/ui/button'
 import { formatShortcut } from '~/lib/keyboard-shortcuts'
@@ -59,7 +60,7 @@ export function Header({
                 : null}
             </div>
             <div>
-              <h1 className="flex items-center gap-1.5 text-[15px] font-semibold leading-5 tracking-[-0.01em]">
+              <h1 className="flex items-center gap-1.5 whitespace-nowrap text-[15px] font-semibold leading-5 tracking-[-0.01em]">
                 <span>{t('brandName')}</span>
                 {catDecorations
                   ? (
@@ -70,7 +71,7 @@ export function Header({
                     )
                   : null}
               </h1>
-              <p className="text-[11px] font-mono tabular-nums text-muted-foreground">
+              <p className="whitespace-nowrap text-[11px] font-mono tabular-nums text-muted-foreground">
                 {t('bookmarkCount', { count })}
               </p>
             </div>
@@ -82,6 +83,7 @@ export function Header({
         </div>
 
         <div className="col-start-2 row-start-1 ml-auto flex shrink-0 items-center gap-2 lg:col-auto lg:row-auto">
+          <HeaderWidget />
           <Button
             type="button"
             onClick={onAdd}

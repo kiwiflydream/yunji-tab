@@ -14,6 +14,7 @@ import { getBrowserLanguage, isLanguage } from './i18n'
 import { normalizeKeyboardShortcuts } from './keyboard-shortcuts'
 import { normalizeMetadataSyncScope } from './metadata-sync'
 import { normalizeCustomSearchEngines } from './search-engines'
+import { normalizeHeaderWidget } from './weather'
 
 const BACKUP_SCHEMA_VERSION = 1
 const FULL_SNAPSHOT_KIND = 'yunji-tab-full-bookmark-snapshot'
@@ -211,6 +212,7 @@ export function parseYunjiTabBackup(raw: string): YunjiTabBackup {
     schemaVersion: BACKUP_SCHEMA_VERSION,
     exportedAt: typeof value.exportedAt === 'string' ? value.exportedAt : '',
     settings: {
+      headerWidget: normalizeHeaderWidget(isRecord(settings.headerWidget) ? settings.headerWidget : undefined),
       bookmarkGroupsEnabled: settings.bookmarkGroupsEnabled !== false,
       language: isLanguage(settings.language)
         ? settings.language

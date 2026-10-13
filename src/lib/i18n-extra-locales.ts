@@ -39,6 +39,7 @@ const zhTW = {
   about: '關於',
   aboutDescription: '雲吉 Tab 是由 kiwi 打造的免費開放原始碼專案。',
   projectRepository: '查看專案原始碼',
+  releaseNotes: '更新紀錄',
   followKiwi: '在 X 上追蹤 kiwi',
   settingsCategories: '設定分類',
   defaultFolder: '預設資料夾',
@@ -228,6 +229,7 @@ const ja = {
   aboutDescription:
     'Yunji Tabはkiwiが開発する無料のオープンソースプロジェクトです。',
   projectRepository: 'ソースコードを見る',
+  releaseNotes: '更新履歴',
   followKiwi: 'Xでkiwiをフォロー',
   settingsCategories: '設定カテゴリ',
   defaultFolder: '既定のフォルダー',
@@ -422,6 +424,7 @@ const ko = {
   about: '정보',
   aboutDescription: 'Yunji Tab은 kiwi가 만든 무료 오픈 소스 프로젝트입니다.',
   projectRepository: '소스 코드 보기',
+  releaseNotes: '업데이트 내역',
   followKiwi: 'X에서 kiwi 팔로우',
   settingsCategories: '설정 카테고리',
   defaultFolder: '기본 폴더',
@@ -613,6 +616,7 @@ const es = {
   aboutDescription:
     'Yunji Tab es un proyecto gratuito y de código abierto creado por kiwi.',
   projectRepository: 'Ver el código fuente',
+  releaseNotes: 'Notas de la versión',
   followKiwi: 'Seguir a kiwi en X',
   settingsCategories: 'Categorías de configuración',
   defaultFolder: 'Carpeta predeterminada',
@@ -806,6 +810,7 @@ const fr = {
   aboutDescription:
     'Yunji Tab est un projet gratuit et open source créé par kiwi.',
   projectRepository: 'Voir le code source',
+  releaseNotes: 'Notes de version',
   followKiwi: 'Suivre kiwi sur X',
   settingsCategories: 'Catégories de paramètres',
   defaultFolder: 'Dossier par défaut',

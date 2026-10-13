@@ -28,6 +28,7 @@ import {
 } from './keyboard-shortcuts'
 import { normalizeMetadataSyncScope } from './metadata-sync'
 import { normalizeCustomSearchEngines } from './search-engines'
+import { DEFAULT_HEADER_WIDGET, normalizeHeaderWidget } from './weather'
 
 export type AppearanceSettingsPatch = Partial<
   Omit<AppearanceSettings, 'cardFields' | 'navItems'>
@@ -37,6 +38,7 @@ export type AppearanceSettingsPatch = Partial<
 }
 
 export interface SettingsSlice {
+  setHeaderWidget: (patch: Partial<Settings['headerWidget']>) => Promise<void>
   resetGeneralSettings: () => Promise<void>
   resetAppearanceSettings: () => Promise<void>
   setBookmarkGroupsEnabled: (enabled: boolean) => Promise<void>
@@ -79,6 +81,7 @@ export interface SettingsSlice {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  headerWidget: DEFAULT_HEADER_WIDGET,
   bookmarkGroupsEnabled: true,
   language: getBrowserLanguage(),
   theme: 'system',
@@ -116,6 +119,7 @@ export function normalizeSettings(settings?: Partial<Settings>): Settings {
     settings?.customSearchEngines,
   )
   return {
+    headerWidget: normalizeHeaderWidget(settings?.headerWidget),
     bookmarkGroupsEnabled: settings?.bookmarkGroupsEnabled !== false,
     language: isLanguage(settings?.language)
       ? settings.language

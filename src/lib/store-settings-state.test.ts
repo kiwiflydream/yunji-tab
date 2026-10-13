@@ -6,6 +6,20 @@ import {
 } from './store-settings-state'
 
 describe('store settings state', () => {
+  it('defaults missing styles to electric blue and preserves explicit themes', () => {
+    expect(normalizeSettings().appearance.colorTheme).toBe('electric')
+    expect(normalizeSettings().appearance).toEqual(DEFAULT_SETTINGS.appearance)
+    for (const colorTheme of ['default', 'engraving', 'electric'] as const) {
+      expect(normalizeSettings({ appearance: { colorTheme } as never }).appearance.colorTheme).toBe(colorTheme)
+    }
+  })
+
+  it('adds header defaults to legacy settings and preserves disabled widgets', () => {
+    expect(normalizeSettings().headerWidget).toMatchObject({ clockEnabled: true, weatherEnabled: true, location: null })
+    expect(normalizeSettings({ headerWidget: { clockEnabled: false, weatherEnabled: false } as never }).headerWidget)
+      .toMatchObject({ clockEnabled: false, weatherEnabled: false })
+  })
+
   it('keeps groups enabled for legacy settings and preserves an explicit disable', () => {
     expect(normalizeSettings().bookmarkGroupsEnabled).toBe(true)
     expect(normalizeSettings({ bookmarkGroupsEnabled: true }).bookmarkGroupsEnabled).toBe(true)

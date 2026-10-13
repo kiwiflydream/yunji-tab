@@ -12,7 +12,7 @@ import {
 } from '~/components/ui/collapsible'
 import { Switch } from '~/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group'
-import { DEFAULT_APPEARANCE_SETTINGS } from '~/lib/appearance'
+import { BALANCED_APPEARANCE_SETTINGS, DEFAULT_APPEARANCE_SETTINGS } from '~/lib/appearance'
 import { useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
 import { cn } from '~/lib/utils'
@@ -174,7 +174,7 @@ const STYLE_PRESETS: Record<StylePreset, StylePresetDefinition> = {
   balanced: {
     labelKey: 'appearanceStyleBalanced',
     descriptionKey: 'appearanceStyleBalancedDescription',
-    settings: toStylePresetSettings(DEFAULT_APPEARANCE_SETTINGS),
+    settings: toStylePresetSettings(BALANCED_APPEARANCE_SETTINGS),
   },
   compact: {
     labelKey: 'appearanceStyleCompact',
@@ -254,12 +254,12 @@ const STYLE_PRESETS: Record<StylePreset, StylePresetDefinition> = {
     descriptionKey: 'appearanceStyleEngravingDescription',
     badgeKey: 'appearanceStyleEngravingBadge',
     settings: {
-      ...toStylePresetSettings(DEFAULT_APPEARANCE_SETTINGS),
+      ...toStylePresetSettings(BALANCED_APPEARANCE_SETTINGS),
       cardStyle: 'outline',
       radius: 'sm',
       colorTheme: 'engraving',
       cardFields: {
-        ...toStylePresetSettings(DEFAULT_APPEARANCE_SETTINGS).cardFields,
+        ...toStylePresetSettings(BALANCED_APPEARANCE_SETTINGS).cardFields,
         titleLines: 2,
       },
     },
@@ -268,17 +268,7 @@ const STYLE_PRESETS: Record<StylePreset, StylePresetDefinition> = {
     labelKey: 'appearanceStyleElectric',
     descriptionKey: 'appearanceStyleElectricDescription',
     badgeKey: 'appearanceStyleElectricBadge',
-    settings: {
-      ...toStylePresetSettings(DEFAULT_APPEARANCE_SETTINGS),
-      cardStyle: 'plain',
-      iconSize: 'sm',
-      radius: 'sm',
-      colorTheme: 'electric',
-      cardFields: {
-        ...toStylePresetSettings(DEFAULT_APPEARANCE_SETTINGS).cardFields,
-        titleLines: 2,
-      },
-    },
+    settings: toStylePresetSettings(DEFAULT_APPEARANCE_SETTINGS),
   },
 }
 

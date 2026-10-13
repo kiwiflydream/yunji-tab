@@ -43,6 +43,7 @@ const zhCN = {
   about: '关于',
   aboutDescription: '云吉 Tab 是由 kiwi 构建的免费开源项目。',
   projectRepository: '查看项目源码',
+  releaseNotes: '更新记录',
   followKiwi: '在 X 上关注 kiwi',
   settingsCategories: '设置分类',
   defaultFolder: '默认目录',
@@ -232,6 +233,7 @@ const en: Record<keyof typeof zhCN, string> = {
   aboutDescription:
     'Yunji Tab is a free and open-source project built by kiwi.',
   projectRepository: 'View source code',
+  releaseNotes: 'Release notes',
   followKiwi: 'Follow kiwi on X',
   settingsCategories: 'Settings categories',
   defaultFolder: 'Default folder',

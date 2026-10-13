@@ -1,4 +1,4 @@
-import { AtSign, Code2, ExternalLink } from 'lucide-react'
+import { AtSign, Code2, ExternalLink, History } from 'lucide-react'
 import logoUrl from 'url:~assets/brand-mark.png'
 import { useI18n } from '~/lib/use-i18n'
 
@@ -8,6 +8,12 @@ const links = [
     labelKey: 'projectRepository' as const,
     value: 'github.com/kiwiflydream/yunji-tab',
     Icon: Code2,
+  },
+  {
+    href: 'https://github.com/kiwiflydream/yunji-tab/releases',
+    labelKey: 'releaseNotes' as const,
+    value: 'github.com/kiwiflydream/yunji-tab/releases',
+    Icon: History,
   },
   {
     href: 'https://x.com/kiwiflysky',

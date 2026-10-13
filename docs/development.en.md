@@ -67,6 +67,10 @@ Internationalization tests verify consistent interpolation parameters. An AST ch
 
 ## Implementation notes
 
+Time and weather preferences live in the synced `headerWidget` settings field. `normalizeHeaderWidget` supplies defaults for legacy data, and the field participates in backups and General settings reset. Weather uses manually selected city coordinates; city search requests optional access to Open-Meteo's two domains. Results are cached locally for 15 minutes. Disabling or unmounting the widget clears timers and aborts pending weather requests. Tests are in `e2e/header-widget.spec.ts` and `src/lib/weather.test.ts`.
+
+First installs and missing appearance settings use the complete Electric Blue preset. Balanced and Blue Engraving use the separate `BALANCED_APPEARANCE_SETTINGS` base so changing the default does not change those presets.
+
 Production builds use the root `.parcelrc` to extract common dependencies with Parcel's default bundler while retaining the other Plasmo build plugins. Its configuration paths depend on pnpm's current default `node_modules/.pnpm/node_modules` layout. After upgrading Plasmo or Parcel, or changing `node-linker`, verify all extension entry points and shared resources again. Using a file path for `extends` triggers a Plasmo configuration notice but still inherits its full configuration.
 
 Before a release, complete the checks under "Verify changes" locally, then run `pnpm package` to create the installation package and upload it to GitHub Release.

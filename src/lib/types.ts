@@ -159,7 +159,23 @@ export interface AutoOrganizeRule {
 }
 
 // 用户设置
+export interface WeatherLocation {
+  name: string
+  latitude: number
+  longitude: number
+}
+
+export interface HeaderWidgetSettings {
+  clockEnabled: boolean
+  weatherEnabled: boolean
+  showDate: boolean
+  hour12: boolean
+  temperatureUnit: 'celsius' | 'fahrenheit'
+  location: WeatherLocation | null
+}
+
 export interface Settings {
+  headerWidget: HeaderWidgetSettings
   bookmarkGroupsEnabled: boolean
   /** 界面语言 */
   language: Language

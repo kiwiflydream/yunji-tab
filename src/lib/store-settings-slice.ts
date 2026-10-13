@@ -25,6 +25,7 @@ import {
   STORAGE_KEYS,
 } from './store-persistence'
 import { DEFAULT_SETTINGS, resolveAvailableCategoryId } from './store-settings-state'
+import { normalizeHeaderWidget } from './weather'
 
 export const createSettingsSlice: StateCreator<
   NavState,
@@ -32,11 +33,18 @@ export const createSettingsSlice: StateCreator<
   [],
   SettingsSlice
 > = (set, get) => ({
+  setHeaderWidget: async (patch) => {
+    const previous = get().settings
+    const settings = { ...previous, headerWidget: normalizeHeaderWidget({ ...previous.headerWidget, ...patch }) }
+    await persist(settingsStorage, STORAGE_KEYS.settings, settings)
+    set(state => ({ settings: { ...state.settings, headerWidget: settings.headerWidget } }))
+  },
   resetGeneralSettings: async () => {
     const current = get().settings
     const settings = {
       ...current,
       language: DEFAULT_SETTINGS.language,
+      headerWidget: structuredClone(DEFAULT_SETTINGS.headerWidget),
       defaultCategoryId: DEFAULT_SETTINGS.defaultCategoryId,
       singleHomeTab: DEFAULT_SETTINGS.singleHomeTab,
       bookmarkGroupsEnabled: DEFAULT_SETTINGS.bookmarkGroupsEnabled,

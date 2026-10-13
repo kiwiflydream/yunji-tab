@@ -17,6 +17,7 @@ Key features:
 • Back up local metadata or export a complete bookmark tree snapshot
 • Back up to WebDAV with optional encryption, timestamped files, and remote history you can restore from
 • Customize themes, card density, visible fields, shortcuts, and search engines
+• Start with Electric Blue and configure the header clock, date, and weather for a manually selected city
 
 Optional AI organization:
 
@@ -49,6 +50,7 @@ Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, and
 • 备份本地元数据，或导出完整书签树快照
 • 通过 WebDAV 备份，可选口令加密，以时间戳文件保留历史并从远端记录恢复
 • 自定义主题、卡片密度、显示字段、快捷键和搜索引擎
+• 默认使用电光蓝，可配置右上角时间、日期和手选城市的天气
 
 可选的 AI 整理：
 
@@ -81,6 +83,7 @@ Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, and
 • 備份本機中繼資料，或匯出完整書籤樹快照
 • 透過 WebDAV 備份，可選擇密碼加密，以時間戳記檔案保留歷史並從遠端紀錄還原
 • 自訂主題、卡片密度、顯示欄位、快速鍵及搜尋引擎
+• 預設使用電光藍，可設定右上角時間、日期及手選城市的天氣
 
 選用的 AI 整理：
 
@@ -113,6 +116,7 @@ Funciones principales:
 • Crea copias de seguridad de los metadatos locales o exporta el árbol completo de marcadores
 • Guarda copias en WebDAV con cifrado opcional, archivos con fecha y hora e historial remoto desde el que puedes restaurar
 • Personaliza temas, densidad de tarjetas, campos visibles, atajos y motores de búsqueda
+• Empieza con Azul eléctrico y configura la hora, la fecha y el tiempo de una ciudad elegida manualmente
 
 Organización opcional con IA:
 
@@ -145,6 +149,7 @@ Fonctions principales :
 • Sauvegardez les métadonnées locales ou exportez une copie complète de l'arborescence
 • Sauvegardez sur WebDAV avec chiffrement facultatif, fichiers horodatés et historique distant permettant la restauration
 • Personnalisez les thèmes, la densité des cartes, les champs visibles, les raccourcis et les moteurs de recherche
+• Démarrez avec Bleu électrique et configurez l’heure, la date et la météo d’une ville choisie manuellement
 
 Classement facultatif par IA :
 
@@ -177,6 +182,7 @@ Yunji Tabはブラウザ標準のブックマークを直接利用します。�
 • ローカルメタデータのバックアップ、またはブックマークツリー全体の書き出し
 • WebDAVへのバックアップ、任意の暗号化、日時付きファイルによる履歴保存とリモート履歴からの復元
 • テーマ、カードの表示密度、表示項目、ショートカット、検索エンジンをカスタマイズ
+• 初期テーマはエレクトリックブルー。右上の時計・日付と、手動で選んだ都市の天気を設定
 
 任意のAI整理機能：
 
@@ -209,6 +215,7 @@ Yunji Tab은 브라우저 기본 북마크를 직접 사용합니다. 데이터�
 • 로컬 메타데이터를 백업하거나 전체 북마크 트리 내보내기
 • WebDAV 백업, 선택적 암호화, 타임스탬프 파일로 이력 보관 및 원격 기록에서 복원
 • 테마, 카드 밀도, 표시 항목, 단축키 및 검색 엔진 사용자 지정
+• 기본 일렉트릭 블루 테마와 오른쪽 위 시계, 날짜, 직접 선택한 도시의 날씨 설정
 
 선택형 AI 정리:
 

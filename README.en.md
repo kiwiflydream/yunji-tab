@@ -88,6 +88,8 @@ Undo a deletion immediately, or restore its snapshot within 30 days through **Mo
 
 Under **Settings › Appearance**, choose Minimal, Balanced, Compact, Soft, Paper & Ink, Blue Engraving, or Electric Blue. Place the category bar on the left or at the top, and switch bookmarks to a compact view if you prefer.
 
+Electric Blue is the default on first install or when no style is configured. Existing style choices are retained.
+
 Electric Blue uses a pale gray background, electric blue text, and local monospace fonts with a fixed light palette. Accent color and background selection are disabled for this theme. Your navigation position and icon visibility preferences are retained.
 
 Under **Settings › Appearance › Advanced customization › Visible fields**, **Card icons** controls icons on bookmark, folder, and group cards together. **Menu icons** controls category navigation icons. Both are enabled by default, and your choices persist across reloads and theme changes.
@@ -97,6 +99,12 @@ The **General** and **Appearance** pages each have a **Restore defaults** button
 Blue Engraving combines deep blue and warm cream, serif type, print grain, and an original astronaut cat illustration. The illustration stays at the bottom of the viewport while you scroll through bookmarks.
 
 ![Blue Engraving theme with a deep blue background, cream text, and an astronaut cat illustration](./docs/images/engraving-theme.png)
+
+### Time and weather
+
+The top-right widget shows the time, date, and weather. Click it or open **Settings › General › Time & weather** to toggle time and weather independently, show the date, choose 12/24-hour time, search for a city, and switch between Celsius and Fahrenheit. Weather requires selecting a city and granting access to Open-Meteo; it never automatically reads your device location.
+
+Open **Settings › About › Release notes** to visit [GitHub Releases](https://github.com/kiwiflydream/yunji-tab/releases).
 
 ### Back up and restore
 

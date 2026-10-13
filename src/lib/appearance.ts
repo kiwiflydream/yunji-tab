@@ -58,7 +58,7 @@ export const DEFAULT_NAV_ITEMS: NavItemSettings = {
   categoryTree: true,
 }
 
-export const DEFAULT_APPEARANCE_SETTINGS: AppearanceSettings = {
+export const BALANCED_APPEARANCE_SETTINGS: AppearanceSettings = {
   navLayout: 'sidebar',
   catDecorations: false,
   contentWidth: 'wide',
@@ -71,6 +71,15 @@ export const DEFAULT_APPEARANCE_SETTINGS: AppearanceSettings = {
   backgroundStyle: 'flat',
   navItems: DEFAULT_NAV_ITEMS,
   cardFields: DEFAULT_CARD_FIELDS,
+}
+
+export const DEFAULT_APPEARANCE_SETTINGS: AppearanceSettings = {
+  ...BALANCED_APPEARANCE_SETTINGS,
+  cardStyle: 'plain',
+  iconSize: 'sm',
+  radius: 'sm',
+  colorTheme: 'electric',
+  cardFields: { ...DEFAULT_CARD_FIELDS, titleLines: 2 },
 }
 
 export const contentWidthClass: Record<ContentWidth, string> = {
@@ -478,7 +487,9 @@ export function normalizeAppearanceSettings(
   const cardFields = isRecord(value?.cardFields) ? value.cardFields : {}
   const navItems = isRecord(value?.navItems) ? value.navItems : {}
   const titleLines
-    = cardFields.titleLines === 2 ? 2 : DEFAULT_CARD_FIELDS.titleLines
+    = cardFields.titleLines === 1 || cardFields.titleLines === 2
+      ? cardFields.titleLines
+      : DEFAULT_APPEARANCE_SETTINGS.cardFields.titleLines
   const descriptionLines
     = cardFields.descriptionLines === 1
       || cardFields.descriptionLines === 2

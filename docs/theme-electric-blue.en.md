@@ -17,6 +17,8 @@ The theme follows the reference image's pale gray background, electric blue prim
 
 ## Maintenance constraints
 
+First installs and missing style settings use the complete Electric Blue preset. Explicit existing style choices are retained; Balanced and Blue Engraving keep a base configuration independent of the default preset.
+
 Reuse existing color variables, overall style presets, and settings persistence. Disable accent color and background selection while the theme is active. These preferences must not override the fixed palette at runtime.
 
 Types and normalized allowed values live in `src/lib/types.ts` and `src/lib/appearance.ts`. The palette uses `electricPalette`, and styles are scoped to `html.theme-electric`. Applying or leaving a theme must clean up `dark`, `theme-kami`, `theme-engraving`, and `theme-electric` together to avoid leftover styles. Appearance settings and hints must cover all supported languages.

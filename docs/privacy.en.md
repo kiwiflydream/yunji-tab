@@ -22,6 +22,12 @@ Groups reference existing bookmarks by URL, avoiding reliance on bookmark IDs th
 
 ## Actions that make network requests
 
+### Time and weather
+
+The clock uses your device's local time zone. Weather uses a city you select manually and never reads your device location. City search requests optional access to Open-Meteo's two domains and sends the search text to `geocoding-api.open-meteo.com`. Once configured, weather requests send the selected city's coordinates and temperature unit to `api.open-meteo.com`. The service receives the normal connection IP address, but no bookmarks or browsing history.
+
+City and display preferences sync with browser settings and are included in backups. Weather readings are cached locally for 15 minutes. Disabling weather stops automatic requests; no weather requests are sent before a city is selected. Configure the widget by clicking it or through **Settings › General › Time & weather**. Optional website access can be revoked in Data & Privacy settings.
+
 ### Site icons
 
 When displaying bookmark cards, the extension requests icons from Google Favicon as needed, sending bookmark domains. It does not send bookmark paths, query parameters, or page content. If the remote request fails, it falls back to the browser's site icon API.

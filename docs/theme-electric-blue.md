@@ -17,6 +17,8 @@
 
 ## 维护约束
 
+首次安装或缺失风格配置时默认使用完整电光蓝预设。已有明确风格选择继续保留；平衡与蓝墨版画的基础配置独立于默认预设。
+
 复用现有颜色变量、整体风格预设和设置持久化。主题启用时禁用强调色和背景选择，运行时也不允许这些偏好覆盖固定配色。
 
 类型与归一化允许值在 `src/lib/types.ts`、`src/lib/appearance.ts`；配色使用 `electricPalette`，样式限定在 `html.theme-electric` 下。主题应用与退出时必须同步清理 `dark`、`theme-kami`、`theme-engraving` 和 `theme-electric`，避免样式残留。外观设置及提示文案覆盖所有支持的语言。

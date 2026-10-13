@@ -1,6 +1,7 @@
 import { ChevronDown, PanelLeft, PanelTop } from 'lucide-react'
 import { useState } from 'react'
 import { AutoOrganizeSettings } from '~/components/AutoOrganizeSettings'
+import { HeaderWidgetSettingsPanel } from '~/components/settings/HeaderWidgetSettingsPanel'
 import { SettingsResetControl } from '~/components/settings/SettingsResetControl'
 import { Button } from '~/components/ui/button'
 import {
@@ -75,6 +76,7 @@ export function SettingsGeneralTab() {
   return (
     <>
       <SettingsResetControl description={t('settingsResetGeneralDescription')} onReset={resetGeneralSettings} />
+      <HeaderWidgetSettingsPanel />
       <section className="rounded-xl border border-border bg-muted/35 p-4">
         <label htmlFor="default-category" className="text-sm font-semibold">
           {t('defaultFolder')}

@@ -208,9 +208,18 @@ export default function NewTab() {
         try {
           const raw = changes[STORAGE_KEYS.settings].newValue
           const settings = normalizeSettings(typeof raw === 'string' ? JSON.parse(raw) : raw)
-          useNavStore.setState(state => state.settings.bookmarkGroupsEnabled === settings.bookmarkGroupsEnabled
-            ? state
-            : { settings: { ...state.settings, bookmarkGroupsEnabled: settings.bookmarkGroupsEnabled } })
+          useNavStore.setState((state) => {
+            const headerChanged = JSON.stringify(state.settings.headerWidget) !== JSON.stringify(settings.headerWidget)
+            if (state.settings.bookmarkGroupsEnabled === settings.bookmarkGroupsEnabled && !headerChanged)
+              return state
+            return {
+              settings: {
+                ...state.settings,
+                bookmarkGroupsEnabled: settings.bookmarkGroupsEnabled,
+                headerWidget: headerChanged ? settings.headerWidget : state.settings.headerWidget,
+              },
+            }
+          })
         }
         catch { /* Retain the current setting if an incoming record is malformed. */ }
       }
