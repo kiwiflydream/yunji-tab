@@ -379,8 +379,11 @@ html.theme-fade::view-transition-new(root) {
   transition: transform 360ms cubic-bezier(0.34, 1.4, 0.64, 1) var(--delay, 0ms);
 }
 .group-stack-blank { background: var(--folder-front); }
-article:is(:hover, :focus-within) .group-stack-card {
-  transform: translate(var(--hx, 0%), var(--hy)) rotate(var(--hr, 0deg));
+@media (prefers-reduced-motion: no-preference) {
+  article:is(:hover, :focus-within) .group-stack-card,
+  [data-group-shortcut]:is(:hover, :focus-within) .group-stack-card {
+    transform: translate(var(--hx, 0%), var(--hy)) rotate(var(--hr, 0deg));
+  }
 }
 
 /* Category nav: the moving highlight stands in for the newly active tab's own background until it lands. */

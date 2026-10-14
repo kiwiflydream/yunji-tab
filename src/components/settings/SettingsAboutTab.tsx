@@ -1,4 +1,4 @@
-import { AtSign, Code2, ExternalLink, History } from 'lucide-react'
+import { AtSign, Code2, ExternalLink } from 'lucide-react'
 import logoUrl from 'url:~assets/brand-mark.png'
 import { useI18n } from '~/lib/use-i18n'
 
@@ -10,12 +10,6 @@ const links = [
     Icon: Code2,
   },
   {
-    href: 'https://github.com/kiwiflydream/yunji-tab/releases',
-    labelKey: 'releaseNotes' as const,
-    value: 'github.com/kiwiflydream/yunji-tab/releases',
-    Icon: History,
-  },
-  {
     href: 'https://x.com/kiwiflysky',
     labelKey: 'followKiwi' as const,
     value: '@kiwiflysky',
@@ -25,15 +19,33 @@ const links = [
 
 export function SettingsAboutTab() {
   const { t } = useI18n()
+  const version = chrome.runtime.getManifest().version
 
   return (
     <div className="flex flex-col gap-5">
-      <section className="surface-panel flex flex-col items-center px-6 py-8 text-center">
-        <img src={logoUrl} alt="" className="size-20" />
-        <h2 className="mt-4 text-xl font-semibold">{t('brandName')}</h2>
-        <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-          {t('aboutDescription')}
-        </p>
+      <section className="flex items-center gap-4 py-2 sm:gap-5">
+        <img src={logoUrl} alt="" className="size-16 shrink-0 sm:size-20" />
+        <div className="min-w-0">
+          <h2 className="text-xl font-semibold sm:text-2xl">{t('brandName')}</h2>
+          <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
+            {t('aboutDescription')}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+            <span className="tabular-nums text-muted-foreground">
+              {`v${version}`}
+            </span>
+            <span aria-hidden="true" className="text-muted-foreground/50">·</span>
+            <a
+              href="https://github.com/kiwiflydream/yunji-tab/releases"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-sm text-primary transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25"
+            >
+              {t('releaseNotes')}
+              <ExternalLink className="size-3" aria-hidden="true" />
+            </a>
+          </div>
+        </div>
       </section>
 
       <div className="grid gap-3 sm:grid-cols-2">

@@ -90,7 +90,7 @@ Under **Settings › Appearance**, choose Clear Sky, Minimal, Balanced, Compact,
 
 Clear Sky is the default on first install or when no style is configured: white cards with sky-blue accents that follow light and dark mode. Existing style choices are retained.
 
-**Settings › General › Home layout** switches between two layouts. Centered puts the time, weather, search, and pinned bookmarks in the middle of the page; Workspace keeps search and the time and weather in the header. First installs start centered and existing settings keep the workspace layout. With the time and weather turned off, the centered layout shows only search and pinned bookmarks. The layout button in the header switches between the two layouts, moving search, the clock and bookmarks smoothly to their new places. When you scroll the centered layout until the search box slides under the header, the header shows search and the time and weather until you scroll back up.
+**Settings › General › Home layout** switches between two layouts. Centered puts the time, weather, search, and pinned bookmarks in the middle of the page; Workspace keeps search and the time and weather in the header. First installs start centered and existing settings keep the workspace layout. With the time and weather turned off, the centered layout shows only search and pinned shortcuts. The pinned row includes bookmarks and groups, up to ten entries in total; hovering over a group opens its member menu. The header's **More actions** menu also switches between the two layouts, moving search, the clock and bookmarks smoothly to their new places. When you scroll the centered layout until the search box slides under the header, the header shows search and the time and weather until you scroll back up.
 
 In the centered Clear Sky layout, the background follows the current weather: a slowly turning sun on clear days, a crescent and stars at night, drifting clouds when it is cloudy, and matching effects for rain, snow, fog, and thunderstorms. Without a city, or when weather fails to load, the background stays static. Turn off **Weather background** under **Time & weather**; animations also stop when the system asks for reduced motion.
 
@@ -106,7 +106,7 @@ Blue Engraving combines deep blue and warm cream, serif type, print grain, and a
 
 ### Time and weather
 
-The top-right widget shows the time, date, and weather. Click it or open **Settings › General › Time & weather** to toggle time and weather independently, show the date, choose 12/24-hour time, search for a city, and switch between Celsius and Fahrenheit. Weather requires selecting a city and granting access to Open-Meteo; it never automatically reads your device location.
+The time, date, and weather appear in the middle of the page in Centered layout and in the header in Workspace layout. Click the widget or open **Settings › General › Time & weather** to toggle time and weather independently, show the date, choose 12/24-hour time, search for a city, and switch between Celsius and Fahrenheit. Weather requires selecting a city and granting access to Open-Meteo; it never automatically reads your device location.
 
 Open **Settings › About › Release notes** to visit [GitHub Releases](https://github.com/kiwiflydream/yunji-tab/releases).
 
