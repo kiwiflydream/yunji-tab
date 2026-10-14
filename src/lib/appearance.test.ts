@@ -22,11 +22,4 @@ describe('appearance settings', () => {
     expect(hidden.cardFields.websiteIcon).toBe(false)
     expect(hidden.navItems.icons).toBe(false)
   })
-
-  it('keeps cat decorations off by default while preserving an explicit choice', () => {
-    expect(normalizeAppearanceSettings().catDecorations).toBe(false)
-    expect(
-      normalizeAppearanceSettings({ catDecorations: true }).catDecorations,
-    ).toBe(true)
-  })
 })

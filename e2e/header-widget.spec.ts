@@ -251,3 +251,46 @@ test('follows the weather with a Clear Sky backdrop and respects the switch, the
   }
   await newTabPage.evaluate(async () => chrome.storage.local.remove('yunji-weather:31.22:121.46:celsius'))
 })
+
+test('switches home layouts from the header and docks search into the header while scrolled', async ({ newTabPage, extensionWorker }) => {
+  const folderId = await extensionWorker.evaluate(async () => {
+    await chrome.storage.sync.set({ 'yunji-tab:settings': JSON.stringify({ language: 'zh-CN', onboardingDismissed: true }) })
+    const folder = await chrome.bookmarks.create({ parentId: '1', title: 'Dock fixture' })
+    for (let i = 0; i < 30; i++)
+      await chrome.bookmarks.create({ parentId: folder.id, title: `Dock ${i}`, url: `https://example.com/dock/${i}` })
+    return folder.id
+  })
+  try {
+    await newTabPage.setViewportSize({ width: 1440, height: 900 })
+    await newTabPage.reload()
+    const shell = newTabPage.locator('.newtab-shell')
+    const toggle = newTabPage.getByRole('button', { name: '切换到工作台布局', exact: true })
+    await expect(shell).toHaveAttribute('data-home-layout', 'centered')
+    await toggle.click()
+    await expect(shell).toHaveAttribute('data-home-layout', 'workspace')
+    await expect(newTabPage.locator('header #yunji-tab-search')).toBeVisible()
+    await expect.poll(async () => extensionWorker.evaluate(async () => JSON.parse(String((await chrome.storage.sync.get('yunji-tab:settings'))['yunji-tab:settings'])).appearance.homeLayout)).toBe('workspace')
+    await newTabPage.getByRole('button', { name: '切换到居中布局', exact: true }).click()
+    await expect(shell).toHaveAttribute('data-home-layout', 'centered')
+    await expect(newTabPage.locator('[data-home-hero] #yunji-tab-search')).toBeVisible()
+
+    const docked = newTabPage.locator('header #yunji-tab-search-docked')
+    await expect(docked).toHaveCount(0)
+    await newTabPage.locator('[data-home-hero] #yunji-tab-search').focus()
+    await newTabPage.evaluate(() => window.scrollTo({ top: 600 }))
+    await expect(docked).toBeVisible()
+    await expect(newTabPage.locator('header').getByTestId('header-widget')).toBeVisible()
+    // Focus follows the box into the header, and the shortcut targets the visible copy.
+    await expect(docked).toBeFocused()
+    await docked.evaluate(element => (element as HTMLInputElement).blur())
+    await newTabPage.keyboard.press('/')
+    await expect(docked).toBeFocused()
+    await newTabPage.evaluate(() => window.scrollTo({ top: 0 }))
+    await expect(docked).toHaveCount(0)
+    await expect(newTabPage.locator('[data-home-hero] #yunji-tab-search')).toBeFocused()
+    await expect(newTabPage.locator('header').getByTestId('header-widget')).toHaveCount(0)
+  }
+  finally {
+    await extensionWorker.evaluate(async id => chrome.bookmarks.removeTree(id), folderId)
+  }
+})

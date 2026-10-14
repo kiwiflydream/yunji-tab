@@ -7,8 +7,9 @@ import {
   Search,
   X,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
+import { SearchEngineIcon } from '~/components/SearchEngineIcon'
 import { Button } from '~/components/ui/button'
 import {
   DropdownMenu,
@@ -35,12 +36,15 @@ function looksLikeUrl(s: string): boolean {
 interface SearchBarProps {
   onOpenCommand: () => void
   variant?: 'header' | 'hero'
+  /** Shown temporarily in the header while the centered hero is scrolled away. */
+  docked?: boolean
 }
 
 type SearchMode = 'bookmarks' | 'web'
 const BROWSER_DEFAULT_ENGINE_ID = 'browser-default'
 
-export function SearchBar({ onOpenCommand, variant = 'header' }: SearchBarProps) {
+export function SearchBar({ onOpenCommand, variant = 'header', docked = false }: SearchBarProps) {
+  const inputId = docked ? 'yunji-tab-search-docked' : 'yunji-tab-search'
   const { t } = useI18n()
   const settings = useNavStore(s => s.settings)
   const query = useNavStore(s => s.bookmarkSearchQuery)
@@ -65,9 +69,24 @@ export function SearchBar({ onOpenCommand, variant = 'header' }: SearchBarProps)
 
   // 进入主页自动聚焦搜索框
   useEffect(() => {
-    inputRef.current?.focus()
+    // Only the first mount decides; a docked bar must not steal focus while scrolling.
+    if (!docked)
+      inputRef.current?.focus()
     return () => pendingSubmitRef.current?.disconnect()
   }, [])
+
+  // Typing keeps landing in a visible box: focus follows the search into the header and back.
+  useLayoutEffect(() => {
+    if (!docked)
+      return
+    const input = inputRef.current
+    if (document.activeElement?.id === 'yunji-tab-search')
+      input?.focus({ preventScroll: true })
+    return () => {
+      if (document.activeElement === input)
+        document.getElementById('yunji-tab-search')?.focus({ preventScroll: true })
+    }
+  }, [docked])
 
   const cancelPendingSubmit = () => {
     pendingSubmitRef.current?.disconnect()
@@ -168,9 +187,11 @@ export function SearchBar({ onOpenCommand, variant = 'header' }: SearchBarProps)
         if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget))
           cancelPendingSubmit()
       }}
+      data-morph="search"
+      data-docked={docked || undefined}
       className="relative w-full max-w-[42rem]"
     >
-      <label htmlFor="yunji-tab-search" className="sr-only">
+      <label htmlFor={inputId} className="sr-only">
         {t('searchOrEnterUrl')}
       </label>
       <div
@@ -224,7 +245,7 @@ export function SearchBar({ onOpenCommand, variant = 'header' }: SearchBarProps)
                     aria-label={t('selectSearchEngine')}
                     className="flex h-9 items-center gap-1 rounded-md px-2 text-xs font-medium text-muted-foreground transition-[color,background-color] hover:bg-accent/70 hover:text-foreground active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25"
                   >
-                    <span className="text-sm">{engine?.emoji ?? '🌐'}</span>
+                    <SearchEngineIcon engine={engine} />
                     <span className="hidden sm:inline">{engineName}</span>
                     <ChevronDown className="size-3 text-muted-foreground/70" />
                   </button>
@@ -243,14 +264,14 @@ export function SearchBar({ onOpenCommand, variant = 'header' }: SearchBarProps)
                     onValueChange={setEngineId}
                   >
                     <DropdownMenuRadioItem value={BROWSER_DEFAULT_ENGINE_ID}>
-                      <span aria-hidden="true">🌐</span>
+                      <SearchEngineIcon />
                       <span className="min-w-0 flex-1 truncate font-medium">
                         {t('browserDefaultSearchEngine')}
                       </span>
                     </DropdownMenuRadioItem>
                     {engines.map(item => (
                       <DropdownMenuRadioItem key={item.id} value={item.id}>
-                        <span aria-hidden="true">{item.emoji}</span>
+                        <SearchEngineIcon engine={item} />
                         <span className="min-w-0 flex-1 truncate font-medium">
                           {item.name}
                         </span>
@@ -269,7 +290,7 @@ export function SearchBar({ onOpenCommand, variant = 'header' }: SearchBarProps)
 
         {/* 搜索输入 */}
         <input
-          id="yunji-tab-search"
+          id={inputId}
           ref={inputRef}
           value={activeQuery}
           onChange={(event) => {

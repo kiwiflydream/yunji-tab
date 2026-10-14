@@ -282,7 +282,7 @@ test('uses bookmark card styling, hover menus and custom emoji or image icons', 
   await nav.getByRole('button', { name: '书签组', exact: true }).click()
   const card = newTabPage.locator('article[data-bookmark-group-id="ui-tools"]')
   const actions = card.locator('div.absolute.right-2.top-2')
-  await expect(card.getByText('🗂️', { exact: true })).toBeVisible()
+  await expect(card.locator('[data-slot="bookmark-icon"] svg')).toBeVisible()
   await expect.poll(() => actions.evaluate(element => getComputedStyle(element).opacity)).toBe('0')
   await card.hover()
   await expect.poll(() => actions.evaluate(element => getComputedStyle(element).opacity)).toBe('1')
@@ -291,7 +291,7 @@ test('uses bookmark card styling, hover menus and custom emoji or image icons', 
   await newTabPage.getByRole('dialog').getByLabel('图标（可选）', { exact: true }).fill('🐱')
   await newTabPage.getByRole('dialog').getByRole('button', { name: '保存', exact: true }).click()
   await expect(card.getByText('🐱', { exact: true })).toBeVisible()
-  await expect(card.getByText('🗂️', { exact: true })).toHaveCount(0)
+  await expect(card.locator('[data-slot="bookmark-icon"] svg')).toHaveCount(0)
 
   // A stale editor changes only its description, retaining another page's new icon.
   await card.hover()

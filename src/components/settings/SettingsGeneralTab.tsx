@@ -11,7 +11,7 @@ import {
 } from '~/components/ui/collapsible'
 import { Switch } from '~/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group'
-import { ALL_CATEGORY, DEFAULT_CATEGORY_EMOJI, VIRTUAL_CATEGORIES } from '~/lib/default-data'
+import { ALL_CATEGORY, categoryOptionLabel, VIRTUAL_CATEGORIES } from '~/lib/default-data'
 import { homeTabReadyMessage } from '~/lib/home-tabs'
 import { languageOptions } from '~/lib/i18n'
 import { useCategories, useNavStore } from '~/lib/store'
@@ -102,7 +102,7 @@ export function SettingsGeneralTab() {
           ))}
           {categories.map(category => (
             <option key={category.id} value={category.id}>
-              {category.emoji === DEFAULT_CATEGORY_EMOJI ? category.name : `${category.emoji} ${category.name}`}
+              {categoryOptionLabel(category.emoji, category.name)}
             </option>
           ))}
         </select>

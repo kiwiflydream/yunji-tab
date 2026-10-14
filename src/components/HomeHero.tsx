@@ -1,6 +1,6 @@
 import type { MouseEvent } from 'react'
 import type { Bookmark } from '~/lib/types'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { BookmarkIcon } from '~/components/BookmarkIcon'
 import { HeaderWidget } from '~/components/HeaderWidget'
 import { SearchBar } from '~/components/SearchBar'
@@ -13,6 +13,7 @@ const MAX_PINNED_SHORTCUTS = 10
 
 interface HomeHeroProps {
   onOpenCommand: () => void
+  onDockedChange: (docked: boolean) => void
 }
 
 function PinnedShortcut({ bookmark }: { bookmark: Bookmark }) {
@@ -51,7 +52,8 @@ function PinnedShortcut({ bookmark }: { bookmark: Bookmark }) {
   )
 }
 
-export function HomeHero({ onOpenCommand }: HomeHeroProps) {
+export function HomeHero({ onOpenCommand, onDockedChange }: HomeHeroProps) {
+  const searchRef = useRef<HTMLDivElement>(null)
   const { t } = useI18n()
   const bookmarks = useBookmarks()
   const searching = useNavStore(state => state.bookmarkSearchQuery.trim().length > 0)
@@ -70,10 +72,39 @@ export function HomeHero({ onOpenCommand }: HomeHeroProps) {
       .slice(0, MAX_PINNED_SHORTCUTS)
   }, [bookmarks])
 
+  // Once the search box slides under the sticky header, the header borrows search and time until it comes back.
+  useEffect(() => {
+    let frame = 0
+    let docked = false
+    const measure = () => {
+      frame = 0
+      const search = searchRef.current?.getBoundingClientRect()
+      const header = document.querySelector('header')?.getBoundingClientRect()
+      const next = Boolean(search && header && search.bottom <= header.bottom)
+      if (next !== docked) {
+        docked = next
+        onDockedChange(next)
+      }
+    }
+    const schedule = () => {
+      if (!frame)
+        frame = requestAnimationFrame(measure)
+    }
+    measure()
+    window.addEventListener('scroll', schedule, { passive: true })
+    window.addEventListener('resize', schedule)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', schedule)
+      window.removeEventListener('resize', schedule)
+      onDockedChange(false)
+    }
+  }, [onDockedChange])
+
   return (
     <section data-home-hero className="flex flex-col items-center gap-6 pb-10 pt-6 sm:pt-10">
       {widget.clockEnabled || widget.weatherEnabled ? <HeaderWidget variant="hero" /> : null}
-      <div className="flex w-full justify-center">
+      <div ref={searchRef} className="flex w-full justify-center">
         <SearchBar onOpenCommand={onOpenCommand} variant="hero" />
       </div>
       {!searching && pinned.length > 0

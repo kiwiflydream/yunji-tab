@@ -104,7 +104,6 @@ export interface NavItemSettings {
 export interface AppearanceSettings {
   navLayout: NavLayout
   homeLayout: HomeLayout
-  catDecorations: boolean
   contentWidth: ContentWidth
   gridDensity: GridDensity
   cardStyle: CardStyle

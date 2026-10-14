@@ -22,6 +22,7 @@ import {
   normalizeAlternateBookmarkUrls,
   normalizeBookmarkUrl,
 } from '~/lib/bookmark-urls'
+import { categoryOptionLabel } from '~/lib/default-data'
 import { localizeError } from '~/lib/localized-error'
 import { getDuplicateBookmark } from '~/lib/quick-save'
 import { fetchSiteMetadata } from '~/lib/site-metadata'
@@ -363,9 +364,7 @@ export function BookmarkDialog({ open, onOpenChange, bookmark }: BookmarkDialogP
             <datalist id="flash-category-list">
               {categories.map(c => (
                 <option key={c.id} value={c.name}>
-                  {c.emoji}
-                  {' '}
-                  {c.name}
+                  {categoryOptionLabel(c.emoji, c.name)}
                 </option>
               ))}
             </datalist>

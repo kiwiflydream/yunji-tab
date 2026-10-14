@@ -1,12 +1,11 @@
 import type { Bookmark, Category } from '~/lib/types'
 
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import engravingArtworkUrl from 'url:~assets/themes/engraving-cat-astronaut.png'
 
 import { BookmarkGridLoadingState } from '~/components/bookmark-grid/BookmarkGridLoadingState'
 import { BookmarkDragDropProvider } from '~/components/BookmarkDragDropProvider'
 import { BookmarkGrid } from '~/components/BookmarkGrid'
-import { CatDoodles } from '~/components/CatDoodles'
 import { CategoryTabs } from '~/components/CategoryTabs'
 import { Header } from '~/components/Header'
 import { HomeHero } from '~/components/HomeHero'
@@ -86,6 +85,8 @@ export default function NewTab() {
     () => window.location.hash === globalPaletteHomeHash,
   )
   const [healthOpen, setHealthOpen] = useState(false)
+  const [searchDocked, setSearchDocked] = useState(false)
+  const handleDockedChange = useCallback((docked: boolean) => setSearchDocked(docked), [])
   const [bookmarksReady, setBookmarksReady] = useState(false)
   const [editing, setEditing] = useState<Bookmark | null>(null)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
@@ -321,7 +322,8 @@ export default function NewTab() {
         = target instanceof HTMLInputElement
           || target instanceof HTMLTextAreaElement
           || target?.isContentEditable
-      const searchInput = document.getElementById('yunji-tab-search')
+      // While the centered hero is scrolled away, the header's docked copy is the visible search box.
+      const searchInput = document.getElementById('yunji-tab-search-docked') ?? document.getElementById('yunji-tab-search')
       if (
         event.defaultPrevented
         || document.querySelector('[role="dialog"], [role="menu"], [role="listbox"]')
@@ -420,6 +422,7 @@ export default function NewTab() {
           onOpenCommand={() => setCommandOpen(true)}
           healthOpen={healthOpen}
           onHealthOpenChange={setHealthOpen}
+          searchDocked={searchDocked}
         />
 
         <div
@@ -437,18 +440,13 @@ export default function NewTab() {
             className={
               appearance.navLayout === 'sidebar'
                 ? 'border-b border-border/60 bg-background/45 px-3 py-2 lg:sticky lg:top-[4.5rem] lg:h-[calc(100dvh-4.5rem)] lg:border-b-0 lg:border-r lg:px-3 lg:py-5'
-                : cn(
-                    'sticky z-30 border-b border-border/60 bg-background/95 px-3 py-2 sm:px-5 lg:top-[4.5rem] lg:px-6',
-                    // Narrow headers wrap search onto a second row only in the workspace layout.
-                    appearance.homeLayout === 'centered' ? 'top-[4.5rem]' : 'top-[7.75rem]',
-                  )
+                : 'sticky top-[var(--header-height,4.5rem)] z-30 border-b border-border/60 bg-background/95 px-3 py-2 sm:px-5 lg:top-[4.5rem] lg:px-6'
             }
           >
             <CategoryTabs onEditCategory={setEditingCategory} groupsActive={groupsActive} onSelectGroups={() => setGroupsOpen(true)} onSelectCategory={() => setGroupsOpen(false)} />
           </aside>
 
           <main className="relative min-w-0 px-3 py-5 sm:px-5 sm:py-6 lg:px-7 lg:py-7 xl:px-10">
-            {appearance.catDecorations ? <CatDoodles /> : null}
             {appearance.homeLayout === 'centered' && appearance.colorTheme === 'sky' && weatherBackground ? <WeatherBackdrop /> : null}
             <div
               className={cn(
@@ -456,52 +454,54 @@ export default function NewTab() {
                 contentWidthClass[appearance.contentWidth],
               )}
             >
-              {appearance.homeLayout === 'centered' ? <HomeHero onOpenCommand={() => setCommandOpen(true)} /> : null}
-              {groupsOpen
-                ? (
-                    <Suspense fallback={<BookmarkGridLoadingState label={`${translate(language, 'bookmarks')}…`} />}>
-                      <BookmarkGroupsView
-                        key="all-groups"
-                        renderCards={groupsEnabled
-                          ? undefined
-                          : () => (
+              {appearance.homeLayout === 'centered' ? <HomeHero onOpenCommand={() => setCommandOpen(true)} onDockedChange={handleDockedChange} /> : null}
+              <div data-morph="grid">
+                {groupsOpen
+                  ? (
+                      <Suspense fallback={<BookmarkGridLoadingState label={`${translate(language, 'bookmarks')}…`} />}>
+                        <BookmarkGroupsView
+                          key="all-groups"
+                          renderCards={groupsEnabled
+                            ? undefined
+                            : () => (
+                                <BookmarkGrid
+                                  loading={!bookmarksReady}
+                                  onEdit={openEdit}
+                                  onEditCategory={setEditingCategory}
+                                  onAdd={openAdd}
+                                />
+                              )}
+                        />
+                      </Suspense>
+                    )
+                  : showPinnedGroups
+                    ? (
+                        <Suspense fallback={<BookmarkGridLoadingState label={`${translate(language, 'bookmarks')}…`} />}>
+                          <BookmarkGroupsView
+                            key="pinned-groups"
+                            pinnedOnly
+                            renderCards={(cards, count) => (
                               <BookmarkGrid
                                 loading={!bookmarksReady}
+                                additionalItems={cards}
+                                additionalItemCount={count}
                                 onEdit={openEdit}
                                 onEditCategory={setEditingCategory}
                                 onAdd={openAdd}
                               />
                             )}
-                      />
-                    </Suspense>
-                  )
-                : showPinnedGroups
-                  ? (
-                      <Suspense fallback={<BookmarkGridLoadingState label={`${translate(language, 'bookmarks')}…`} />}>
-                        <BookmarkGroupsView
-                          key="pinned-groups"
-                          pinnedOnly
-                          renderCards={(cards, count) => (
-                            <BookmarkGrid
-                              loading={!bookmarksReady}
-                              additionalItems={cards}
-                              additionalItemCount={count}
-                              onEdit={openEdit}
-                              onEditCategory={setEditingCategory}
-                              onAdd={openAdd}
-                            />
-                          )}
+                          />
+                        </Suspense>
+                      )
+                    : (
+                        <BookmarkGrid
+                          loading={!bookmarksReady}
+                          onEdit={openEdit}
+                          onEditCategory={setEditingCategory}
+                          onAdd={openAdd}
                         />
-                      </Suspense>
-                    )
-                  : (
-                      <BookmarkGrid
-                        loading={!bookmarksReady}
-                        onEdit={openEdit}
-                        onEditCategory={setEditingCategory}
-                        onAdd={openAdd}
-                      />
-                    )}
+                      )}
+              </div>
             </div>
           </main>
         </div>

@@ -64,7 +64,6 @@ export const DEFAULT_NAV_ITEMS: NavItemSettings = {
 export const BALANCED_APPEARANCE_SETTINGS: AppearanceSettings = {
   navLayout: 'sidebar',
   homeLayout: 'workspace',
-  catDecorations: false,
   contentWidth: 'wide',
   gridDensity: 'comfortable',
   cardStyle: 'soft',
@@ -568,10 +567,6 @@ export function normalizeAppearanceSettings(
       HOME_LAYOUTS,
       isRecord(value) ? 'workspace' : DEFAULT_APPEARANCE_SETTINGS.homeLayout,
     ),
-    catDecorations:
-      typeof value?.catDecorations === 'boolean'
-        ? value.catDecorations
-        : DEFAULT_APPEARANCE_SETTINGS.catDecorations,
     contentWidth: pick(
       value?.contentWidth,
       CONTENT_WIDTHS,

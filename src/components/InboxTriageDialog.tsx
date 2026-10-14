@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from '~/components/ui/dialog'
 import { Input } from '~/components/ui/input'
+import { categoryOptionLabel } from '~/lib/default-data'
 import { useBookmarks, useCategories, useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
 
@@ -156,9 +157,7 @@ export function InboxTriageDialog() {
                   <select id="triage-category" value={destinationId} onChange={event => setDestinationId(event.target.value)} className="h-10 rounded-md border border-input bg-background px-3 text-sm">
                     {orderedCategories.map(category => (
                       <option key={category.id} value={category.id}>
-                        {category.emoji}
-                        {' '}
-                        {categoryName(category)}
+                        {categoryOptionLabel(category.emoji, categoryName(category))}
                       </option>
                     ))}
                   </select>

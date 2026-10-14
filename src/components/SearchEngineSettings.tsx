@@ -2,6 +2,7 @@ import type { SearchEngine } from '~/lib/types'
 import { Pencil, Plus, Save, Trash2, X } from 'lucide-react'
 
 import { useState } from 'react'
+import { SearchEngineIcon } from '~/components/SearchEngineIcon'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +16,7 @@ import {
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { searchEngines } from '~/lib/default-data'
+import { DEFAULT_SEARCH_ENGINE_EMOJI } from '~/lib/search-engines'
 import { useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
 
@@ -22,7 +24,7 @@ const EMPTY_ENGINE: Omit<SearchEngine, 'id'> = {
   name: '',
   keyword: '',
   url: '',
-  emoji: '🔎',
+  emoji: DEFAULT_SEARCH_ENGINE_EMOJI,
 }
 
 export function SearchEngineSettings() {
@@ -106,7 +108,7 @@ export function SearchEngineSettings() {
 
       <div className="divide-y divide-border border-t border-border">
         <div className="flex min-h-11 items-center gap-2 px-4 py-2">
-          <span className="w-6 text-center">🌐</span>
+          <span className="flex w-6 justify-center"><SearchEngineIcon /></span>
           <span className="min-w-0 flex-1 truncate text-sm font-medium">
             {t('browserDefaultSearchEngine')}
           </span>
@@ -118,7 +120,7 @@ export function SearchEngineSettings() {
               key={engine.id}
               className="flex min-h-11 items-center gap-2 px-4 py-2"
             >
-              <span className="w-6 text-center">{engine.emoji}</span>
+              <span className="flex w-6 justify-center"><SearchEngineIcon engine={engine} /></span>
               <span className="min-w-0 flex-1 truncate text-sm font-medium">
                 {engine.name}
               </span>

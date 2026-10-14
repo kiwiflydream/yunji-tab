@@ -13,7 +13,7 @@ The theme follows the reference image's pale gray background, electric blue prim
 - Use local system monospace fonts, falling back to local Chinese fonts for Chinese text. Do not load remote fonts or images for the theme.
 - Headings and controls use font weight 400 and normal letter spacing. Selection backgrounds and borders stay subtle, avoiding heavy purple blocks.
 - Bookmark, group, and folder cards have no persistent border. Hover uses a light background without lifting the card. Menus keep a light shadow; dialogs use small corner radii and a light backdrop.
-- Retain the user's navigation position, cat decoration toggle, and card icon visibility preferences. Do not add the reference image's leaderboard content or winged logo.
+- Retain the user's navigation position and card icon visibility preferences. Do not add the reference image's leaderboard content or winged logo.
 
 ## Maintenance constraints
 

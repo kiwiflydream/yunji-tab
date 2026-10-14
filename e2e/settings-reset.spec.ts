@@ -19,7 +19,7 @@ for (const scope of ['general', 'appearance'] as const) {
       globalCommandPaletteEnabled: true,
       savedSearches: [{ id: 'reset-filter', name: 'Keep filter', query: 'tag:work' }],
       autoOrganizeRules: [{ id: 'reset-rule', name: 'Keep rule', enabled: true, field: 'domain', operator: 'contains', value: 'example.test', addTags: ['work'], clearInbox: false }],
-      appearance: { ...DEFAULT_APPEARANCE_SETTINGS, colorTheme: 'electric', catDecorations: true, navLayout: 'top', contentWidth: 'full', navItems: { icons: false, counts: false, smartCategories: false, savedSearches: true, categoryTree: false }, cardFields: { ...DEFAULT_APPEARANCE_SETTINGS.cardFields, websiteIcon: false, description: false, tags: false, actions: 'always' } },
+      appearance: { ...DEFAULT_APPEARANCE_SETTINGS, colorTheme: 'electric', navLayout: 'top', contentWidth: 'full', navItems: { icons: false, counts: false, smartCategories: false, savedSearches: true, categoryTree: false }, cardFields: { ...DEFAULT_APPEARANCE_SETTINGS.cardFields, websiteIcon: false, description: false, tags: false, actions: 'always' } },
     })
     const original = await extensionWorker.evaluate(async ({ settingsKey, groupKey, partKey }) => chrome.storage.sync.get([settingsKey, groupKey, partKey]), { settingsKey, groupKey, partKey })
     const bookmarkId = await extensionWorker.evaluate(async () => (await chrome.bookmarks.create({ parentId: '1', title: 'Keep bookmark', url: 'https://example.test/reset-fixture' })).id)

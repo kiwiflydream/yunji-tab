@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '~/components/ui/dialog'
 import { Input } from '~/components/ui/input'
-import { DEFAULT_CATEGORY_EMOJI } from '~/lib/default-data'
+import { categoryOptionLabel, DEFAULT_CATEGORY_EMOJI } from '~/lib/default-data'
 import { useBookmarks, useCategories, useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
 
@@ -263,9 +263,7 @@ export function CategoryDialog({
                   >
                     {parentOptions.map(option => (
                       <option key={option.id} value={option.id}>
-                        {option.emoji}
-                        {' '}
-                        {getCategoryPath(option, categoryById, categoryName)}
+                        {categoryOptionLabel(option.emoji, getCategoryPath(option, categoryById, categoryName))}
                       </option>
                     ))}
                   </select>

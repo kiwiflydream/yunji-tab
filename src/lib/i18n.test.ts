@@ -31,7 +31,7 @@ describe('i18n', () => {
     expect(translate('en', 'themeLight')).toBe('Light')
     expect(translate('zh-TW', 'appearanceOverallStyle')).toBe('整體風格')
     expect(translate('ja', 'appearanceAdvancedCustomization')).toBe('詳細設定')
-    expect(translate('ko', 'appearanceCatDecorations')).toBe('고양이 장식')
+    expect(translate('ko', 'appearanceHomeLayout')).toBe('홈 레이아웃')
     expect(translate('es', 'appearanceCardDetails')).toBe('Detalles de las tarjetas')
     expect(translate('fr', 'appearanceLineCount', { count: 2 })).toBe('2 lignes')
   })

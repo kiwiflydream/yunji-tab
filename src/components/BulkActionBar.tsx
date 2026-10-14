@@ -29,6 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
+import { categoryOptionLabel } from '~/lib/default-data'
 import { useI18n } from '~/lib/use-i18n'
 
 interface BulkActionBarProps {
@@ -94,9 +95,7 @@ export function BulkActionBar({
         </option>
         {categories.map(category => (
           <option key={category.id} value={category.id}>
-            {category.emoji}
-            {' '}
-            {categoryName(category)}
+            {categoryOptionLabel(category.emoji, categoryName(category))}
           </option>
         ))}
       </select>

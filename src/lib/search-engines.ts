@@ -7,6 +7,9 @@ export interface SearchIntent {
   usedKeyword: boolean
 }
 
+/** Custom engines saved without an emoji of their own; shown with the site's favicon instead. */
+export const DEFAULT_SEARCH_ENGINE_EMOJI = '🔎'
+
 export function normalizeSearchKeyword(value: string): string {
   return value.trim().toLowerCase()
 }
@@ -31,7 +34,7 @@ export function validateCustomSearchEngine(
   const name = input.name.trim()
   const keyword = normalizeSearchKeyword(input.keyword)
   const url = input.url.trim()
-  const emoji = input.emoji.trim() || '🔎'
+  const emoji = input.emoji.trim() || DEFAULT_SEARCH_ENGINE_EMOJI
   if (!name)
     throw new Error('search_engine.name_required')
   if (name.length > 40)

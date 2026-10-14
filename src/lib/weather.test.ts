@@ -58,4 +58,20 @@ describe('weather settings and API', () => {
     ] }) }))
     expect(await searchWeatherCities('Shanghai', 'en')).toEqual([{ name: 'Shanghai · China', latitude: 31.2, longitude: 121.4 }])
   })
+
+  it('ranks the city above same-named villages, names their prefecture and drops non-places', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ results: [
+      { name: '上海', admin1: '浙江', admin2: '绍兴市', country: '中国', feature_code: 'PPL', latitude: 29.3, longitude: 121.05 },
+      { name: '上海', admin1: '上海市', admin2: '上海市', country: '中国', feature_code: 'PPLA', population: 24874500, latitude: 31.22, longitude: 121.46 },
+      { name: '上海', admin1: '云南', admin2: '丽江市', country: '中国', feature_code: 'PPL', latitude: 27.07, longitude: 100.1 },
+      { name: '上海', admin1: '云南', admin2: '丽江市', country: '中国', feature_code: 'PPL', latitude: 27.08, longitude: 100.2 },
+      { name: '上海', admin1: '上海市', country: '中国', feature_code: 'ISL', latitude: 31.1, longitude: 121.9 },
+    ] }) }))
+    expect((await searchWeatherCities('上海', 'zh-CN')).map(location => location.name)).toEqual([
+      '上海 · 上海市 · 中国',
+      '上海 · 绍兴市 · 浙江 · 中国',
+      '上海 · 丽江市 · 云南 · 中国',
+    ])
+    expect(vi.mocked(fetch).mock.calls[0]?.[0]).toContain('count=20')
+  })
 })

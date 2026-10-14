@@ -2,7 +2,7 @@ import type { MouseEvent, PointerEvent } from 'react'
 import type { BookmarkGroup } from '~/lib/bookmark-groups'
 import type { AppearanceSettings } from '~/lib/types'
 import { useDndContext, useDraggable, useDroppable } from '@dnd-kit/core'
-import { GripVertical, Loader2, MoreHorizontal, Pencil, Star, Trash2 } from 'lucide-react'
+import { GripVertical, Layers, Loader2, MoreHorizontal, Pencil, Star, Trash2 } from 'lucide-react'
 import { useCallback } from 'react'
 import { useMovePending } from '~/components/BookmarkDragDropContext'
 import { BookmarkIcon } from '~/components/BookmarkIcon'
@@ -76,7 +76,7 @@ export function BookmarkGroupCard({ group, appearance, compact, pinning, expande
         className={cn('flex w-full items-center text-left focus-visible:outline-none active:scale-[0.99]', compact ? cardContentClass.compact : cardContentClass.grid, reorderEnabled && 'cursor-grab active:cursor-grabbing', moving && 'cursor-wait')}
       >
         {fields.websiteIcon
-          ? <BookmarkIcon icon={group.icon} name={group.title} appearance={appearance} compact={compact} fallbackIcon="🗂️" />
+          ? <BookmarkIcon icon={group.icon} name={group.title} appearance={appearance} compact={compact} fallbackIcon={<Layers aria-hidden="true" strokeWidth={1.75} className="size-1/2 text-muted-foreground" />} />
           : null}
         <div className="min-w-0 flex-1 pr-9">
           <div className={cn(cardTitleClass, titleLineClass[fields.titleLines])}>{group.title}</div>

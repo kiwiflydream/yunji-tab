@@ -93,7 +93,7 @@ const THEME_OPTIONS: Array<{
 
 type StylePresetSettings = Omit<
   AppearanceSettings,
-  'navLayout' | 'homeLayout' | 'navItems' | 'catDecorations' | 'cardFields'
+  'navLayout' | 'homeLayout' | 'navItems' | 'cardFields'
 > & { cardFields: Omit<AppearanceSettings['cardFields'], 'websiteIcon'> }
 type StylePreset = 'sky' | 'minimal' | 'balanced' | 'compact' | 'soft' | 'kami' | 'engraving' | 'electric'
 
@@ -397,23 +397,6 @@ export function SettingsAppearanceTab() {
         <p className="mt-3 text-xs leading-5 text-muted-foreground">
           {t('appearancePresetScopeDescription')}
         </p>
-      </section>
-
-      <section className="rounded-xl border border-border bg-muted/35 p-4">
-        <label className="flex items-center justify-between gap-4">
-          <span>
-            <span className="block text-sm font-semibold">{t('appearanceCatDecorations')}</span>
-            <span className="mt-1 block text-sm leading-5 text-muted-foreground">
-              {t('appearanceCatDecorationsDescription')}
-            </span>
-          </span>
-          <Switch
-            checked={appearance.catDecorations}
-            onCheckedChange={value =>
-              void setAppearance({ catDecorations: value })}
-            aria-label={t('appearanceShowCatDecorations')}
-          />
-        </label>
       </section>
 
       <Collapsible

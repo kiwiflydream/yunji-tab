@@ -190,6 +190,24 @@ html:not(.theme-electric, .theme-kami, .theme-engraving) .newtab-shell[data-home
   background-image: radial-gradient(60% 22rem at 50% 0, hsl(var(--primary) / 0.08), transparent 75%);
 }
 
+/* Home layout switch: search, clock and grid travel between their header and hero places.
+   Names exist only during the switch, so the docked header copies never clash with the hero. */
+html.home-layout-morph [data-morph="search"]:not([data-docked]) { view-transition-name: home-search; }
+html.home-layout-morph [data-morph="clock"]:not([data-docked]) { view-transition-name: home-clock; }
+html.home-layout-morph [data-morph="grid"] { view-transition-name: home-grid; }
+
+::view-transition-group(home-search),
+::view-transition-group(home-clock),
+::view-transition-group(home-grid) {
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 280ms;
+}
+
 /* Electric Blue: quiet surfaces let the blue typography lead. */
 html.theme-electric,
 html.theme-electric body {
@@ -268,6 +286,11 @@ html.theme-kami .bg-muted\/35,
 html.theme-kami .bg-muted\/45,
 html.theme-kami .bg-muted\/75 {
   background-color: hsl(var(--background)) !important;
+}
+
+/* Settings sections sit flat on the dialog like other presets; the muted reset above must not repaint them. */
+html.theme-kami [id^="settings-panel-"] > section {
+  background-color: transparent !important;
 }
 
 html.theme-kami article {

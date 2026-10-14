@@ -2,6 +2,11 @@ import type { Category, SearchEngine } from './types'
 
 export const DEFAULT_CATEGORY_EMOJI = '📁'
 
+/** Folder name for pickers; untouched folders show no emoji, user-picked emoji stay. */
+export function categoryOptionLabel(emoji: string, name: string): string {
+  return emoji && emoji !== DEFAULT_CATEGORY_EMOJI ? `${emoji} ${name}` : name
+}
+
 // 虚拟分类：代表"全部书签"，由 UI 层固定渲染，不存入数据层
 export const ALL_CATEGORY: Category = {
   id: 'all',

@@ -188,7 +188,7 @@ describe('navigation store boundaries', () => {
       onboardingDismissed: true,
       bookmarkViewMode: 'compact',
       savedSearches: [{ id: 'saved', name: 'Work', query: 'tag:work' }],
-      appearance: { ...DEFAULT_SETTINGS.appearance, colorTheme: 'engraving', catDecorations: true, navLayout: 'top', navItems: { icons: false, counts: false, smartCategories: false, savedSearches: true, categoryTree: false }, cardFields: { ...DEFAULT_SETTINGS.appearance.cardFields, websiteIcon: false, description: false, tags: false } },
+      appearance: { ...DEFAULT_SETTINGS.appearance, colorTheme: 'engraving', navLayout: 'top', navItems: { icons: false, counts: false, smartCategories: false, savedSearches: true, categoryTree: false }, cardFields: { ...DEFAULT_SETTINGS.appearance.cardFields, websiteIcon: false, description: false, tags: false } },
     })
     useNavStore.setState({ settings })
     await useNavStore.getState().resetAppearanceSettings()

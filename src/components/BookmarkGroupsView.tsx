@@ -3,7 +3,7 @@ import type { AdditionalGridItem } from '~/components/bookmark-grid/BookmarkGrid
 import type { BookmarkGroupMenuAnchor } from '~/components/BookmarkGroupMenu'
 import type { BookmarkGroup } from '~/lib/bookmark-groups'
 import { useDndContext } from '@dnd-kit/core'
-import { Loader2, Plus } from 'lucide-react'
+import { Layers, Loader2, Plus } from 'lucide-react'
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { BookmarkGroupCard } from '~/components/BookmarkGroupCard'
 import { BookmarkGroupEditor } from '~/components/BookmarkGroupEditor'
@@ -302,7 +302,7 @@ export function BookmarkGroupsView({ pinnedOnly = false, renderCards }: Bookmark
               {!groups.length && !loadError
                 ? (
                     <div className="col-span-full py-14 text-center">
-                      <span aria-hidden="true" className="mb-3 block text-3xl">🗂️</span>
+                      <span aria-hidden="true" className="mx-auto mb-3 flex size-12 items-center justify-center rounded-xl bg-secondary text-muted-foreground"><Layers className="size-5" strokeWidth={1.75} /></span>
                       <h2 className="text-sm font-medium">{t('noBookmarkGroups')}</h2>
                       <p className="mt-2 text-sm text-muted-foreground">{t('bookmarkGroupsHint')}</p>
                     </div>

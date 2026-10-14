@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { AppearanceSettings } from '~/lib/types'
 import { useEffect, useRef, useState } from 'react'
 import { iconSizeClass } from '~/lib/appearance'
@@ -11,7 +12,7 @@ interface BookmarkIconProps {
   name: string
   appearance: AppearanceSettings
   compact?: boolean
-  fallbackIcon?: string
+  fallbackIcon?: ReactNode
   className?: string
 }
 

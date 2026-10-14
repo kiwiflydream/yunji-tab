@@ -13,6 +13,7 @@ import {
   AUTO_ORGANIZE_OPERATORS,
   previewAutoOrganizeRules,
 } from '~/lib/auto-organize'
+import { categoryOptionLabel } from '~/lib/default-data'
 import { useBookmarks, useCategories, useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
 
@@ -153,9 +154,7 @@ export function AutoOrganizeSettings() {
             <option value="">{t('doNotMoveFolder')}</option>
             {categories.map(category => (
               <option key={category.id} value={category.id}>
-                {category.emoji}
-                {' '}
-                {categoryName(category)}
+                {categoryOptionLabel(category.emoji, categoryName(category))}
               </option>
             ))}
           </select>

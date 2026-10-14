@@ -36,17 +36,38 @@ async function fetchJson(url: string, signal?: AbortSignal) {
   return response.json()
 }
 
+const CITY_RESULT_LIMIT = 6
+// GeoNames feature codes: capitals and administrative seats first, then ordinary places.
+const placeRank: Record<string, number> = { PPLC: 0, PPLA: 1, PPLA2: 2, PPLA3: 3, PPLA4: 4 }
+
 export async function searchWeatherCities(query: string, language: string): Promise<WeatherLocation[]> {
-  const params = new URLSearchParams({ name: query.trim(), count: '6', language: language.startsWith('zh') ? 'zh' : language, format: 'json' })
+  // Ask for more than we show: small villages sharing a big city's name are ranked below it.
+  const params = new URLSearchParams({ name: query.trim(), count: '20', language: language.startsWith('zh') ? 'zh' : language, format: 'json' })
   const data = await fetchJson(`https://geocoding-api.open-meteo.com/v1/search?${params}`)
-  return (Array.isArray(data.results) ? data.results : []).flatMap((item: Record<string, unknown>) => {
+  const items: Record<string, unknown>[] = Array.isArray(data.results) ? data.results : []
+  const places = items.filter(item => typeof item.feature_code !== 'string' || item.feature_code.startsWith('PPL'))
+  const ranked = (places.length ? places : items)
+    .map((item, index) => ({ item, index }))
+    .sort((left, right) => {
+      const rank = (item: Record<string, unknown>) => placeRank[String(item.feature_code)] ?? 5
+      const population = (item: Record<string, unknown>) => Number(item.population) || 0
+      return rank(left.item) - rank(right.item) || population(right.item) - population(left.item) || left.index - right.index
+    })
+  const seen = new Set<string>()
+  return ranked.flatMap(({ item }) => {
+    // Name the prefecture or county too, so same-named places in one province stay distinguishable.
+    const parts = [item.name, item.admin2, item.admin1, item.country].filter((part, index, all): part is string =>
+      typeof part === 'string' && Boolean(part.trim()) && all.indexOf(part) === index)
     const location = normalizeHeaderWidget({ location: {
-      name: [item.name, item.admin1, item.country].filter(Boolean).join(' · '),
+      name: parts.join(' · '),
       latitude: item.latitude as number,
       longitude: item.longitude as number,
     } }).location
-    return location ? [location] : []
-  })
+    if (!location || seen.has(location.name))
+      return []
+    seen.add(location.name)
+    return [location]
+  }).slice(0, CITY_RESULT_LIMIT)
 }
 
 export interface WeatherReading {
