@@ -105,4 +105,15 @@ describe('bookmark grid data', () => {
     expect(counts.childCountByCategory.get('all')).toBe(1)
     expect(counts.childCountByCategory.get('work')).toBe(1)
   })
+
+  it('previews the first three direct bookmarks of each folder in library order', () => {
+    const counts = countGridItems(
+      ['a', 'b', 'c', 'd'].map(id => bookmark(id)).concat(bookmark('nested', { categoryId: 'docs' })),
+      categories,
+    )
+
+    expect(counts.previewBookmarksByCategory.get('work')?.map(item => item.id)).toEqual(['a', 'b', 'c'])
+    expect(counts.previewBookmarksByCategory.get('docs')?.map(item => item.id)).toEqual(['nested'])
+    expect(counts.previewBookmarksByCategory.has('all')).toBe(false)
+  })
 })

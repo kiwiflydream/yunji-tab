@@ -74,6 +74,7 @@ export function useBookmarkGridData({
     itemCounts: {
       bookmarkCountByCategory: derived.bookmarkCountByCategory,
       childCountByCategory: derived.childCategoryCountByCategory,
+      previewBookmarksByCategory: derived.previewBookmarksByCategory,
     },
     searching: Boolean(searchQuery.trim()),
   }

@@ -1,13 +1,13 @@
-import type { AppearanceSettings, Category } from '~/lib/types'
+import type { AppearanceSettings, Bookmark, Category } from '~/lib/types'
 import { useDraggable } from '@dnd-kit/core'
-import { ChevronRight, Folder, GripVertical, Pencil } from 'lucide-react'
+import { ChevronRight, GripVertical, Pencil } from 'lucide-react'
 
 import { useCallback } from 'react'
 import { useMovePending } from '~/components/BookmarkDragDropContext'
+import { FolderGraphic } from '~/components/FolderGraphic'
 import { useCategoryDropTarget } from '~/components/useCategoryDropTarget'
 import {
   cardStyleClass,
-  iconSizeClass,
   radiusClass,
 } from '~/lib/appearance'
 import { DEFAULT_CATEGORY_EMOJI } from '~/lib/default-data'
@@ -19,6 +19,7 @@ interface CategoryCardProps {
   category: Category
   bookmarkCount: number
   childCategoryCount: number
+  previewBookmarks?: Bookmark[]
   onEdit: (category: Category) => void
   locationLabel?: string
   onOpen?: (category: Category) => void
@@ -29,6 +30,7 @@ export function CategoryCard({
   category,
   bookmarkCount,
   childCategoryCount,
+  previewBookmarks,
   onEdit,
   locationLabel,
   onOpen,
@@ -69,7 +71,6 @@ export function CategoryCard({
     bookmarkCount > 0 ? t('folderBookmarkCount', { count: bookmarkCount }) : '',
     childCategoryCount > 0 ? t('subfolderCount', { count: childCategoryCount }) : '',
   ].filter(Boolean)
-  const iconClasses = iconSizeClass[appearance.iconSize]
 
   return (
     <div
@@ -98,26 +99,11 @@ export function CategoryCard({
       >
         {appearance.cardFields.websiteIcon
           ? (
-              <div
-                data-slot="folder-card-icon"
-                className={cn(
-                  'flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-secondary/85 to-secondary/40 text-foreground ring-1 ring-border/45 shadow-xs group-hover:ring-border/65 transition-all',
-                  iconClasses.grid,
-                )}
-              >
-                {category.emoji === DEFAULT_CATEGORY_EMOJI
-                  ? (
-                      <Folder className="size-6 text-muted-foreground/80" />
-                    )
-                  : (
-                      <span
-                        className="max-w-full truncate px-2 text-3xl"
-                        aria-hidden="true"
-                      >
-                        {category.emoji}
-                      </span>
-                    )}
-              </div>
+              <FolderGraphic
+                appearance={appearance}
+                emoji={category.emoji === DEFAULT_CATEGORY_EMOJI ? undefined : category.emoji}
+                previewBookmarks={previewBookmarks}
+              />
             )
           : null}
 

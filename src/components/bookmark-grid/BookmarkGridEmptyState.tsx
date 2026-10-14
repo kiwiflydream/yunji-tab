@@ -18,7 +18,7 @@ export function BookmarkGridEmptyState({
   const { t } = useI18n()
   const Icon = emptyLibrary ? Bookmark : searching ? SearchX : FolderOpen
   return (
-    <div className="surface-panel flex min-h-72 flex-col items-center justify-center px-6 py-16 text-center">
+    <div className="surface-panel flex min-h-72 flex-col items-center justify-center px-6 py-16 text-center animate-in fade-in-0 duration-300 motion-reduce:animate-none">
       <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
         <Icon className="size-5" aria-hidden="true" />
       </div>

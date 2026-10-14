@@ -11,12 +11,14 @@ import {
   compileBookmarkSearchQuery,
 } from './bookmark-search'
 import { pinnedCardRank } from './card-order'
+import { addFolderPreview } from './navigation-derived'
 
 export type BookmarkUsageMap = Record<string, BookmarkUsage>
 
 export interface GridItemCounts {
   bookmarkCountByCategory: Map<string, number>
   childCountByCategory: Map<string, number>
+  previewBookmarksByCategory: Map<string, Bookmark[]>
 }
 
 export function isUsageBookmarkView(activeCategoryId: string): boolean {
@@ -174,11 +176,13 @@ export function countGridItems(
 ): GridItemCounts {
   const bookmarkCountByCategory = new Map<string, number>()
   const childCountByCategory = new Map<string, number>()
+  const previewBookmarksByCategory = new Map<string, Bookmark[]>()
   for (const bookmark of bookmarks) {
     bookmarkCountByCategory.set(
       bookmark.categoryId,
       (bookmarkCountByCategory.get(bookmark.categoryId) ?? 0) + 1,
     )
+    addFolderPreview(previewBookmarksByCategory, bookmark)
   }
   for (const category of categories) {
     childCountByCategory.set(
@@ -186,5 +190,5 @@ export function countGridItems(
       (childCountByCategory.get(category.parentId) ?? 0) + 1,
     )
   }
-  return { bookmarkCountByCategory, childCountByCategory }
+  return { bookmarkCountByCategory, childCountByCategory, previewBookmarksByCategory }
 }

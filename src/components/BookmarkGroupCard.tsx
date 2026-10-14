@@ -2,10 +2,11 @@ import type { MouseEvent, PointerEvent } from 'react'
 import type { BookmarkGroup } from '~/lib/bookmark-groups'
 import type { AppearanceSettings } from '~/lib/types'
 import { useDndContext, useDraggable, useDroppable } from '@dnd-kit/core'
-import { GripVertical, Layers, Loader2, MoreHorizontal, Pencil, Star, Trash2 } from 'lucide-react'
+import { GripVertical, Loader2, MoreHorizontal, Pencil, Star, Trash2 } from 'lucide-react'
 import { useCallback } from 'react'
 import { useMovePending } from '~/components/BookmarkDragDropContext'
 import { BookmarkIcon } from '~/components/BookmarkIcon'
+import { GroupStackGraphic } from '~/components/GroupStackGraphic'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from '~/components/ui/dropdown-menu'
 import { cardActionButtonClass, cardActionsClass, cardActionsHoverClass, cardContainerClass, cardContentClass, cardSizeClass, cardStyleClass, cardTitleClass, descriptionLineClass, radiusClass, titleLineClass } from '~/lib/appearance'
 import { getBookmarkDropPlacement, readDragItemData, validateBookmarkDrop } from '~/lib/drag-drop'
@@ -76,7 +77,9 @@ export function BookmarkGroupCard({ group, appearance, compact, pinning, expande
         className={cn('flex w-full items-center text-left focus-visible:outline-none active:scale-[0.99]', compact ? cardContentClass.compact : cardContentClass.grid, reorderEnabled && 'cursor-grab active:cursor-grabbing', moving && 'cursor-wait')}
       >
         {fields.websiteIcon
-          ? <BookmarkIcon icon={group.icon} name={group.title} appearance={appearance} compact={compact} fallbackIcon={<Layers aria-hidden="true" strokeWidth={1.75} className="size-1/2 text-muted-foreground" />} />
+          ? group.icon
+            ? <BookmarkIcon icon={group.icon} name={group.title} appearance={appearance} compact={compact} />
+            : <GroupStackGraphic appearance={appearance} compact={compact} members={group.bookmarks} />
           : null}
         <div className="min-w-0 flex-1 pr-9">
           <div className={cn(cardTitleClass, titleLineClass[fields.titleLines])}>{group.title}</div>

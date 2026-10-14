@@ -5,7 +5,7 @@ import type { Category } from '~/lib/types'
 
 import { useDraggable } from '@dnd-kit/core'
 import { ChevronRight, Clock3, FileText, Folder, GripVertical, Inbox, Layers, LayoutGrid, ListFilter, Pencil, Pin, Star, Tag } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useMovePending } from '~/components/BookmarkDragDropContext'
 import { Button } from '~/components/ui/button'
 import {
@@ -18,6 +18,7 @@ import { useBookmarkGroupsStore } from '~/lib/bookmark-groups-store'
 import { countMatchingSearchEntries } from '~/lib/bookmark-search'
 import { getCategoryAncestorIds } from '~/lib/category-tree'
 import { DEFAULT_CATEGORY_EMOJI, VIRTUAL_CATEGORIES } from '~/lib/default-data'
+import { useSlidingIndicator } from '~/lib/motion'
 import { getNavigationDerivedData } from '~/lib/navigation-derived'
 import { useBookmarks, useCategories, useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
@@ -111,6 +112,8 @@ function CategoryTab({
   return (
     <div
       ref={setNodeRef}
+      data-category-tab
+      data-active={active || undefined}
       className={cn(
         'group relative flex h-9 shrink-0 items-center gap-1 rounded-lg text-sm transition-all duration-150',
         fullWidth && 'lg:w-full',
@@ -326,6 +329,9 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
     () => new Set(),
   )
   const [smartCategoriesOpen, setSmartCategoriesOpen] = useState(false)
+  const navRef = useRef<HTMLElement>(null)
+  const indicatorRef = useRef<HTMLSpanElement>(null)
+  useSlidingIndicator(navRef, indicatorRef, '[data-category-tab][data-active]', groupsActive ? 'groups' : `${activeId}\u0000${searchQuery}`)
 
   const savedCategories: Category[] = useMemo(
     () =>
@@ -491,14 +497,16 @@ export function CategoryTabs({ onEditCategory, groupsActive, onSelectGroups, onS
 
   return (
     <nav
+      ref={navRef}
       aria-label={t('bookmarkCategories')}
       className={cn(
-        'flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+        'relative flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
         navLayout === 'sidebar'
           ? 'lg:h-full lg:flex-col lg:gap-1 lg:overflow-x-hidden lg:overflow-y-auto'
           : 'lg:overflow-x-auto',
       )}
     >
+      <span ref={indicatorRef} aria-hidden="true" hidden className="pointer-events-none absolute left-0 top-0 rounded-lg bg-accent" />
       {smartCategoriesCollapsible
         ? (
             <>

@@ -152,6 +152,7 @@ export function BookmarkGrid({
           )
         : null}
       <BookmarkGridItems
+        entranceKey={`${activeCategoryId}\u0000${viewMode}`}
         appearance={appearance}
         bookmarks={renderedBookmarks}
         categories={visibleCategories}

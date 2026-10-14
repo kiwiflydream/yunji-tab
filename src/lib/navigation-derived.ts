@@ -5,8 +5,12 @@ import { createBookmarkSearchEntry } from './bookmark-search'
 import { buildCategoryPathMap } from './category-path'
 import { buildCategoryTree } from './category-tree'
 
+export const FOLDER_PREVIEW_LIMIT = 3
+
 export interface NavigationDerivedData {
   bookmarkCountByCategory: Map<string, number>
+  /** The first few direct bookmarks of each folder, in library order, for folder card previews. */
+  previewBookmarksByCategory: Map<string, Bookmark[]>
   categoryPathMap: Map<string, string[]>
   categoryTree: CategoryTreeNode[]
   childCategoryCountByCategory: Map<string, number>
@@ -54,6 +58,14 @@ function getCategoryDerivedData(categories: Category[]): CategoryDerivedData {
   return derived
 }
 
+export function addFolderPreview(previews: Map<string, Bookmark[]>, bookmark: Bookmark): void {
+  const preview = previews.get(bookmark.categoryId)
+  if (!preview)
+    previews.set(bookmark.categoryId, [bookmark])
+  else if (preview.length < FOLDER_PREVIEW_LIMIT)
+    preview.push(bookmark)
+}
+
 export function getNavigationDerivedData(
   bookmarks: Bookmark[],
   categories: Category[],
@@ -69,6 +81,7 @@ export function getNavigationDerivedData(
 
   const categoryDerived = getCategoryDerivedData(categories)
   const bookmarkCountByCategory = new Map<string, number>()
+  const previewBookmarksByCategory = new Map<string, Bookmark[]>()
   let inbox = 0
   let pinned = 0
   let untagged = 0
@@ -78,6 +91,7 @@ export function getNavigationDerivedData(
       bookmark.categoryId,
       (bookmarkCountByCategory.get(bookmark.categoryId) ?? 0) + 1,
     )
+    addFolderPreview(previewBookmarksByCategory, bookmark)
     if (bookmark.inboxAt)
       inbox += 1
     if (bookmark.pinnedAt)
@@ -109,6 +123,7 @@ export function getNavigationDerivedData(
   const derived: NavigationDerivedData = {
     ...categoryDerived,
     bookmarkCountByCategory,
+    previewBookmarksByCategory,
     get searchEntries() {
       return getSearchEntries()
     },

@@ -6,11 +6,13 @@ import type {
   BookmarkViewMode,
   Category,
 } from '~/lib/types'
+import { useRef } from 'react'
 import { BookmarkCard } from '~/components/BookmarkCard'
 import { CategoryCard } from '~/components/CategoryCard'
 import { gridClassByMode } from '~/lib/appearance'
 import { useBookmarkGroupsStore } from '~/lib/bookmark-groups-store'
 import { bookmarkCardKey, comparePinnedCards, getPinnedCards } from '~/lib/card-order'
+import { useStaggeredEntrance } from '~/lib/motion'
 import { useNavStore } from '~/lib/store'
 
 export interface AdditionalGridItem {
@@ -22,6 +24,8 @@ export interface AdditionalGridItem {
 
 interface BookmarkGridItemsProps {
   additionalItems?: AdditionalGridItem[]
+  /** Cards replay their entrance whenever this changes, e.g. on switching category or view. */
+  entranceKey: string
   appearance: AppearanceSettings
   bookmarks: Bookmark[]
   categories: Category[]
@@ -40,6 +44,7 @@ interface BookmarkGridItemsProps {
 
 export function BookmarkGridItems({
   additionalItems,
+  entranceKey,
   appearance,
   bookmarks,
   categories,
@@ -63,6 +68,8 @@ export function BookmarkGridItems({
   }
   const allBookmarks = useNavStore(state => state.bookmarks)
   const groups = useBookmarkGroupsStore(state => state.groups)
+  const gridRef = useRef<HTMLDivElement>(null)
+  useStaggeredEntrance(gridRef, entranceKey)
   const pinnedIndices = new Map(getPinnedCards(allBookmarks, groups).map((card, index) => [card.key, index]))
   const items: Array<AdditionalGridItem & { bookmark?: Bookmark, renderKey: string }> = [
     ...bookmarks.map(bookmark => ({
@@ -79,7 +86,7 @@ export function BookmarkGridItems({
     items.sort(comparePinnedCards)
 
   return (
-    <div className={gridClassByMode[appearance.gridDensity][viewMode]}>
+    <div ref={gridRef} className={gridClassByMode[appearance.gridDensity][viewMode]}>
       {categories.map(category => (
         <CategoryCard
           key={category.id}
@@ -90,6 +97,7 @@ export function BookmarkGridItems({
           childCategoryCount={
             itemCounts.childCountByCategory.get(category.id) ?? 0
           }
+          previewBookmarks={itemCounts.previewBookmarksByCategory.get(category.id)}
           onEdit={onEditCategory}
           locationLabel={
             searching

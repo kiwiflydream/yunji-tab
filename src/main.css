@@ -208,6 +208,101 @@ html.home-layout-morph [data-morph="grid"] { view-transition-name: home-grid; }
   animation-duration: 280ms;
 }
 
+/* Centered hero: clock, search and pinned shortcuts rise in one after another when a new tab opens. */
+@keyframes home-rise { from { opacity: 0; transform: translateY(8px); } }
+.home-hero-entrance > * { animation: home-rise 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+.home-hero-entrance > :nth-child(2) { animation-delay: 60ms; }
+.home-hero-entrance > :nth-child(3) { animation-delay: 120ms; }
+
+/* Folder card graphic: an open folder holding its first site icons. Hover tips the front flap toward the
+   viewer and fans the contents up; everything is drawn from theme colours, so every preset and dark mode follow. */
+.folder-graphic {
+  --folder-back: color-mix(in srgb, hsl(var(--muted-foreground)) 34%, hsl(var(--card)));
+  --folder-ease: cubic-bezier(0.34, 1.4, 0.64, 1);
+  position: relative;
+  perspective: 110px;
+}
+.folder-graphic-back {
+  position: absolute;
+  inset: 24% 4% 6%;
+  border-radius: 18% / 22%;
+  background: var(--folder-back);
+}
+.folder-graphic-back::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 92%;
+  width: 42%;
+  height: 14%;
+  border-radius: 40% 40% 0 0 / 100% 100% 0 0;
+  background: var(--folder-back);
+}
+.folder-graphic-item {
+  position: absolute;
+  bottom: 30%;
+  left: var(--x);
+  width: 44%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 28%;
+  background: hsl(var(--card));
+  box-shadow: 0 0 0 1px hsl(var(--border) / 0.9), 0 2px 4px -1px hsl(var(--foreground) / 0.18);
+  transform: translateY(var(--y, 0%)) rotate(var(--r, 0deg));
+  transition: transform 360ms var(--folder-ease) var(--delay, 0ms);
+}
+.folder-graphic-paper { width: 50%; aspect-ratio: 4 / 5; border-radius: 12%; }
+.folder-graphic-paper::before {
+  content: "";
+  position: absolute;
+  inset: 22% 18% auto;
+  height: 34%;
+  background: repeating-linear-gradient(hsl(var(--muted-foreground) / 0.35) 0 1px, transparent 1px 4px);
+}
+.folder-graphic-front {
+  position: absolute;
+  inset: auto 0 2%;
+  height: 48%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16% / 26%;
+  background: linear-gradient(hsl(var(--card)), hsl(var(--secondary)));
+  box-shadow: inset 0 1px 0 hsl(var(--card)), 0 0 0 1px hsl(var(--border) / 0.9), 0 3px 6px -3px hsl(var(--foreground) / 0.3);
+  transform-origin: 50% 100%;
+  transition: transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.folder-graphic-emoji { font-size: 0.5em; line-height: 1; }
+.folder-card:is(:hover, :focus-within) .folder-graphic-front { transform: rotateX(-40deg); }
+.folder-card:is(:hover, :focus-within) .folder-graphic-item {
+  transform: translate(var(--hx, 0%), var(--hy)) rotate(var(--hr, 0deg)) scale(1.04);
+}
+
+/* Bookmark group graphic: the group's first sites held like a hand of cards, pivoting from below the stack. */
+.group-stack { position: relative; }
+.group-stack-card {
+  position: absolute;
+  left: var(--x);
+  top: 20%;
+  width: 60%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 28%;
+  background: hsl(var(--card));
+  box-shadow: 0 0 0 1px hsl(var(--border) / 0.9), 0 2px 5px -1px hsl(var(--foreground) / 0.2);
+  transform-origin: 50% 100%;
+  transform: translateY(var(--y, 0%)) rotate(var(--r, 0deg));
+  transition: transform 360ms cubic-bezier(0.34, 1.4, 0.64, 1) var(--delay, 0ms);
+}
+.group-stack-blank { background: linear-gradient(hsl(var(--card)), hsl(var(--secondary))); }
+article:is(:hover, :focus-within) .group-stack-card {
+  transform: translate(var(--hx, 0%), var(--hy)) rotate(var(--hr, 0deg));
+}
+
+/* Category nav: the moving highlight stands in for the newly active tab's own background until it lands. */
+[data-indicator-pending] { background-color: transparent !important; }
+[data-indicator-still] { transition: none !important; }
+
 /* Electric Blue: quiet surfaces let the blue typography lead. */
 html.theme-electric,
 html.theme-electric body {

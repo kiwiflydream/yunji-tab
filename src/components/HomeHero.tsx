@@ -1,15 +1,22 @@
 import type { MouseEvent } from 'react'
 import type { Bookmark } from '~/lib/types'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { BookmarkIcon } from '~/components/BookmarkIcon'
 import { HeaderWidget } from '~/components/HeaderWidget'
 import { SearchBar } from '~/components/SearchBar'
 import { openBookmarkUrl } from '~/lib/bookmark-urls'
 import { pinnedCardRank } from '~/lib/card-order'
+import { contentMotionAllowed } from '~/lib/motion'
 import { useBookmarks, useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
+import { cn } from '~/lib/utils'
 
 const MAX_PINNED_SHORTCUTS = 10
+
+// The entrance plays once per new tab, not again when the layout is switched back to centered.
+let heroEntered = false
+// Long enough for the last child's delay plus its rise; afterwards remounted children (pinned row after a search) just appear.
+const ENTRANCE_WINDOW_MS = 700
 
 interface HomeHeroProps {
   onOpenCommand: () => void
@@ -54,6 +61,7 @@ function PinnedShortcut({ bookmark }: { bookmark: Bookmark }) {
 
 export function HomeHero({ onOpenCommand, onDockedChange }: HomeHeroProps) {
   const searchRef = useRef<HTMLDivElement>(null)
+  const [entrance, setEntrance] = useState(() => !heroEntered && contentMotionAllowed())
   const { t } = useI18n()
   const bookmarks = useBookmarks()
   const searching = useNavStore(state => state.bookmarkSearchQuery.trim().length > 0)
@@ -71,6 +79,12 @@ export function HomeHero({ onOpenCommand, onDockedChange }: HomeHeroProps) {
       })
       .slice(0, MAX_PINNED_SHORTCUTS)
   }, [bookmarks])
+
+  useEffect(() => {
+    heroEntered = true
+    const timer = window.setTimeout(setEntrance, ENTRANCE_WINDOW_MS, false)
+    return () => window.clearTimeout(timer)
+  }, [])
 
   // Once the search box slides under the sticky header, the header borrows search and time until it comes back.
   useEffect(() => {
@@ -102,7 +116,7 @@ export function HomeHero({ onOpenCommand, onDockedChange }: HomeHeroProps) {
   }, [onDockedChange])
 
   return (
-    <section data-home-hero className="flex flex-col items-center gap-6 pb-10 pt-6 sm:pt-10">
+    <section data-home-hero className={cn('flex flex-col items-center gap-6 pb-10 pt-6 sm:pt-10', entrance && 'home-hero-entrance')}>
       {widget.clockEnabled || widget.weatherEnabled ? <HeaderWidget variant="hero" /> : null}
       <div ref={searchRef} className="flex w-full justify-center">
         <SearchBar onOpenCommand={onOpenCommand} variant="hero" />
