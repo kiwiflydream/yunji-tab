@@ -46,7 +46,7 @@ export async function searchWeatherCities(query: string, language: string): Prom
   const data = await fetchJson(`https://geocoding-api.open-meteo.com/v1/search?${params}`)
   const items: Record<string, unknown>[] = Array.isArray(data.results) ? data.results : []
   const places = items.filter(item => typeof item.feature_code !== 'string' || item.feature_code.startsWith('PPL'))
-  const ranked = (places.length ? places : items)
+  const ranked = places
     .map((item, index) => ({ item, index }))
     .sort((left, right) => {
       const rank = (item: Record<string, unknown>) => placeRank[String(item.feature_code)] ?? 5
@@ -54,7 +54,7 @@ export async function searchWeatherCities(query: string, language: string): Prom
       return rank(left.item) - rank(right.item) || population(right.item) - population(left.item) || left.index - right.index
     })
   const seen = new Set<string>()
-  return ranked.flatMap(({ item }) => {
+  const candidates = ranked.flatMap(({ item }) => {
     // Name the prefecture or county too, so same-named places in one province stay distinguishable.
     const parts = [item.name, item.admin2, item.admin1, item.country].filter((part, index, all): part is string =>
       typeof part === 'string' && Boolean(part.trim()) && all.indexOf(part) === index)
@@ -66,8 +66,15 @@ export async function searchWeatherCities(query: string, language: string): Prom
     if (!location || seen.has(location.name))
       return []
     seen.add(location.name)
-    return [location]
-  }).slice(0, CITY_RESULT_LIMIT)
+    const feature = String(item.feature_code)
+    const population = Number(item.population)
+    const isAdministrativeCity = /^PPLA[2-5]?$/.test(feature) || feature === 'PPLC' || feature === 'PPLCD'
+    const isCity = isAdministrativeCity || (feature === 'PPL' && Number.isFinite(population) && population > 0)
+    return [{ location, isCity, isAdministrativeCity }]
+  })
+  const cities = candidates.filter(candidate => candidate.isCity)
+  const hasAdministrativeCity = candidates.some(candidate => candidate.isAdministrativeCity)
+  return (hasAdministrativeCity ? cities : candidates).slice(0, CITY_RESULT_LIMIT).map(candidate => candidate.location)
 }
 
 export interface WeatherReading {

@@ -59,7 +59,7 @@ describe('weather settings and API', () => {
     expect(await searchWeatherCities('Shanghai', 'en')).toEqual([{ name: 'Shanghai · China', latitude: 31.2, longitude: 121.4 }])
   })
 
-  it('ranks the city above same-named villages, names their prefecture and drops non-places', async () => {
+  it('keeps the recognized city instead of filling results with same-named villages', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ results: [
       { name: '上海', admin1: '浙江', admin2: '绍兴市', country: '中国', feature_code: 'PPL', latitude: 29.3, longitude: 121.05 },
       { name: '上海', admin1: '上海市', admin2: '上海市', country: '中国', feature_code: 'PPLA', population: 24874500, latitude: 31.22, longitude: 121.46 },
@@ -69,9 +69,42 @@ describe('weather settings and API', () => {
     ] }) }))
     expect((await searchWeatherCities('上海', 'zh-CN')).map(location => location.name)).toEqual([
       '上海 · 上海市 · 中国',
-      '上海 · 绍兴市 · 浙江 · 中国',
-      '上海 · 丽江市 · 云南 · 中国',
     ])
     expect(vi.mocked(fetch).mock.calls[0]?.[0]).toContain('count=20')
+  })
+
+  it('retains ordinary populated cities alongside administrative cities', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ results: [
+      { name: 'Cambridge', admin1: 'England', country: 'United Kingdom', feature_code: 'PPLA3', population: 145700, latitude: 52.2, longitude: 0.12 },
+      { name: 'Cambridge', admin1: 'Massachusetts', country: 'United States', feature_code: 'PPL', population: 118403, latitude: 42.37, longitude: -71.11 },
+      { name: 'Cambridge', admin1: 'Unknown', feature_code: 'PPL', latitude: 1, longitude: 1 },
+    ] }) }))
+    expect((await searchWeatherCities('Cambridge', 'en')).map(location => location.name)).toEqual([
+      'Cambridge · England · United Kingdom',
+      'Cambridge · Massachusetts · United States',
+    ])
+  })
+
+  it('keeps smaller settlements as a fallback when no recognized city exists', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ results: [
+      { name: '小镇', admin1: '浙江', country: '中国', feature_code: 'PPL', latitude: 29.3, longitude: 121.05 },
+      { name: '小镇', admin1: '云南', country: '中国', feature_code: 'PPL', latitude: 27.07, longitude: 100.1 },
+    ] }) }))
+    expect((await searchWeatherCities('小镇', 'zh-CN')).map(location => location.name)).toEqual(['小镇 · 浙江 · 中国', '小镇 · 云南 · 中国'])
+  })
+
+  it('does not offer islands as cities when there are no settlement results', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ results: [
+      { name: '上海', admin1: '浙江', country: '中国', feature_code: 'ISL', latitude: 30.49, longitude: 122.36 },
+    ] }) }))
+    expect(await searchWeatherCities('上海', 'zh-CN')).toEqual([])
+  })
+
+  it('keeps all small settlements when only some have population data', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ results: [
+      { name: '小村', admin1: '浙江', country: '中国', feature_code: 'PPL', population: 80, latitude: 29.3, longitude: 121.05 },
+      { name: '小村', admin1: '云南', country: '中国', feature_code: 'PPL', latitude: 27.07, longitude: 100.1 },
+    ] }) }))
+    expect((await searchWeatherCities('小村', 'zh-CN')).map(location => location.name)).toEqual(['小村 · 浙江 · 中国', '小村 · 云南 · 中国'])
   })
 })

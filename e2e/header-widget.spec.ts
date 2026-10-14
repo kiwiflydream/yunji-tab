@@ -15,7 +15,11 @@ test('configures time and weather, persists settings and fits small screens', as
     chrome.permissions.request = async () => true
     chrome.permissions.contains = async () => true
   })
-  await newTabPage.route('https://geocoding-api.open-meteo.com/**', route => route.fulfill({ json: { results: [{ name: '上海', admin1: '上海市', country: '中国', latitude: 31.22, longitude: 121.46 }] } }))
+  await newTabPage.route('https://geocoding-api.open-meteo.com/**', route => route.fulfill({ json: { results: [
+    { name: '上海', admin1: '上海市', country: '中国', feature_code: 'PPLA', population: 24874500, latitude: 31.22, longitude: 121.46 },
+    { name: '上海', admin1: '浙江', admin2: '绍兴市', country: '中国', feature_code: 'PPL', latitude: 29.33, longitude: 121.06 },
+    { name: '上海', admin1: '云南', admin2: '丽江市', country: '中国', feature_code: 'PPL', latitude: 27.07, longitude: 100.11 },
+  ] } }))
   await newTabPage.route('https://api.open-meteo.com/**', route => route.fulfill({ json: { current: { temperature_2m: route.request().url().includes('fahrenheit') ? 79 : 26, weather_code: 0, is_day: 1 } } }))
   await newTabPage.reload()
   await newTabPage.setViewportSize({ width: 1440, height: 900 })
@@ -25,6 +29,7 @@ test('configures time and weather, persists settings and fits small screens', as
   await widget.click()
   await newTabPage.getByRole('textbox', { name: '城市', exact: true }).fill('上海')
   await newTabPage.getByRole('button', { name: '搜索', exact: true }).click()
+  await expect(newTabPage.locator('section[aria-label="时间与天气"] ul > li')).toHaveCount(1)
   await newTabPage.getByRole('button', { name: '上海 · 上海市 · 中国', exact: true }).click()
   await expect(widget).toContainText('26°C')
   await newTabPage.keyboard.press('Escape')
