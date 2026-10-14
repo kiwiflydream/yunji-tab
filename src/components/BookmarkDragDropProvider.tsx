@@ -1,4 +1,4 @@
-import type { CollisionDetection, DragCancelEvent, DragEndEvent, DragStartEvent } from '@dnd-kit/core'
+import type { CollisionDetection, DragCancelEvent, DragEndEvent, DragStartEvent, DropAnimation } from '@dnd-kit/core'
 import type { ReactNode } from 'react'
 import type { DragItemData } from '~/lib/drag-drop'
 import type { MessageKey, TranslationParams } from '~/lib/i18n'
@@ -21,6 +21,7 @@ import { useEffect, useState } from 'react'
 import { MovePendingContext } from '~/components/BookmarkDragDropContext'
 import { useBookmarkGroupsStore } from '~/lib/bookmark-groups-store'
 import { bookmarkCardKey, groupCardKey } from '~/lib/card-order'
+import { runCardTransition } from '~/lib/card-transition'
 import {
 
   readCardDropData,
@@ -47,6 +48,16 @@ const categoryCollisionDetection: CollisionDetection = (args) => {
   return pointerCollisions.length > 0
     ? pointerCollisions
     : rectIntersection(args)
+}
+
+// The label chip dissolves where it was dropped while the cards themselves glide to their new places.
+const dropAnimation: DropAnimation = {
+  duration: 180,
+  easing: 'ease-out',
+  keyframes: ({ transform: { initial } }) => {
+    const at = `translate3d(${initial.x}px, ${initial.y}px, 0)`
+    return [{ opacity: 1, transform: at }, { opacity: 0, transform: `${at} scale(0.92)` }]
+  },
 }
 
 export function BookmarkDragDropProvider({
@@ -108,18 +119,20 @@ export function BookmarkDragDropProvider({
       try {
         if (item.type === 'category')
           return
-        if (item.pinnedReorder) {
-          await reorderPinnedCard(
-            item.type === 'group' ? groupCardKey(item.groupId) : bookmarkCardKey(item.url),
-            bookmarkTarget.type === 'group-drop' ? groupCardKey(bookmarkTarget.groupId) : bookmarkCardKey(bookmarkTarget.url),
-          )
-        }
-        else if (item.type === 'group' && bookmarkTarget.type === 'group-drop') {
-          await reorderGroup(item.groupId, bookmarkTarget.groupId)
-        }
-        else if (item.type === 'bookmark' && bookmarkTarget.type === 'bookmark-drop') {
-          await reorderBookmark(item.bookmarkId, bookmarkTarget.bookmarkId)
-        }
+        await runCardTransition(async () => {
+          if (item.pinnedReorder) {
+            await reorderPinnedCard(
+              item.type === 'group' ? groupCardKey(item.groupId) : bookmarkCardKey(item.url),
+              bookmarkTarget.type === 'group-drop' ? groupCardKey(bookmarkTarget.groupId) : bookmarkCardKey(bookmarkTarget.url),
+            )
+          }
+          else if (item.type === 'group' && bookmarkTarget.type === 'group-drop') {
+            await reorderGroup(item.groupId, bookmarkTarget.groupId)
+          }
+          else if (item.type === 'bookmark' && bookmarkTarget.type === 'bookmark-drop') {
+            await reorderBookmark(item.bookmarkId, bookmarkTarget.bookmarkId)
+          }
+        })
         setNotice({
           kind: 'success',
           key: validation.completedMessageKey ?? validation.messageKey,
@@ -153,16 +166,18 @@ export function BookmarkDragDropProvider({
 
     setMoving(true)
     try {
-      if (item.type === 'bookmark') {
-        await updateBookmark(item.bookmarkId, {
-          categoryId: categoryTarget.categoryId,
-        })
-      }
-      else if (item.type === 'category') {
-        await updateCategory(item.categoryId, {
-          parentId: categoryTarget.categoryId,
-        })
-      }
+      await runCardTransition(async () => {
+        if (item.type === 'bookmark') {
+          await updateBookmark(item.bookmarkId, {
+            categoryId: categoryTarget.categoryId,
+          })
+        }
+        else if (item.type === 'category') {
+          await updateCategory(item.categoryId, {
+            parentId: categoryTarget.categoryId,
+          })
+        }
+      })
       setNotice({
         kind: 'success',
         key: validation.completedMessageKey ?? validation.messageKey,
@@ -242,7 +257,7 @@ export function BookmarkDragDropProvider({
       >
         {children}
 
-        <DragOverlay dropAnimation={null}>
+        <DragOverlay dropAnimation={window.matchMedia('(prefers-reduced-motion: reduce)').matches ? null : dropAnimation}>
           {activeItem
             ? (
                 <div className="flex max-w-xs items-center gap-3 rounded-md border border-border bg-background px-4 py-3 text-sm font-medium shadow-xl">

@@ -75,6 +75,7 @@ export function CategoryCard({
   return (
     <div
       ref={setNodeRef}
+      data-card-key={`folder:${category.id}`}
       className={cn(
         'folder-card group relative flex min-h-[76px] [contain-intrinsic-size:76px] [content-visibility:auto] transition-[background-color,border-color,box-shadow,transform] duration-200',
         cardStyleClass[appearance.cardStyle],

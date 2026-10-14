@@ -1,6 +1,6 @@
 import type { Bookmark, Category } from '~/lib/types'
 
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import engravingArtworkUrl from 'url:~assets/themes/engraving-cat-astronaut.png'
 
 import { BookmarkGridLoadingState } from '~/components/bookmark-grid/BookmarkGridLoadingState'
@@ -41,6 +41,7 @@ import { runNewtabStartup } from '~/lib/newtab-startup'
 import { flushUsagePersistence, useNavStore } from '~/lib/store'
 import { STORAGE_KEYS } from '~/lib/store-persistence'
 import { normalizeSettings } from '~/lib/store-settings-state'
+import { runThemeTransition, trackThemeTransitionOrigin } from '~/lib/theme-transition'
 import { cn } from '~/lib/utils'
 import '~main.css'
 
@@ -261,10 +262,17 @@ export default function NewTab() {
     return () => storageChanges.removeListener(onStorageChanged)
   }, [])
 
-  // 应用主题：light / dark / 跟随系统，以及成套配色变量。
+  useEffect(() => trackThemeTransitionOrigin(), [])
+
+  // 应用主题：light / dark / 跟随系统，以及成套配色变量。首次直接生效，之后的切换以过渡动画呈现。
+  const themeAppliedRef = useRef(false)
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    // A transition still waiting for its snapshot must not repaint settings that have since changed.
+    let stale = false
     const apply = () => {
+      if (stale)
+        return
       const root = document.documentElement
       const dark = theme === 'dark' || (theme === 'system' && mq.matches)
       const strictKami = appearance.colorTheme === 'kami'
@@ -308,10 +316,21 @@ export default function NewTab() {
         root.style.setProperty(key, colorVars[key])
       }
     }
-    apply()
+    if (themeAppliedRef.current)
+      runThemeTransition(apply)
+    else
+      apply()
+    themeAppliedRef.current = true
     if (theme === 'system') {
-      mq.addEventListener('change', apply)
-      return () => mq.removeEventListener('change', apply)
+      const onSchemeChange = () => runThemeTransition(apply)
+      mq.addEventListener('change', onSchemeChange)
+      return () => {
+        stale = true
+        mq.removeEventListener('change', onSchemeChange)
+      }
+    }
+    return () => {
+      stale = true
     }
   }, [appearance.accentColor, appearance.colorTheme, appearance.radius, theme])
 

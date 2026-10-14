@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group'
+import { runCardTransition } from '~/lib/card-transition'
 import { VIRTUAL_CATEGORIES } from '~/lib/default-data'
 import { useCategories, useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
@@ -94,7 +95,7 @@ export function BookmarkGridToolbar({
           value={viewMode}
           onValueChange={(mode) => {
             if (mode)
-              void setViewMode(mode as BookmarkViewMode)
+              void runCardTransition(() => setViewMode(mode as BookmarkViewMode))
           }}
           variant="outline"
           size="sm"

@@ -190,23 +190,86 @@ html:not(.theme-electric, .theme-kami, .theme-engraving) .newtab-shell[data-home
   background-image: radial-gradient(60% 22rem at 50% 0, hsl(var(--primary) / 0.08), transparent 75%);
 }
 
-/* Home layout switch: search, clock and grid travel between their header and hero places.
-   Names exist only during the switch, so the docked header copies never clash with the hero. */
+/* Home layout switch: search, the time and grid travel between their header and hero places.
+   Names exist only during the switch, so the docked header copies never clash with the hero.
+   Only the time digits travel; the date and weather lay out differently in each place, so they fade where they are. */
 html.home-layout-morph [data-morph="search"]:not([data-docked]) { view-transition-name: home-search; }
 html.home-layout-morph [data-morph="clock"]:not([data-docked]) { view-transition-name: home-clock; }
 html.home-layout-morph [data-morph="grid"] { view-transition-name: home-grid; }
 
-::view-transition-group(home-search),
-::view-transition-group(home-clock),
-::view-transition-group(home-grid) {
-  animation-duration: 420ms;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+html.home-layout-morph {
+  --home-morph-duration: 520ms;
+  --home-morph-ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 280ms;
+html.home-layout-morph::view-transition-group(home-search),
+html.home-layout-morph::view-transition-group(home-clock),
+html.home-layout-morph::view-transition-group(home-grid) {
+  animation-duration: var(--home-morph-duration);
+  animation-timing-function: var(--home-morph-ease);
 }
+
+/* The two snapshots of a travelling piece differ in size and font, so swap them early in the move
+   instead of showing both at half strength the whole way. */
+html.home-layout-morph::view-transition-old(home-search),
+html.home-layout-morph::view-transition-new(home-search),
+html.home-layout-morph::view-transition-old(home-clock),
+html.home-layout-morph::view-transition-new(home-clock) {
+  animation-duration: calc(var(--home-morph-duration) * 0.45);
+  animation-timing-function: ease-out;
+}
+
+/* Everything that stays put cross-fades over the same span, so the header buttons settle with the moving pieces. */
+html.home-layout-morph::view-transition-old(root),
+html.home-layout-morph::view-transition-new(root) {
+  animation-duration: calc(var(--home-morph-duration) * 0.7);
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Card morph (reorder, move, delete, undo, grid/list switch): each card near the viewport carries its own name
+   while it runs, so cards glide and resize to their new places; removed cards shrink away and new ones grow in.
+   The page takes no input while a view transition plays, so this stays short. */
+html.card-morph { --card-morph-duration: 320ms; }
+html.card-morph::view-transition-group(*) {
+  animation-duration: var(--card-morph-duration);
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+/* A resized card's two snapshots hold different text sizes; hand over quickly so they never sit doubled for long. */
+html.card-morph::view-transition-old(*),
+html.card-morph::view-transition-new(*) {
+  animation-duration: calc(var(--card-morph-duration) * 0.35);
+  animation-timing-function: ease-out;
+}
+html.card-morph::view-transition-old(*):only-child {
+  animation: card-morph-exit 200ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+html.card-morph::view-transition-new(*):only-child {
+  animation: card-morph-enter 260ms 60ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+html.card-morph::view-transition-old(root),
+html.card-morph::view-transition-new(root) {
+  animation-duration: 220ms;
+}
+@keyframes card-morph-exit { to { opacity: 0; transform: scale(0.92); } }
+@keyframes card-morph-enter { from { opacity: 0; transform: scale(0.94); } }
+
+/* Theme switch: a pick by pointer spreads the new theme out from where it was made (the circle is animated
+   from theme-transition.ts); keyboard, system and synced changes cross-fade. */
+html.theme-reveal::view-transition-old(root),
+html.theme-reveal::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html.theme-fade::view-transition-old(root),
+html.theme-fade::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: ease-out;
+}
+
+/* Big clock: a changed digit rises into place. */
+.clock-digit { display: inline-block; }
+.clock-digit[data-roll] { animation: clock-roll 460ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes clock-roll { from { opacity: 0; transform: translateY(0.32em); filter: blur(3px); } }
 
 /* Centered hero: clock, search and pinned shortcuts rise in one after another when a new tab opens. */
 @keyframes home-rise { from { opacity: 0; transform: translateY(8px); } }
@@ -216,8 +279,29 @@ html.home-layout-morph [data-morph="grid"] { view-transition-name: home-grid; }
 
 /* Folder card graphic: an open folder holding its first site icons. Hover tips the front flap toward the
    viewer and fans the contents up; everything is drawn from theme colours, so every preset and dark mode follow. */
-.folder-graphic {
+.folder-graphic,
+.group-stack {
   --folder-back: color-mix(in srgb, hsl(var(--muted-foreground)) 34%, hsl(var(--card)));
+  --folder-front: linear-gradient(hsl(var(--card)), hsl(var(--secondary)));
+  --folder-sheet: hsl(var(--card));
+  --folder-edge: hsl(var(--border) / 0.9);
+  --folder-highlight: hsl(var(--card));
+  --folder-shade: hsl(var(--foreground) / 0.3);
+}
+/* Card-coloured paper vanishes on a dark card and foreground shadows glow, so lift the paper toward the ink and
+   cast real shadows. Dark presets such as Engraving carry `.dark` too. */
+.dark :is(.folder-graphic, .group-stack) {
+  --folder-back: color-mix(in srgb, hsl(var(--muted-foreground)) 20%, hsl(var(--card)));
+  --folder-front: linear-gradient(
+    color-mix(in srgb, hsl(var(--muted-foreground)) 36%, hsl(var(--card))),
+    color-mix(in srgb, hsl(var(--muted-foreground)) 26%, hsl(var(--card)))
+  );
+  --folder-sheet: color-mix(in srgb, hsl(var(--muted-foreground)) 44%, hsl(var(--card)));
+  --folder-edge: hsl(var(--foreground) / 0.16);
+  --folder-highlight: hsl(var(--foreground) / 0.18);
+  --folder-shade: rgb(0 0 0 / 0.55);
+}
+.folder-graphic {
   --folder-ease: cubic-bezier(0.34, 1.4, 0.64, 1);
   position: relative;
   perspective: 110px;
@@ -246,8 +330,8 @@ html.home-layout-morph [data-morph="grid"] { view-transition-name: home-grid; }
   aspect-ratio: 1;
   overflow: hidden;
   border-radius: 28%;
-  background: hsl(var(--card));
-  box-shadow: 0 0 0 1px hsl(var(--border) / 0.9), 0 2px 4px -1px hsl(var(--foreground) / 0.18);
+  background: var(--folder-sheet);
+  box-shadow: 0 0 0 1px var(--folder-edge), 0 2px 4px -1px color-mix(in srgb, var(--folder-shade) 60%, transparent);
   transform: translateY(var(--y, 0%)) rotate(var(--r, 0deg));
   transition: transform 360ms var(--folder-ease) var(--delay, 0ms);
 }
@@ -267,8 +351,8 @@ html.home-layout-morph [data-morph="grid"] { view-transition-name: home-grid; }
   align-items: center;
   justify-content: center;
   border-radius: 16% / 26%;
-  background: linear-gradient(hsl(var(--card)), hsl(var(--secondary)));
-  box-shadow: inset 0 1px 0 hsl(var(--card)), 0 0 0 1px hsl(var(--border) / 0.9), 0 3px 6px -3px hsl(var(--foreground) / 0.3);
+  background: var(--folder-front);
+  box-shadow: inset 0 1px 0 var(--folder-highlight), 0 0 0 1px var(--folder-edge), 0 3px 6px -3px var(--folder-shade);
   transform-origin: 50% 100%;
   transition: transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -289,12 +373,12 @@ html.home-layout-morph [data-morph="grid"] { view-transition-name: home-grid; }
   overflow: hidden;
   border-radius: 28%;
   background: hsl(var(--card));
-  box-shadow: 0 0 0 1px hsl(var(--border) / 0.9), 0 2px 5px -1px hsl(var(--foreground) / 0.2);
+  box-shadow: 0 0 0 1px var(--folder-edge), 0 2px 5px -1px color-mix(in srgb, var(--folder-shade) 67%, transparent);
   transform-origin: 50% 100%;
   transform: translateY(var(--y, 0%)) rotate(var(--r, 0deg));
   transition: transform 360ms cubic-bezier(0.34, 1.4, 0.64, 1) var(--delay, 0ms);
 }
-.group-stack-blank { background: linear-gradient(hsl(var(--card)), hsl(var(--secondary))); }
+.group-stack-blank { background: var(--folder-front); }
 article:is(:hover, :focus-within) .group-stack-card {
   transform: translate(var(--hx, 0%), var(--hy)) rotate(var(--hr, 0deg));
 }

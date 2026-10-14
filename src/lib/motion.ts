@@ -1,19 +1,31 @@
 import type { RefObject } from 'react'
 import { useLayoutEffect, useRef } from 'react'
+import { CARD_MORPH_CLASS } from '~/lib/card-transition'
 import { HOME_LAYOUT_MORPH_CLASS, HOME_LAYOUT_MORPH_START_EVENT } from '~/lib/home-layout-transition'
 
 const EASE_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)'
 const STAGGER_MS = 24
 const MAX_STAGGER_MS = 240
 
-/** Content motion stays off for reduced motion and while a home-layout view transition owns the page. */
+/** Content motion stays off for reduced motion and while a home-layout or card view transition owns the page. */
 export function contentMotionAllowed(): boolean {
+  const root = document.documentElement
   return !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    && !document.documentElement.classList.contains(HOME_LAYOUT_MORPH_CLASS)
+    && !root.classList.contains(HOME_LAYOUT_MORPH_CLASS)
+    && !root.classList.contains(CARD_MORPH_CLASS)
 }
 
-/** Fades the children currently in the viewport up into place, one after another, whenever `key` changes. */
-export function useStaggeredEntrance(containerRef: RefObject<HTMLElement | null>, key: string): void {
+/** Where entering cards come from: below by default, or sideways when moving deeper into or back out of a folder. */
+export type EntranceDirection = 'up' | 'forward' | 'back'
+
+const entranceOffset: Record<EntranceDirection, string> = {
+  up: 'translateY(6px)',
+  forward: 'translateX(14px)',
+  back: 'translateX(-14px)',
+}
+
+/** Fades the children currently in the viewport into place, one after another, whenever `key` changes. */
+export function useStaggeredEntrance(containerRef: RefObject<HTMLElement | null>, key: string, direction: EntranceDirection = 'up'): void {
   useLayoutEffect(() => {
     const container = containerRef.current
     if (!container || typeof container.animate !== 'function' || !contentMotionAllowed())
@@ -24,7 +36,7 @@ export function useStaggeredEntrance(containerRef: RefObject<HTMLElement | null>
       return rect.bottom > 0 && rect.top < viewportBottom
     })
     const animations = visible.map((child, index) => child.animate(
-      [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }],
+      [{ opacity: 0, transform: entranceOffset[direction] }, { opacity: 1, transform: 'none' }],
       { duration: 260, delay: Math.min(index * STAGGER_MS, MAX_STAGGER_MS), easing: EASE_OUT, fill: 'backwards' },
     ))
     const stop = () => {
@@ -33,7 +45,7 @@ export function useStaggeredEntrance(containerRef: RefObject<HTMLElement | null>
     }
     document.addEventListener(HOME_LAYOUT_MORPH_START_EVENT, stop, { once: true })
     return stop
-  }, [containerRef, key])
+  }, [containerRef, key, direction])
 }
 
 /**

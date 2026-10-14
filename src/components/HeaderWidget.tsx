@@ -16,6 +16,18 @@ interface HeaderWidgetProps {
   docked?: boolean
 }
 
+/** The big clock's digits: a digit that changes rolls up into place instead of flipping. */
+function RollingTime({ label }: { label: string }) {
+  const [shown, setShown] = useState({ label, previous: label })
+  if (shown.label !== label)
+    setShown({ label, previous: shown.label })
+  return Array.from(label, (char, index) => (
+    <span key={`${index}:${char}`} className="clock-digit" data-roll={shown.previous[index] !== char || undefined}>
+      {char}
+    </span>
+  ))
+}
+
 export function HeaderWidget({ variant = 'header', docked = false }: HeaderWidgetProps) {
   const settings = useNavStore(state => state.settings.headerWidget)
   const { language, languageTag } = useI18n()
@@ -105,7 +117,7 @@ export function HeaderWidget({ variant = 'header', docked = false }: HeaderWidge
       <Popover.Trigger asChild>
         {variant === 'hero'
           ? (
-              <button type="button" aria-label={accessibleLabel} className="flex min-w-0 flex-col items-center gap-2 rounded-2xl px-6 py-2 text-center transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40" data-testid="header-widget" data-morph="clock" data-docked={docked || undefined}>
+              <button type="button" aria-label={accessibleLabel} className="flex min-w-0 flex-col items-center gap-2 rounded-2xl px-6 py-2 text-center transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40" data-testid="header-widget">
                 <span className="flex items-center gap-2.5 text-sm text-muted-foreground">
                   {settings.clockEnabled && settings.showDate && <span>{now.toLocaleDateString(languageTag, { month: 'long', day: 'numeric', weekday: 'long' })}</span>}
                   {settings.clockEnabled && settings.showDate && settings.weatherEnabled && <span aria-hidden="true" className="size-[3px] rounded-full bg-muted-foreground/70" />}
@@ -118,17 +130,17 @@ export function HeaderWidget({ variant = 'header', docked = false }: HeaderWidge
                   )}
                 </span>
                 {settings.clockEnabled && (
-                  <time className="whitespace-nowrap text-[clamp(3.5rem,6.5vw,4.75rem)] font-light leading-none tracking-[-0.045em] text-foreground tabular-nums" dateTime={now.toISOString()}>
-                    {timeLabel}
+                  <time data-morph="clock" data-docked={docked || undefined} className="whitespace-nowrap text-[clamp(3.5rem,6.5vw,4.75rem)] font-light leading-none tracking-[-0.045em] text-foreground tabular-nums" dateTime={now.toISOString()}>
+                    <RollingTime label={timeLabel} />
                   </time>
                 )}
               </button>
             )
           : (
-              <button type="button" aria-label={accessibleLabel} className="flex min-w-0 items-center gap-2 rounded-lg px-1 py-1.5 text-left transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:mr-1 sm:gap-3 sm:px-2" data-testid="header-widget" data-morph="clock" data-docked={docked || undefined}>
+              <button type="button" aria-label={accessibleLabel} className="flex min-w-0 items-center gap-2 rounded-lg px-1 py-1.5 text-left transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:mr-1 sm:gap-3 sm:px-2" data-testid="header-widget">
                 {settings.clockEnabled && (
                   <span className="flex shrink-0 flex-col">
-                    <time className="whitespace-nowrap font-mono text-[15px] font-medium leading-6 tracking-[-0.04em] tabular-nums sm:text-lg" dateTime={now.toISOString()}>
+                    <time data-morph="clock" data-docked={docked || undefined} className="whitespace-nowrap font-mono text-[15px] font-medium leading-6 tracking-[-0.04em] tabular-nums sm:text-lg" dateTime={now.toISOString()}>
                       {timeLabel}
                     </time>
                     {settings.showDate && <span className="hidden text-[10px] leading-4 text-muted-foreground sm:block">{dateLabel}</span>}

@@ -54,6 +54,8 @@ async function seed(worker: Worker, pinned = false) {
 }
 
 async function drag(page: Page, source: Locator, target: Locator) {
+  // The page takes no pointer input until the previous drop's cards have glided into place.
+  await expect(page.locator('html')).not.toHaveClass(/card-morph/)
   await source.scrollIntoViewIfNeeded()
   const from = await source.boundingBox()
   const to = await target.boundingBox()

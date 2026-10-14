@@ -37,6 +37,7 @@ import {
   titleLineClass,
 } from '~/lib/appearance'
 import { openBookmarkUrl } from '~/lib/bookmark-urls'
+import { runCardTransition } from '~/lib/card-transition'
 import {
   getBookmarkDropPlacement,
   readDragItemData,
@@ -168,7 +169,7 @@ export function BookmarkCard({
     setDeleting(true)
     setDeleteError('')
     try {
-      await removeBookmark(bookmark.id)
+      await runCardTransition(() => removeBookmark(bookmark.id))
     }
     catch {
       setDeleteError(t('deleteFailed'))
@@ -222,6 +223,7 @@ export function BookmarkCard({
   return (
     <article
       ref={setNodeRef}
+      data-card-key={`bookmark:${bookmark.id}`}
       className={cn(
         cardContainerClass,
         cardStyleClass[appearance.cardStyle],

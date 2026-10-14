@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { GridItemCounts } from '~/lib/bookmark-grid-data'
+import type { EntranceDirection } from '~/lib/motion'
 import type {
   AppearanceSettings,
   Bookmark,
@@ -26,6 +27,7 @@ interface BookmarkGridItemsProps {
   additionalItems?: AdditionalGridItem[]
   /** Cards replay their entrance whenever this changes, e.g. on switching category or view. */
   entranceKey: string
+  entranceDirection?: EntranceDirection
   appearance: AppearanceSettings
   bookmarks: Bookmark[]
   categories: Category[]
@@ -45,6 +47,7 @@ interface BookmarkGridItemsProps {
 export function BookmarkGridItems({
   additionalItems,
   entranceKey,
+  entranceDirection,
   appearance,
   bookmarks,
   categories,
@@ -69,7 +72,7 @@ export function BookmarkGridItems({
   const allBookmarks = useNavStore(state => state.bookmarks)
   const groups = useBookmarkGroupsStore(state => state.groups)
   const gridRef = useRef<HTMLDivElement>(null)
-  useStaggeredEntrance(gridRef, entranceKey)
+  useStaggeredEntrance(gridRef, entranceKey, entranceDirection)
   const pinnedIndices = new Map(getPinnedCards(allBookmarks, groups).map((card, index) => [card.key, index]))
   const items: Array<AdditionalGridItem & { bookmark?: Bookmark, renderKey: string }> = [
     ...bookmarks.map(bookmark => ({

@@ -1,4 +1,5 @@
 import type { AdditionalGridItem } from '~/components/bookmark-grid/BookmarkGridItems'
+import type { EntranceDirection } from '~/lib/motion'
 import type { Bookmark, Category } from '~/lib/types'
 import { useDeferredValue, useMemo, useState } from 'react'
 import { BookmarkGridEmptyState } from '~/components/bookmark-grid/BookmarkGridEmptyState'
@@ -23,6 +24,28 @@ interface BookmarkGridProps {
 
 const RENDER_BATCH_SIZE = 50
 
+/** True when `descendantId` sits somewhere inside `ancestorId`; every folder lives inside "all". */
+function isInside(descendantId: string, ancestorId: string, categories: Category[]): boolean {
+  const parents = new Map(categories.map(category => [category.id, category.parentId]))
+  if (!parents.has(descendantId))
+    return false
+  if (ancestorId === 'all')
+    return true
+  for (let id = parents.get(descendantId); id !== undefined; id = parents.get(id)) {
+    if (id === ancestorId)
+      return true
+  }
+  return false
+}
+
+function entranceDirection(from: string, to: string, categories: Category[]): EntranceDirection {
+  if (isInside(to, from, categories))
+    return 'forward'
+  if (isInside(from, to, categories))
+    return 'back'
+  return 'up'
+}
+
 export function BookmarkGrid({
   loading,
   additionalItems,
@@ -41,6 +64,10 @@ export function BookmarkGrid({
   const sortMode = useNavStore(state => state.settings.bookmarkSortMode)
   const viewMode = useNavStore(state => state.settings.bookmarkViewMode)
   const appearance = useNavStore(state => state.settings.appearance)
+  // Opening a folder brings its cards in from the right; going back up brings the parent's in from the left.
+  const [entrance, setEntrance] = useState({ categoryId: activeCategoryId, direction: 'up' as EntranceDirection })
+  if (entrance.categoryId !== activeCategoryId)
+    setEntrance({ categoryId: activeCategoryId, direction: entranceDirection(entrance.categoryId, activeCategoryId, categories) })
   const paginationKey = `${activeCategoryId}\u0000${searchQuery}\u0000${viewMode}`
   const [pagination, setPagination] = useState({
     key: paginationKey,
@@ -153,6 +180,7 @@ export function BookmarkGrid({
         : null}
       <BookmarkGridItems
         entranceKey={`${activeCategoryId}\u0000${viewMode}`}
+        entranceDirection={entrance.direction}
         appearance={appearance}
         bookmarks={renderedBookmarks}
         categories={visibleCategories}

@@ -2,6 +2,7 @@ import type { MessageKey, TranslationParams } from '~/lib/i18n'
 import type { Bookmark, Category } from '~/lib/types'
 import { useMemo, useState } from 'react'
 import { openBookmarkUrl } from '~/lib/bookmark-urls'
+import { runCardTransition } from '~/lib/card-transition'
 import { useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
 
@@ -109,7 +110,7 @@ export function useBookmarkBulkActions({
       return Promise.resolve()
     const count = selectedIds.size
     return run(async () => {
-      await moveBookmarks([...selectedIds], resolvedDestinationId)
+      await runCardTransition(() => moveBookmarks([...selectedIds], resolvedDestinationId))
       return {
         clearSelection: true,
         message: { key: 'bulkMovedCount', params: { count } },
@@ -119,7 +120,7 @@ export function useBookmarkBulkActions({
   const remove = () => {
     const count = selectedIds.size
     return run(async () => {
-      await removeBookmarks([...selectedIds])
+      await runCardTransition(() => removeBookmarks([...selectedIds]))
       return {
         clearSelection: true,
         message: { key: 'bulkDeletedCount', params: { count } },

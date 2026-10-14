@@ -1,12 +1,14 @@
 import {
+  AlignCenter,
   Ellipsis,
   FolderClock,
   HeartPulse,
   History,
   ListTodo,
+  PanelTop,
   Settings,
 } from 'lucide-react'
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { LazyDialogFallback } from '~/components/LazyDialogFallback'
 import {
   DropdownMenu,
@@ -17,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
+import { runHomeLayoutTransition } from '~/lib/home-layout-transition'
 import { useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
 
@@ -69,6 +72,10 @@ export function HeaderMoreMenu({ open, onOpenChange }: HeaderMoreMenuProps) {
   const runningCount = tasks.filter(task => task.state === 'running').length
   const errorCount = tasks.filter(task => task.state === 'error').length
   const attentionCount = runningCount + errorCount
+  const centered = useNavStore(state => state.settings.appearance.homeLayout === 'centered')
+  const setAppearance = useNavStore(state => state.setAppearance)
+  // Set when the layout item is chosen; the switch waits for the menu to finish closing so it stays out of the snapshots.
+  const layoutSwitchPendingRef = useRef(false)
 
   useEffect(() => {
     setActiveTool(current =>
@@ -147,7 +154,19 @@ export function HeaderMoreMenu({ open, onOpenChange }: HeaderMoreMenuProps) {
               : null}
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" sideOffset={8} className="w-56">
+        <DropdownMenuContent
+          align="end"
+          sideOffset={8}
+          className="w-56"
+          onCloseAutoFocus={() => {
+            if (!layoutSwitchPendingRef.current)
+              return
+            layoutSwitchPendingRef.current = false
+            runHomeLayoutTransition(() => {
+              void setAppearance({ homeLayout: centered ? 'workspace' : 'centered' })
+            })
+          }}
+        >
           <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
             {t('managementTools')}
           </DropdownMenuLabel>
@@ -191,6 +210,10 @@ export function HeaderMoreMenu({ open, onOpenChange }: HeaderMoreMenuProps) {
             {t('preferences')}
           </DropdownMenuLabel>
           <DropdownMenuGroup>
+            <DropdownMenuItem onSelect={() => { layoutSwitchPendingRef.current = true }}>
+              {centered ? <PanelTop /> : <AlignCenter />}
+              <span>{t(centered ? 'switchToWorkspaceLayout' : 'switchToCenteredLayout')}</span>
+            </DropdownMenuItem>
             <DropdownMenuItem
               aria-label={t('openSettings')}
               onSelect={() => openTool('settings')}

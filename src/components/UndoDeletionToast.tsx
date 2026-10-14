@@ -2,6 +2,7 @@ import { Loader2, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '~/components/ui/button'
+import { runCardTransition } from '~/lib/card-transition'
 import { useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
 
@@ -17,7 +18,11 @@ export function UndoDeletionToast() {
   const undo = async () => {
     setError('')
     try {
-      await undoLastDeletion()
+      // Claim the snapshot and stop its expiry as soon as the click is accepted.
+      const restoration = undoLastDeletion()
+      // A fast API failure is still reported below, even if its snapshot callback has not run yet.
+      void restoration.catch(() => undefined)
+      await runCardTransition(() => restoration)
     }
     catch {
       setError(t('undoRestoreFailed'))

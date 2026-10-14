@@ -55,7 +55,7 @@ export function BookmarkGroupCard({ group, appearance, compact, pinning, expande
   const validation = isOver && item ? validateBookmarkDrop(item, target) : null
   const placement = item && item.type !== 'category' ? getBookmarkDropPlacement(item, target) : null
   return (
-    <article ref={setNodeRef} data-bookmark-group-id={group.id} className={cn(cardContainerClass, cardStyleClass[appearance.cardStyle], radiusClass[appearance.radius], compact ? cardSizeClass.compact : cardSizeClass.grid, isDragging && 'opacity-35', validation?.status === 'valid' && 'ring-2 ring-ring', validation?.status === 'invalid' && 'ring-2 ring-destructive/70')}>
+    <article ref={setNodeRef} data-bookmark-group-id={group.id} data-card-key={`group:${group.id}`} className={cn(cardContainerClass, cardStyleClass[appearance.cardStyle], radiusClass[appearance.radius], compact ? cardSizeClass.compact : cardSizeClass.grid, isDragging && 'opacity-35', validation?.status === 'valid' && 'ring-2 ring-ring', validation?.status === 'invalid' && 'ring-2 ring-destructive/70')}>
       <button
         type="button"
         data-nav-item

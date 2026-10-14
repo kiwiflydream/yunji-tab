@@ -1,11 +1,10 @@
-import { AlignCenter, PanelTop, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useLayoutEffect, useRef } from 'react'
 import logoUrl from 'url:~assets/brand-mark.png'
 import { HeaderMoreMenu } from '~/components/HeaderMoreMenu'
 import { HeaderWidget } from '~/components/HeaderWidget'
 import { SearchBar } from '~/components/SearchBar'
 import { Button } from '~/components/ui/button'
-import { runHomeLayoutTransition } from '~/lib/home-layout-transition'
 import { formatShortcut } from '~/lib/keyboard-shortcuts'
 import { useNavStore } from '~/lib/store'
 import { useI18n } from '~/lib/use-i18n'
@@ -35,7 +34,6 @@ export function Header({
   const centered = useNavStore(
     state => state.settings.appearance.homeLayout === 'centered',
   )
-  const setAppearance = useNavStore(state => state.setAppearance)
   const headerRef = useRef<HTMLElement>(null)
   // The top category bar sticks right below the header, whose height changes with layout, docking and wrapping.
   useLayoutEffect(() => {
@@ -49,9 +47,6 @@ export function Header({
   }, [])
   const docked = centered && searchDocked
   const dockedMotion = 'animate-in fade-in-0 slide-in-from-top-1 duration-200 motion-reduce:animate-none'
-  const toggleLayout = () => runHomeLayoutTransition(() => {
-    void setAppearance({ homeLayout: centered ? 'workspace' : 'centered' })
-  })
 
   return (
     <header ref={headerRef} className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md transition-colors">
@@ -87,15 +82,6 @@ export function Header({
             <Plus data-icon="inline-start" className={cn(centered && 'text-primary')} />
             <span className="hidden xl:inline">{t('addBookmark')}</span>
           </Button>
-          <button
-            type="button"
-            onClick={toggleLayout}
-            aria-label={t(centered ? 'switchToWorkspaceLayout' : 'switchToCenteredLayout')}
-            title={t(centered ? 'switchToWorkspaceLayout' : 'switchToCenteredLayout')}
-            className="hidden size-9 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-card text-muted-foreground shadow-sm transition-[color,background-color,transform] sm:flex hover:bg-accent hover:text-foreground active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25"
-          >
-            {centered ? <PanelTop className="size-[18px]" strokeWidth={1.75} /> : <AlignCenter className="size-[18px]" strokeWidth={1.75} />}
-          </button>
           <HeaderMoreMenu open={healthOpen} onOpenChange={onHealthOpenChange} />
         </div>
       </div>

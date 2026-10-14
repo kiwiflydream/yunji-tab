@@ -1,10 +1,12 @@
 import { flushSync } from 'react-dom'
+import { runViewTransition } from '~/lib/view-transition'
 
 // Marks the elements that move between layouts; names are only set while a switch runs (see main.css).
 export const HOME_LAYOUT_MORPH_CLASS = 'home-layout-morph'
 export const HOME_LAYOUT_MORPH_START_EVENT = 'home-layout-morph-start'
 
-function finishContentCssAnimations(): void {
+/** Lands entrance animations so view-transition snapshots never freeze a card mid-fade. */
+export function finishContentCssAnimations(): void {
   for (const animation of document.getAnimations()) {
     const target = animation.effect instanceof KeyframeEffect ? animation.effect.target : null
     if (animation instanceof CSSAnimation && target instanceof Element
@@ -21,14 +23,18 @@ export function runHomeLayoutTransition(update: () => void): void {
     update()
     return
   }
-  root.classList.add(HOME_LAYOUT_MORPH_CLASS)
-  document.dispatchEvent(new Event(HOME_LAYOUT_MORPH_START_EVENT))
-  finishContentCssAnimations()
-  // The transition snapshots the new state when the callback returns, so React must commit synchronously.
-  const transition = document.startViewTransition(() => {
-    // eslint-disable-next-line react/dom-no-flush-sync
-    flushSync(update)
-    finishContentCssAnimations()
+  runViewTransition({
+    prepare: () => {
+      root.classList.add(HOME_LAYOUT_MORPH_CLASS)
+      document.dispatchEvent(new Event(HOME_LAYOUT_MORPH_START_EVENT))
+      finishContentCssAnimations()
+    },
+    // The transition snapshots the new state when the callback returns, so React must commit synchronously.
+    update: () => {
+      // eslint-disable-next-line react/dom-no-flush-sync
+      flushSync(update)
+      finishContentCssAnimations()
+    },
+    cleanup: () => root.classList.remove(HOME_LAYOUT_MORPH_CLASS),
   })
-  void transition.finished.catch(() => undefined).finally(() => root.classList.remove(HOME_LAYOUT_MORPH_CLASS))
 }
