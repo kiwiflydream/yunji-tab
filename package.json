@@ -9,6 +9,7 @@
     "dev": "plasmo dev",
     "build": "plasmo build",
     "package": "plasmo package",
+    "docs:screenshots": "pnpm build && node scripts/capture-docs.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src e2e --quiet",
     "test": "vitest run src",

@@ -6,170 +6,242 @@
 
 [简体中文](./README.md) · English
 
-Find the sites you have already bookmarked, every time you open a new tab.
+**Put the sites you have saved to work, every time you open a new tab.**
 
-Yunji Tab is an open-source Chrome extension that works with your existing browser bookmarks and folders. Search, tag, group, and organize bookmarks in bulk, or choose a theme for your home page. Start using it after installation, without migrating bookmarks or creating another account.
+Yunji Tab is a free, open-source Chrome extension that turns native browser bookmarks into a searchable, organized home page. Keep daily tools within reach, collect pages in an inbox for later, and work through older bookmarks with rules, optional AI classification, and link checks.
 
-[Chrome Web Store](https://chromewebstore.google.com/detail/mongacbicmimajjfljaaelfcchhkepbh) · [Download the latest release](https://github.com/kiwiflydream/yunji-tab/releases/latest) · [Release notes](https://github.com/kiwiflydream/yunji-tab/releases) · [Report an issue](https://github.com/kiwiflydream/yunji-tab/issues) · [Development guide](./docs/development.en.md)
+It works directly with your existing bookmarks and folders, with no migration or extra account. Adding, editing, moving, or deleting a bookmark in Yunji Tab also changes it in the browser's bookmark manager.
 
-The screenshots below show the Chinese interface. English is also available in the language settings.
+[Chrome Web Store](https://chromewebstore.google.com/detail/mongacbicmimajjfljaaelfcchhkepbh) · [Download the latest release](https://github.com/kiwiflydream/yunji-tab/releases/latest) · [Release notes](https://github.com/kiwiflydream/yunji-tab/releases) · [Report an issue](https://github.com/kiwiflydream/yunji-tab/issues)
 
-![Yunji Tab home page: folders on the left, pinned bookmarks and bookmark groups on the right](./docs/images/yunji-tab-overview.png)
+![Centered Clear Sky home: time, weather, search, pinned bookmarks and groups, with the bookmark collection below](./docs/images/yunji-tab-overview.png)
 
-## Installation
+Screenshots show the current extension with public sample bookmarks and demo city and weather settings. They use the Chinese interface; English is available in settings.
 
-Chrome packages are currently distributed through GitHub Releases.
+[Install and get started](#install-and-get-started) · [Find and open](#find-and-open) · [Save and organize](#save-and-organize) · [Home and appearance](#home-and-appearance) · [Sync and backup](#sync-and-backup) · [Development and contributions](#development-and-contributions)
 
-1. Open the [download page](https://github.com/kiwiflydream/yunji-tab/releases/latest) and download the attachment named `yunji-tab-<version>-chrome.zip`. The automatically generated `Source code` archives contain source files, not an installable extension.
+## Features at a glance
+
+| What you want to do | What Yunji Tab provides |
+| --- | --- |
+| Reach daily tools from a new tab | Centered and Workspace layouts, pinned bookmarks and groups, time and weather |
+| Find something you saved | Search names, URLs, descriptions, tags, and folder paths; fuzzy matching, Chinese Pinyin initials, and saved filters |
+| Search your collection or the web | Bookmark and web modes, browser default search, keyword shortcuts, and custom engines |
+| Keep related sites together | Groups, member aliases, custom icons, hover menus, and drag ordering |
+| Save now and organize later | Toolbar popup, context menu, browser shortcut, and one-by-one inbox triage |
+| Manage many bookmarks | Bulk move, open, delete, and description completion; drag bookmarks and folders |
+| Add context to a bookmark | Descriptions, tags, emoji or image icons, and automatic selection between alternate URLs |
+| Reduce repetitive sorting | Rules for names, domains, URLs, descriptions, and tags; optional AI classification previews |
+| Maintain an older collection | Duplicate, broken, and redirected link checks; undo, 30-day trash, and sync recovery points |
+| Set aside the pages for a task | Saved tab sessions, selective restore, and opening in a new window |
+| Make the page your own | Eight styles, light and dark modes, navigation placement, card fields and density, shortcuts, and seven languages |
+| Move between devices or keep backups | Browser sync, JSON import and export, full snapshots, and optionally encrypted WebDAV backups |
+
+## Install and get started
+
+Download a Chrome package from [GitHub Releases](https://github.com/kiwiflydream/yunji-tab/releases/latest):
+
+1. Download `yunji-tab-<version>-chrome.zip`. The automatically generated `Source code` archives contain source files, not an installable extension.
 2. Extract the ZIP and make sure the folder contains `manifest.json`.
 3. Open `chrome://extensions` in Chrome and enable **Developer mode** in the upper-right corner.
 4. Click **Load unpacked** and select the extracted folder.
-5. Open a new tab to get started.
+5. Open a new tab. Your existing browser bookmarks appear automatically.
 
-To upgrade, replace the contents of the original installation folder with the new version, then click Reload on the extensions page. Keep the installation folder; there is no need to uninstall the extension.
+To upgrade, replace the contents of the original installation folder with the new version, then click Reload on the extensions page. Keep that folder; there is no need to uninstall.
 
-Chrome is the main supported browser. You can try loading the same package in Chromium browsers such as Edge, Brave, and Opera, but compatibility has not been verified individually. Official packages for Firefox and Safari are not currently available.
+Start by pinning a few daily sites, clicking the time and weather widget to choose a city, and opening **More actions › Settings** in the upper-right corner to choose a layout, style, and default folder. All settings paths below start from that menu.
 
-## Everyday use
+Chrome is the main supported browser. Edge, Brave, and Opera can try the same package, but compatibility has not been verified individually. Firefox and Safari do not currently have official packages.
 
-### Find a saved site
+## Find and open
 
-The categories on the left follow your existing bookmark folders. Pin sites you use often, or continue organizing through smart categories such as **Recent**, **Untagged**, and **No description**.
+### Search bookmarks, folders, and the web
 
-Use the search box at the top to find bookmarks and folders. Filters such as `tag:AI`, `site:github.com`, and `folder:Documentation` are also supported. Switch to **Web** to search with the browser's default search engine or choose another engine.
+Bookmark search covers names, URLs, descriptions, tags, and folder paths, with fuzzy matching and Chinese Pinyin initials. If you cannot remember the exact title, try the domain, purpose, or folder instead.
 
-![Searching with tag:AI finds tagged bookmarks across folders](./docs/images/bookmark-search.png)
+| Example | Find |
+| --- | --- |
+| `github` | Bookmarks or folders related to GitHub |
+| `tag:AI` | Bookmarks tagged AI |
+| `site:github.com` | Saved pages on GitHub |
+| `folder:Development` | Content under a matching folder path |
+| `tag:development site:github.com` | Bookmarks matching both the tag and the site |
 
-### Group sites you use together
+![Tag search finds AI bookmarks across folders](./docs/images/bookmark-search.png)
 
-For example, put your chat, reading, and research tools in an “AI workspace” group. Open **Bookmark groups**, click **Create bookmark group**, enter a title and description, and choose members from saved bookmarks. Each member can have its own title within the group. You can also change the member order and set a custom group icon.
+Save recurring queries as filters: enable **Saved filters** under **Settings › General › Navigation & categories**, run a search, and click **Saved filters** above the results. Reopen saved queries from the category bar, or remove them in **Settings › Search**.
 
-Hover over a group card or click it to expand the member list on the current page, then select a link to open it. Groups can be pinned alongside regular bookmarks without moving their members out of the original folders. Deleting a group keeps the original bookmarks.
+Switch to **Web** to enter a URL or send keywords to the browser's default search engine. Built-in engines include Google, Bing, DuckDuckGo, and GitHub, with `g`, `b`, `ddg`, and `gh` keyword shortcuts, such as `gh react`. Add custom engines, keywords, and search URL templates containing `%s` under **Settings › Search**.
 
-![A bookmark group expands its member names on the current page](./docs/images/bookmark-groups.png)
+### Run actions from the command palette
 
-Bookmark groups are enabled by default. Turn them off under **Settings › General › Bookmark groups** if you do not need them; saved group configurations are retained.
-
-### Add your own bookmark details
-
-Open **More actions › Edit bookmark** on a card to change its name, URL, or category. Expand **More options** to add a description, tags, a custom icon, or alternate URLs for the same service. Icons can be emoji or image URLs.
+Press `Cmd/Ctrl + K` on the home page to find bookmarks and folders or run actions such as adding a bookmark, clearing search, checking links, and switching between light and dark themes. Use arrow keys to select, `Enter` to run, and `Esc` to close.
 
 <p align="center">
-  <img src="./docs/images/bookmark-editor.png" width="400" alt="Bookmark editor with description, tags, custom icon, and alternate URLs">
+  <img src="./docs/images/command-palette.png" width="640" alt="Command palette for bookmarks, folders, and actions">
 </p>
 
-### Choose an entry point automatically with alternate URLs
+You can also open a **global command palette** on regular web pages to find bookmarks, save the current page, or return home. It is off by default: enable it in **Settings › Keyboard shortcuts**, then assign its browser shortcut at `chrome://extensions/shortcuts`. Restricted pages, including browser internal pages, cannot host the palette and fall back to Yunji Tab's home page.
 
-A service can have several addresses. For example, a home NAS might have both a public domain and a local network domain. Save them in one bookmark, and Yunji Tab probes the primary and alternate URLs together when you click it, opening the first address that responds. This avoids choosing an entry point manually after switching networks.
+### Group the tools for a task
 
-For example, set `https://nas.example.com` as the primary URL and add `http://nas.home.arpa` under **More options › Alternate URLs (optional)**. Enter one alternate address per line.
+Put ChatGPT, Claude, and Perplexity in an “AI workspace,” or group a project repository, documentation, and design tools. Open **Bookmark groups › Create bookmark group**, choose existing bookmarks, and add a title and description. Members can have their own names and order within the group; the group can use an emoji or image icon.
 
-| Network | What opens |
-| ------- | ---------- |
-| Away from home, on a public network | The responding public domain when the local address is unreachable |
-| At home, on the local network | The local address if it responds faster |
-| Connected to a VPN or private network | Private addresses also participate once they are reachable |
+![Hover or click a group to open its member list on the current page](./docs/images/bookmark-groups.png)
 
-This also works for internal and external company service addresses, public and VPN addresses for self-hosted services, or other equivalent entry points. A single bookmark chooses an address based on the current network response.
+Hover or click to reveal members, then choose one to open. The default group graphic stacks member site icons like a hand of cards. Drag groups to reorder them, or pin them alongside regular bookmarks so they also appear in the centered home shortcuts.
 
-Selection uses probe response time. If every probe fails, Yunji Tab opens the primary URL.
+Groups leave their members in their original folders. Deleting a group does not delete the bookmarks. Groups are enabled by default; turn them off under **Settings › General › Bookmark groups** while keeping the configuration.
 
-### Organize several bookmarks at once
+## Save and organize
 
-Click **Bulk manage**, select bookmarks, and move, open, or delete them together. You can also drag bookmarks to change their positions.
+### Save a page now, file it later
 
-Drag a group card or its handle to reorder bookmark groups. Under **Pinned**, groups and regular bookmarks can be sorted together. Manual order is saved, participates in browser sync, and is included in backups.
+Click the extension toolbar icon while browsing to save the current page, edit its title, choose a folder, and add tags. You can also use the page context menu or the quick-save browser shortcut. Already-saved URLs show a duplicate notice.
 
-Undo a deletion immediately, or restore its snapshot within 30 days through **More actions › Trash & history**. For larger collections, use the bookmark health check to find duplicate, unavailable, and redirected links.
+Quick-saved bookmarks appear under **Smart categories › Inbox** so you can organize them later. Choose **Organize one by one**, pick a destination folder, add tags, and select **Complete and continue**. Skip items you are not ready to file, or mark selected items as **Finish organizing** in bulk management.
 
-![Bulk management: select several bookmarks to move, open, or delete them together](./docs/images/bookmark-bulk-actions.png)
+<p align="center">
+  <img src="./docs/images/inbox-triage.png" width="580" alt="Inbox triage: choose a folder, add tags, complete, or skip">
+</p>
 
-### Choose a home page style
+### Browse folders, smart categories, and bulk actions
 
-Under **Settings › Appearance**, choose Clear Sky, Minimal, Balanced, Compact, Soft, Paper & Ink, Blue Engraving, or Electric Blue. Place the category bar on the left or at the top, and switch bookmarks to a compact view if you prefer.
+The folder tree follows your browser's hierarchy. Expand and collapse folders, create, rename, move, or delete them, and assign folder icons. Drag bookmarks to reorder them or move them between folders; folders can also be reordered or moved within the hierarchy.
 
-Clear Sky is the default on first install or when no style is configured: white cards with sky-blue accents that follow light and dark mode. Existing style choices are retained.
+Six smart categories cover Inbox, Pinned, Frequent, Recent, Untagged, and No description. Frequent and Recent use visits made through Yunji Tab. Untagged and No description help you find bookmarks that need more context.
 
-**Settings › General › Home layout** switches between two layouts. Centered puts the time, weather, search, and pinned bookmarks in the middle of the page; Workspace keeps search and the time and weather in the header. First installs start centered and existing settings keep the workspace layout. With the time and weather turned off, the centered layout shows only search and pinned shortcuts. The pinned row includes bookmarks and groups, up to ten entries in total; hovering over a group opens its member menu. The header's **More actions** menu also switches between the two layouts, moving search, the clock and bookmarks smoothly to their new places. When you scroll the centered layout until the search box slides under the header, the header shows search and the time and weather until you scroll back up.
+The **Organize** menu above the list switches between native order, name, recently added, and frequency. It also opens **Bulk manage** to move, open, or delete several bookmarks, with description completion under **More**. Switch between card and compact views at any time.
 
-In the centered Clear Sky layout, the background follows the current weather: a slowly turning sun on clear days, a crescent and stars at night, drifting clouds when it is cloudy, and matching effects for rain, snow, fog, and thunderstorms. Without a city, or when weather fails to load, the background stays static. Turn off **Weather background** under **Time & weather**; animations also stop when the system asks for reduced motion.
+![Bulk management: move, open, delete, or complete descriptions for selected bookmarks](./docs/images/bookmark-bulk-actions.png)
 
-Electric Blue uses a pale gray background, electric blue text, and local monospace fonts with a fixed light palette. Accent color and background selection are disabled for this theme. Your navigation position and icon visibility preferences are retained.
+### Descriptions, tags, icons, and alternate URLs
 
-Under **Settings › Appearance › Advanced customization › Visible fields**, **Card icons** controls icons on bookmark, folder, and group cards together. **Menu icons** controls category navigation icons. Both are enabled by default, and your choices persist across reloads and theme changes.
+Use a bookmark card's **More actions › Edit bookmark** to change its name, URL, and folder. **More options** contains descriptions, tags, custom icons, and alternate URLs. Icons accept emoji or image URLs. You can also fetch website information when adding or editing a bookmark.
 
-The **General** and **Appearance** pages each have a **Restore defaults** button at the top. It resets and saves the settings on that page. Bookmarks, groups, and auto-organize rules are retained; resetting General also resets the interface language to the browser language.
+<p align="center">
+  <img src="./docs/images/bookmark-editor.png" width="400" alt="A NAS bookmark with a description, tags, an emoji icon, and a local-network alternate URL">
+</p>
 
-Blue Engraving combines deep blue and warm cream, serif type, print grain, and an original astronaut cat illustration. The illustration stays at the bottom of the viewport while you scroll through bookmarks.
+Keep one bookmark when a service has multiple addresses. For example, use `https://nas.example.com/` as the primary URL and `http://nas.home.arpa/` as an alternate. On opening, Yunji Tab probes all addresses and selects the first to respond. The public address works away from home; local and VPN addresses participate when reachable. Put each alternate on its own line. If every probe fails, the primary URL opens.
 
-![Blue Engraving theme with a deep blue background, cream text, and an astronaut cat illustration](./docs/images/engraving-theme.png)
+**Settings › Content** fills in missing website descriptions in bulk. Maintain an ignored-domain list to skip sites you do not want accessed. This reads website information and does not require AI.
+
+### Apply rules or ask AI for a classification proposal
+
+**Rules suit repeatable filing habits.** Under **Settings › General › Advanced: Auto-organize rules**, match a title, URL, domain, description, or tag using contains, equals, or starts with. Choose a destination folder, append tags, and optionally remove matches from the inbox. For example, file `github.com` bookmarks in a development folder and add an “open source” tag. Review the match count and click **Apply rules** to run them. Rules do not run continuously in the background.
+
+**AI helps sort a collection that is harder to classify.** Connect your own OpenAI-compatible service in **Settings › AI** with a Base URL, token, and model. Fetch available models, verify the connection, customize the classification prompt, and adjust batch size.
+
+1. Generate a classification preview. You can pause, resume, or terminate analysis.
+2. Review the source and destination folders and deselect unwanted suggestions.
+3. Confirm the selected moves to change folders. The most recent AI classification can be undone within 24 hours.
+
+Generating a preview does not modify bookmarks, and closing settings keeps completed results. AI receives titles, URLs with query parameters removed, descriptions, tags, and folder paths. Tokens are excluded from sync and backups, and can be kept only for the current browser session. AI is optional; ordinary bookmarking and organization work without it.
+
+### Check links, undo changes, and recover history
+
+Open **More actions › Bookmark health check** to find duplicate, unavailable, and redirected links. Filter results by issue, choose which duplicate to keep and merge the others, update a redirected address, or delete a bookmark you no longer need. A network error can differ from a permanently broken link, so review the results; scans do not delete bookmarks automatically.
+
+Bookmarks and folders deleted through Yunji Tab can be undone immediately or restored within 30 days from **More actions › Trash & history**. That view also includes recent actions and recovery points saved before remote sync overwrites local supplementary data.
+
+When tasks are running or have failed, **More actions** shows the **Task center** entry for sync, description fetching, checks, and restore status.
+
+### Save a set of open tabs
+
+When a task leaves many pages open, save the current window under **More actions › Tab sessions**. Exclude pinned tabs, update an existing session from the current window, restore selected pages, or open them in a new window. Pages reopen in their saved order.
+
+Save up to 50 sessions, each with up to 100 deduplicated HTTP/HTTPS pages. Sessions stay in the current browser and are excluded from cross-device sync and full snapshot backups.
+
+## Home and appearance
+
+### Centered home and Workspace
+
+First installs start with Clear Sky and the Centered layout: date, weather, a large clock, search, and pinned shortcuts in the middle of the page. The shortcut row includes bookmarks and groups, up to ten entries in total; hovering over a group reveals its members. Turn off both time and weather to collapse their area and keep search and shortcuts.
+
+For more room to browse and manage bookmarks, switch to Workspace, which keeps search and the time and weather in the header.
+
+![Workspace layout keeps search and time and weather in the header](./docs/images/workspace-layout.png)
+
+Switch from **More actions** or **Settings › General › Home layout**, with a smooth transition between layouts. Older appearance settings without a layout choice keep Workspace; an explicit layout choice is retained. In Centered layout, scrolling search under the header temporarily moves search and the time and weather into the header.
+
+General settings also control the default folder, left or top navigation, smart categories and counts, and whether to reuse a single home tab.
+
+### Eight styles and detailed customization
+
+**Settings › Appearance** offers **Clear Sky, Minimal, Balanced, Compact, Soft, Paper & Ink, Blue Engraving, and Electric Blue**. Most styles support light, dark, or system mode; Paper & Ink and Electric Blue are fixed to light, and Blue Engraving to dark. Advanced customization controls content width, grid density, card style, corners, icon size, and visible fields.
+
+![Appearance settings with overall styles, theme modes, and advanced customization](./docs/images/appearance-settings.png)
+
+Control descriptions, tags, folder paths, title and description line counts, visible tag limits, and when action buttons appear. **Card icons** affects bookmarks, folders, and groups together; **Menu icons** controls category navigation icons. These choices persist across reloads and theme changes.
+
+Blue Engraving combines deep blue and warm cream, serif type, print grain, and an original astronaut cat illustration. The illustration stays at the bottom of the viewport while bookmarks scroll.
+
+![Blue Engraving with deep blue, cream text, and an astronaut cat illustration](./docs/images/engraving-theme.png)
+
+Electric Blue uses pale gray, electric blue text, and local monospace fonts, with a fixed light palette. Accent and background selection are disabled; navigation placement and icon preferences are retained. See the [Electric Blue theme guide](./docs/theme-electric-blue.en.md).
+
+General and Appearance each offer a reset for their own settings, keeping bookmarks, groups, and auto-organize rules. Resetting General restores the browser language. Interface animations respect the system's reduced-motion setting.
 
 ### Time and weather
 
-The time, date, and weather appear in the middle of the page in Centered layout and in the header in Workspace layout. Click the widget or open **Settings › General › Time & weather** to toggle time and weather independently, show the date, choose 12/24-hour time, search for a city, and switch between Celsius and Fahrenheit. Weather requires selecting a city and granting access to Open-Meteo; it never automatically reads your device location.
+Click the widget or open **Settings › General › Time & weather** to toggle time and weather independently, show the date, choose 12/24-hour time, search for a city, and select Celsius or Fahrenheit. The clock follows the device time zone. Weather uses a city you choose, requests Open-Meteo access as needed, and never automatically reads your device location.
 
-Open **Settings › About › Release notes** to visit [GitHub Releases](https://github.com/kiwiflydream/yunji-tab/releases).
+<p align="center">
+  <img src="./docs/images/time-and-weather.png" width="360" alt="Time and weather preferences: time format, date, units, background, and city">
+</p>
 
-### Back up and restore
+The centered Clear Sky layout changes its background with the weather: sunshine, a crescent and stars at night, drifting clouds, rain, snow, fog, or thunderstorms. It stays static without a city or available weather. You can also turn off **Weather background** independently.
 
-Open **Settings › Data & Privacy** to export or import supplementary bookmark data, or use **Full snapshot** to back up the bookmark tree and related configuration. WebDAV uses the same full snapshot, with the following scope:
+## Sync and backup
 
-| Included | Excluded |
-| -------- | -------- |
-| Native bookmark tree, folder hierarchy, and order | Tab sessions, trash, operation history, and caches |
-| Descriptions, tags, custom icons, alternate URLs, pinned state, and inbox state | AI API token, WebDAV connection settings, and backup encryption passphrase |
-| Groups and member order, folder icons, open counts, last-opened times, and app settings | Browser sync encryption passphrase |
+### Cross-device sync
 
-A full snapshot restore shows a preview first. After confirmation, the native bookmark tree is imported into a new `Yunji Tab Restore ...` folder, keeping existing native bookmarks. **Supplementary data and usage records for matching URLs revert to the snapshot values. Groups are restored by ID: matching groups are replaced by the snapshot, while other existing groups are kept. App settings are replaced by the snapshot.** Restored data continues to participate in cross-device sync according to the browser and extension settings.
+The browser syncs native bookmarks. Yunji Tab stores supplementary information such as descriptions, tags, icons, alternate URLs, pinned state, and inbox state, and syncs it through browser sync storage by default. Settings and groups also work across devices. Both devices need the same Chrome account, browser sync enabled, and Yunji Tab installed.
 
-To configure WebDAV:
+**Settings › Data & Privacy** shows sync status, offers immediate sync, and lets you select supplementary fields or enable passphrase encryption. **Groups use separate sync storage and are not covered by supplementary field selection or its passphrase encryption.** Usage records, sessions, trash, and operation history stay local; usage records can be included in full snapshot backups.
 
-1. Enter a folder URL. The default is Jianguoyun (Nutstore), `https://dav.jianguoyun.com/dav/`. You can choose another WebDAV service or a subfolder. Create custom folders in your cloud drive first. Remote services must use HTTPS.
-2. Enter your username and app password. For Jianguoyun, use your login email and create an app password under **账户信息 › 安全选项 › 第三方应用管理** (Account information › Security options › Third-party app management).
-3. Optionally enter a **Backup encryption passphrase (optional)**, save the configuration, and test the connection. The first connection requests website access to that server.
-4. Back up manually, or enable **Back up automatically on new-tab opens**. Automatic backup is off by default. When enabled, the minimum check interval defaults to 24 hours; 1, 6, and 72 hours are also available. An upload occurs only after the interval has elapsed and the content has changed. Nothing runs on a schedule while the home page is closed, and no `alarms` or notification permission is needed. Manual backups bypass the interval and content deduplication.
+### Local files and WebDAV
 
-Leave the backup passphrase empty to upload plain JSON. Save a passphrase once to reuse it for later manual and automatic backups. The complete snapshot, including groups, is encrypted locally with AES-256-GCM before upload. This passphrase is separate from the supplementary data's browser sync passphrase. It stays on this device and is excluded from remote files and snapshots. Changing or clearing it affects future backups only; older files still need their original passphrase. Restore first tries the saved local passphrase. If it is missing or does not match, you can enter a temporary passphrase without changing the saved configuration. Successful decryption still requires a preview and confirmation. A forgotten passphrase makes the corresponding encrypted backups unrecoverable.
+| Method | Use it for |
+| --- | --- |
+| Export / import JSON | Supplementary data and configuration, including descriptions, tags, icons, and groups |
+| Full snapshot / restore snapshot | Native bookmark tree, folder hierarchy, supplementary data, groups, usage records, and settings |
+| WebDAV backup | Full snapshots on your own cloud drive or server, with separate historical files and optional encryption |
 
-This passphrase applies only to WebDAV backups. Manually exported local JSON remains unencrypted.
+![Data and privacy settings: browser sync, local JSON export, and full snapshots](./docs/images/backup-and-restore.png)
 
-Each backup uploads one separate JSON file, for example `yunji-tab-backup-20261011T114025123Z-<random-ID>.json`. Its name contains a UTC timestamp with millisecond precision and a random ID to avoid overwriting history. **Sync history** reads files directly from the remote folder, newest first. Refresh the list, restore the latest backup, or restore a specific record. Connect another device to the same folder to view the records; encrypted files also need the corresponding passphrase. Failed uploads or unchanged content only update the current status and create no file record.
+Back up manually to WebDAV, or check at a chosen interval when opening a new tab and upload only when content has changed. Each upload creates a separate file you can restore from remote history. A backup passphrase enables AES-256-GCM encryption of the complete snapshot, including groups. It is separate from the browser sync passphrase; manually exported local JSON remains unencrypted.
 
-History is not persisted locally, and no separate index is uploaded. Legacy files named `yunji-tab-full-snapshot.json` and `yunji-tab-snapshot-<random-ID>.json` also appear, using the server's modification time. The extension does not automatically delete remote files; manage them in your cloud drive. Clearing the connection configuration removes only local credentials, the passphrase, and check status, keeping remote files.
+Full snapshot restores show a preview first. Confirmation imports the native tree into a new `Yunji Tab Restore ...` folder, retaining existing native bookmarks. **Supplementary data and usage records for matching URLs, groups with matching IDs, and app settings revert to snapshot values; other existing groups remain.** Snapshots exclude tab sessions, trash, operation history, caches, AI tokens, WebDAV credentials, and encryption passphrases.
 
-![Data and privacy settings for sync status, data export, and full snapshot restore](./docs/images/backup-and-restore.png)
+See the [Backup and restore guide](./docs/backup.en.md) for Jianguoyun/Nutstore and other WebDAV setup, automatic backup intervals, encryption, and historical restores.
 
-### More tools
+### Privacy and permissions
 
-- **AI classification**: Configure your own service under **Settings › AI** to generate a bookmark organization proposal. Review the move preview and confirm before applying it.
-- **Tab sessions**: Open session management from **More actions** on the home page to save a set of open tabs for later.
+No Yunji Tab account or analytics. Site icons send domains to Google Favicon as needed. Weather, website information, health checks, AI, and WebDAV contact their respective services when used and request the website permissions they need. Settings let you revoke optional access and clear caches and local records.
 
-## Cross-device sync and privacy
+You choose the AI service; its token is excluded from sync and backups. WebDAV credentials and the backup passphrase stay on the current device. See [Privacy and permissions](./docs/privacy.en.md) for storage locations, network requests, and permission purposes.
 
-The browser syncs native bookmarks. Yunji Tab syncs supplementary data such as descriptions, tags, icons, and alternate URLs by default, and also supports group sync. Both devices need the same Chrome account, browser sync enabled, and Yunji Tab installed.
+## Shortcuts and languages
 
-Under **Settings › Data & Privacy**, view sync status, choose supplementary fields to sync, or enable their passphrase encryption. **Groups use separate browser sync storage and are not protected by this supplementary data encryption.**
-
-Yunji Tab collects no analytics. Site icon requests send website domains to Google Favicon. AI classification is optional and requires an OpenAI-compatible service that you configure. Proposals are previewed and applied only after confirmation; API tokens are excluded from sync and backups. See [Privacy and permissions](./docs/privacy.en.md) for storage locations, external requests, and permission purposes.
-
-## Common shortcuts
-
-| Shortcut | Action |
-| -------- | ------ |
-| `/` | Focus search |
-| `Cmd/Ctrl + K` | Open the command palette |
+| Default shortcut | Action |
+| --- | --- |
+| `/` | Focus home page search |
+| `Cmd/Ctrl + K` | Open the home page command palette |
 | `N` | Add a bookmark |
-| Arrow keys, `Enter` | Select and open a bookmark |
+| Arrow keys, `Enter` | Select and open bookmarks or commands |
 | `Esc` | Clear search or close the current overlay |
 | `Alt + Shift + B` (macOS: `Command + Shift + B`) | Quickly save the current page |
+| Assign your own | Open the global command palette on a regular web page |
 
-Change home page shortcuts in **Settings › Keyboard shortcuts**. Configure browser shortcuts at `chrome://extensions/shortcuts`.
+Record new home page shortcuts in **Settings › Keyboard shortcuts**, with conflict feedback and reset controls. Browser shortcuts are managed at `chrome://extensions/shortcuts`.
 
-The interface supports Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, and French.
+The interface supports Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, and French. Switch languages in General settings.
 
 ## Development and contributions
 
-The project uses Plasmo, React, and TypeScript. With Node.js 22 or later and pnpm 10.34.4 installed, run from source:
+Built with Plasmo, React 19, TypeScript, Tailwind CSS, and Zustand. With Node.js 22 or later and pnpm 10.34.4:
 
 ```bash
 corepack enable
@@ -177,9 +249,11 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-In development mode, load `build/chrome-mv3-dev/`. See the [Development guide](./docs/development.en.md) for builds, tests, and the code layout.
+Load `build/chrome-mv3-dev/` for development. See the [Development guide](./docs/development.en.md) for production builds, unit and extension end-to-end tests, the code layout, and updating documentation screenshots.
 
-Issues, suggestions, and code contributions are welcome through [GitHub Issues](https://github.com/kiwiflydream/yunji-tab/issues). Include reproduction steps, your browser version, and screenshots when reporting a problem. Hide private URLs and credentials before posting.
+Issues, suggestions, and contributions are welcome through [GitHub Issues](https://github.com/kiwiflydream/yunji-tab/issues). Include reproduction steps, the browser version, and screenshots. Hide private URLs and credentials before posting.
+
+[Development guide](./docs/development.en.md) · [Backup and restore](./docs/backup.en.md) · [Privacy and permissions](./docs/privacy.en.md) · [Design notes](./DESIGN.md) · [Release notes](https://github.com/kiwiflydream/yunji-tab/releases)
 
 ## License
 

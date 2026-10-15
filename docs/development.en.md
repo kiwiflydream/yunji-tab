@@ -141,4 +141,16 @@ The extension stores supplementary fields such as descriptions, tags, icons, and
 
 When changing a user-visible feature, update the README instructions and all seven product descriptions in `description.md`. Keep the Chinese and English README, development guide, privacy document, and Electric Blue theme document in sync. Update privacy documentation for data, network request, or permission changes, and the development guide for new configuration, storage, or testing constraints. Theme-specific guidance is in [Electric Blue](./theme-electric-blue.en.md) and the [theme asset documentation](../assets/themes/README.md). Store screenshots in `docs/images/`. Use test data and public sites so real users' bookmarks, accounts, and credentials are not exposed.
 
-Current screenshots come from the actual extension interface and cover the home page, search, groups, bookmark editing, bulk management, Blue Engraving, and backup settings. See the [theme asset documentation](../assets/themes/README.md) for Blue Engraving assets.
+To refresh documentation screenshots:
+
+```bash
+# Install the browser before the first capture
+pnpm exec playwright install chromium
+pnpm docs:screenshots
+```
+
+The command rebuilds the extension, then `scripts/capture-docs.mjs` loads it in a temporary Chromium profile with public sample bookmarks, groups, and inbox items. Time is fixed at 2026-10-15 10:08 in Shanghai, with a fixture weather response of clear skies and 26°C. These are capture fixtures, not product defaults. The script does not connect to your everyday browser or use real accounts or credentials. It closes the browser and removes the temporary profile when finished.
+
+The 13 PNG files in `docs/images/` cover the centered home, Workspace, search, groups, command palette, inbox triage, bookmark editor, bulk management, appearance, time and weather, Blue Engraving, data backup, and WebDAV. Capture waits for bookmarks, weather, and icons, checks horizontal overflow, uses reduced motion, and disables screenshot animations. Documentation images are replaced only after all captures succeed. On failure, a diagnostic screenshot is saved as `yunji-docs-error.png` in the system temporary directory. Inspect each image for content, cropping, and readable text afterward; screenshot generation is not a full product regression run.
+
+Both READMEs share screenshots of the Chinese interface. Update both and the related guides when adding or renaming images. See [Backup and restore](./backup.en.md) for detailed backup instructions and the [theme asset documentation](../assets/themes/README.md) for Blue Engraving assets.
